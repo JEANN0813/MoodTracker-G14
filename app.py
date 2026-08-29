@@ -1,420 +1,465 @@
+# -*- coding: utf-8 -*-
+"""
+MoodTracker - Flask Application
+Backend API server with static file hosting for frontend
+"""
 
-import sqlite3
-import json
-import datetime
-from http.server import HTTPServer, BaseHTTPRequestHandler
-from urllib.parse import urlparse, parse_qs
-import hashlib
-import uuid
+from flask import Flask, session, request, jsonify, send_from_directory
+from flask_sqlalchemy import SQLAlchemy
+from flask_cors import CORS
+from datetime import timedelta
+from werkzeug.security import generate_password_hash, check_password_hash
+from datetime import datetime
 import os
 
-DATABASE_NAME = 'database.db'
+# ============================================
+# Flask Application Configuration
+# ============================================
+
+app = Flask(__name__, static_folder='static', static_url_path='')
+
+# Secret key for session encryption (change in production)
+app.config['SECRET_KEY'] = 'moodtracker-secret-key-2026'
+
+# Database configuration
+app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///database.db'
+app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+
+# Session configuration
+app.config['SESSION_COOKIE_SAMESITE'] = 'Lax'
+app.config['SESSION_COOKIE_HTTPONLY'] = True
+app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(days=7)
+
+# Enable CORS for frontend access
+CORS(app, supports_credentials=True)
+
+# ============================================
+# Database Initialization
+# ============================================
+
+db = SQLAlchemy(app)
+
+# ============================================
+# Database Models
+# ============================================
+
+class User(db.Model):
+    """User account model"""
+    __tablename__ = 'users'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    username = db.Column(db.String(80), unique=True, nullable=False)
+    email = db.Column(db.String(120), unique=True, nullable=False)
+    password_hash = db.Column(db.String(200), nullable=False)
+    security_question = db.Column(db.String(200))
+    security_answer_hash = db.Column(db.String(200))
+    created_at = db.Column(db.DateTime, default=db.func.current_timestamp())
+    
+    emotion_logs = db.relationship('EmotionLog', backref='user', lazy=True, cascade='all, delete-orphan')
 
 
-# Database Functions
-def get_db_connection():
-    return sqlite3.connect(DATABASE_NAME)
-
-def dict_factory(cursor, row):
-    d = {}
-    for idx, col in enumerate(cursor.description):
-        d[col[0]] = row[idx]
-    return d
-
-def hash_password(password):
-    return hashlib.sha256(password.encode()).hexdigest()
+class EmotionLog(db.Model):
+    """Emotion log model"""
+    __tablename__ = 'emotion_logs'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+    emotion = db.Column(db.String(30), nullable=False)
+    note = db.Column(db.String(300))
+    log_date = db.Column(db.Date, nullable=False)
+    created_at = db.Column(db.DateTime, default=db.func.current_timestamp())
 
 
-# User Functions
-def register_user(username, password, email=""):
-    conn = get_db_connection()
-    cursor = conn.cursor()
-    try:
-        hashed_pw = hash_password(password)
-        cursor.execute("""
-            INSERT INTO users (username, email, password_hash)
-            VALUES (?, ?, ?)
-        """, (username, email, hashed_pw))
-        conn.commit()
-        user_id = cursor.lastrowid
-        conn.close()
-        return {"success": True, "user_id": user_id}
-    except sqlite3.IntegrityError:
-        conn.close()
-        return {"success": False, "error": "Username already exists"}
+# ============================================
+# Helper Functions
+# ============================================
 
-def login_user(username, password):
-    conn = get_db_connection()
-    conn.row_factory = dict_factory
-    cursor = conn.cursor()
-    hashed_pw = hash_password(password)
-    cursor.execute(
-        "SELECT * FROM users WHERE username = ? AND password_hash = ?",
-        (username, hashed_pw)
+def get_current_user():
+    """Get current logged-in user"""
+    user_id = session.get('user_id')
+    if not user_id:
+        return None
+    return User.query.get(user_id)
+
+
+# ============================================
+# Static File Routes (Serve Frontend)
+# ============================================
+
+@app.route('/', defaults={'path': ''})
+@app.route('/<path:path>')
+def serve_static(path):
+    """Serve static files from the 'static' folder"""
+    if path == '':
+        return send_from_directory('static', 'index.html')
+    
+    # Check if file exists in static folder
+    file_path = os.path.join('static', path)
+    if os.path.exists(file_path):
+        return send_from_directory('static', path)
+    
+    # If not found, return 404
+    return jsonify({'error': 'Not found'}), 404
+
+
+# ============================================
+# API Routes - User Authentication
+# ============================================
+
+@app.route('/api/status')
+def status():
+    """Health check endpoint"""
+    return jsonify({
+        'status': 'online',
+        'message': 'MoodTracker API is running',
+        'version': '1.0.0'
+    })
+
+
+@app.route('/api/register', methods=['POST'])
+def register():
+    """Register a new user"""
+    data = request.get_json()
+    
+    username = data.get('username', '').strip()
+    email = data.get('email', '').strip()
+    password = data.get('password', '').strip()
+    
+    if not username or not password:
+        return jsonify({'error': 'Username and password required'}), 400
+    
+    # Check if username already exists
+    if User.query.filter_by(username=username).first():
+        return jsonify({'error': 'Username already exists'}), 400
+    
+    # Create new user
+    user = User(
+        username=username,
+        email=email,
+        password_hash=generate_password_hash(password)
     )
-    user = cursor.fetchone()
-    conn.close()
-    if user:
-        return {"success": True, "user": user}
-    return {"success": False, "error": "Invalid credentials"}
-
-def get_user_by_id(user_id):
-    conn = get_db_connection()
-    conn.row_factory = dict_factory
-    cursor = conn.cursor()
-    cursor.execute("SELECT id, username, email, created_at FROM users WHERE id = ?", (user_id,))
-    user = cursor.fetchone()
-    conn.close()
-    return user
-
-def update_user_profile(user_id, email=None, password=None, username=None):
-    conn = get_db_connection()
-    cursor = conn.cursor()
     
-    if password:
-        hashed_pw = hash_password(password)
-        cursor.execute("UPDATE users SET password_hash = ? WHERE id = ?", (hashed_pw, user_id))
-    if email:
-        cursor.execute("UPDATE users SET email = ? WHERE id = ?", (email, user_id))
-    if username:
-        cursor.execute("UPDATE users SET username = ? WHERE id = ?", (username, user_id))
+    db.session.add(user)
+    db.session.commit()
     
-    conn.commit()
-    conn.close()
-    return {"success": True, "message": "Profile updated"}
-
-def delete_user_account(user_id):
-    conn = get_db_connection()
-    cursor = conn.cursor()
-    cursor.execute("DELETE FROM users WHERE id = ?", (user_id,))
-    conn.commit()
-    conn.close()
-    return {"success": True, "message": "Account deleted"}
+    return jsonify({
+        'success': True,
+        'message': 'Registration successful',
+        'user_id': user.id
+    }), 201
 
 
-# Emotion Log Functions
-def add_emotion_log(user_id, emotion, note="", log_date=None):
-    if log_date is None:
-        log_date = datetime.datetime.now().strftime("%Y-%m-%d")
-    conn = get_db_connection()
-    cursor = conn.cursor()
-    cursor.execute("""
-        INSERT INTO emotion_logs (user_id, emotion, note, log_date)
-        VALUES (?, ?, ?, ?)
-    """, (user_id, emotion, note, log_date))
-    conn.commit()
-    log_id = cursor.lastrowid
-    conn.close()
-    return {"success": True, "log_id": log_id}
+@app.route('/api/login', methods=['POST'])
+def login():
+    """Login user"""
+    data = request.get_json()
+    
+    username = data.get('username', '').strip()
+    password = data.get('password', '').strip()
+    
+    if not username or not password:
+        return jsonify({'error': 'Username and password required'}), 400
+    
+    user = User.query.filter_by(username=username).first()
+    
+    if not user or not check_password_hash(user.password_hash, password):
+        return jsonify({'error': 'Invalid credentials'}), 401
+    
+    # Save user in session
+    session['user_id'] = user.id
+    session.permanent = True
+    
+    return jsonify({
+        'success': True,
+        'message': 'Login successful',
+        'user': {
+            'id': user.id,
+            'username': user.username,
+            'email': user.email
+        }
+    }), 200
 
-def get_emotion_logs(user_id, start_date=None, end_date=None):
-    conn = get_db_connection()
-    conn.row_factory = dict_factory
-    cursor = conn.cursor()
-    query = "SELECT * FROM emotion_logs WHERE user_id = ?"
-    params = [user_id]
-    if start_date:
-        query += " AND log_date >= ?"
-        params.append(start_date)
-    if end_date:
-        query += " AND log_date <= ?"
-        params.append(end_date)
-    query += " ORDER BY log_date DESC, created_at DESC"
-    cursor.execute(query, params)
-    logs = cursor.fetchall()
-    conn.close()
-    return logs
 
-def update_emotion_log(log_id, user_id, emotion=None, note=None):
-    conn = get_db_connection()
-    cursor = conn.cursor()
-    if emotion:
-        cursor.execute("UPDATE emotion_logs SET emotion = ? WHERE id = ? AND user_id = ?", (emotion, log_id, user_id))
-    if note is not None:
-        cursor.execute("UPDATE emotion_logs SET note = ? WHERE id = ? AND user_id = ?", (note, log_id, user_id))
-    conn.commit()
-    conn.close()
-    return {"success": True}
+@app.route('/api/logout', methods=['POST'])
+def logout():
+    """Logout user"""
+    session.clear()
+    return jsonify({'message': 'Logged out successfully'}), 200
 
-def delete_emotion_log(log_id, user_id):
-    conn = get_db_connection()
-    cursor = conn.cursor()
-    cursor.execute("DELETE FROM emotion_logs WHERE id = ? AND user_id = ?", (log_id, user_id))
-    conn.commit()
-    conn.close()
-    return {"success": True}
 
-def get_calendar_data(user_id, year, month):
-    start_date = f"{year}-{month:02d}-01"
+@app.route('/api/user', methods=['GET'])
+def get_user():
+    """Get current user profile"""
+    user = get_current_user()
+    if not user:
+        return jsonify({'error': 'Unauthorized'}), 401
+    
+    return jsonify({
+        'id': user.id,
+        'username': user.username,
+        'email': user.email,
+        'created_at': user.created_at.isoformat() if user.created_at else None
+    }), 200
+
+
+@app.route('/api/user', methods=['PUT'])
+def update_user():
+    """Update user profile"""
+    user = get_current_user()
+    if not user:
+        return jsonify({'error': 'Unauthorized'}), 401
+    
+    data = request.get_json()
+    
+    if 'email' in data:
+        user.email = data['email']
+    if 'username' in data:
+        # Check if username is taken
+        existing = User.query.filter_by(username=data['username']).first()
+        if existing and existing.id != user.id:
+            return jsonify({'error': 'Username already taken'}), 400
+        user.username = data['username']
+    if 'password' in data:
+        user.password_hash = generate_password_hash(data['password'])
+    
+    db.session.commit()
+    
+    return jsonify({'message': 'Profile updated successfully'}), 200
+
+
+@app.route('/api/user', methods=['DELETE'])
+def delete_user():
+    """Delete user account"""
+    user = get_current_user()
+    if not user:
+        return jsonify({'error': 'Unauthorized'}), 401
+    
+    db.session.delete(user)
+    db.session.commit()
+    session.clear()
+    
+    return jsonify({'message': 'Account deleted successfully'}), 200
+
+
+# ============================================
+# API Routes - Emotion Logs
+# ============================================
+
+@app.route('/api/logs', methods=['POST'])
+def add_emotion_log():
+    """Add an emotion log"""
+    user = get_current_user()
+    if not user:
+        return jsonify({'error': 'Unauthorized'}), 401
+    
+    data = request.get_json()
+    
+    emotion = data.get('emotion', '').strip()
+    note = data.get('note', '').strip()
+    log_date_str = data.get('date', datetime.now().strftime('%Y-%m-%d'))
+    
+    if not emotion:
+        return jsonify({'error': 'Emotion is required'}), 400
+    
+    try:
+        log_date = datetime.strptime(log_date_str, '%Y-%m-%d').date()
+    except ValueError:
+        return jsonify({'error': 'Invalid date format. Use YYYY-MM-DD'}), 400
+    
+    log = EmotionLog(
+        user_id=user.id,
+        emotion=emotion,
+        note=note,
+        log_date=log_date
+    )
+    
+    db.session.add(log)
+    db.session.commit()
+    
+    return jsonify({
+        'success': True,
+        'message': 'Log added successfully',
+        'log_id': log.id
+    }), 201
+
+
+@app.route('/api/logs', methods=['GET'])
+def get_emotion_logs():
+    """Get all emotion logs for current user"""
+    user = get_current_user()
+    if not user:
+        return jsonify({'error': 'Unauthorized'}), 401
+    
+    logs = EmotionLog.query.filter_by(user_id=user.id).order_by(
+        EmotionLog.log_date.desc(),
+        EmotionLog.created_at.desc()
+    ).all()
+    
+    return jsonify({
+        'logs': [{
+            'id': log.id,
+            'emotion': log.emotion,
+            'note': log.note,
+            'log_date': log.log_date.isoformat(),
+            'created_at': log.created_at.isoformat() if log.created_at else None
+        } for log in logs]
+    }), 200
+
+
+@app.route('/api/logs/<int:log_id>', methods=['PUT'])
+def update_emotion_log(log_id):
+    """Update an emotion log"""
+    user = get_current_user()
+    if not user:
+        return jsonify({'error': 'Unauthorized'}), 401
+    
+    log = EmotionLog.query.get(log_id)
+    if not log:
+        return jsonify({'error': 'Log not found'}), 404
+    
+    if log.user_id != user.id:
+        return jsonify({'error': 'Permission denied'}), 403
+    
+    data = request.get_json()
+    
+    if 'emotion' in data:
+        log.emotion = data['emotion']
+    if 'note' in data:
+        log.note = data['note']
+    
+    db.session.commit()
+    
+    return jsonify({'message': 'Log updated successfully'}), 200
+
+
+@app.route('/api/logs/<int:log_id>', methods=['DELETE'])
+def delete_emotion_log(log_id):
+    """Delete an emotion log"""
+    user = get_current_user()
+    if not user:
+        return jsonify({'error': 'Unauthorized'}), 401
+    
+    log = EmotionLog.query.get(log_id)
+    if not log:
+        return jsonify({'error': 'Log not found'}), 404
+    
+    if log.user_id != user.id:
+        return jsonify({'error': 'Permission denied'}), 403
+    
+    db.session.delete(log)
+    db.session.commit()
+    
+    return jsonify({'message': 'Log deleted successfully'}), 200
+
+
+# ============================================
+# API Routes - Calendar & Statistics
+# ============================================
+
+@app.route('/api/calendar/<int:year>/<int:month>', methods=['GET'])
+def get_calendar(year, month):
+    """Get calendar data for a specific month"""
+    user = get_current_user()
+    if not user:
+        return jsonify({'error': 'Unauthorized'}), 401
+    
+    # Calculate month range
+    start_date = datetime(year, month, 1).date()
     if month == 12:
-        end_date = f"{year+1}-01-01"
+        end_date = datetime(year + 1, 1, 1).date()
     else:
-        end_date = f"{year}-{month+1:02d}-01"
+        end_date = datetime(year, month + 1, 1).date()
     
-    conn = get_db_connection()
-    conn.row_factory = dict_factory
-    cursor = conn.cursor()
-    cursor.execute("""
-        SELECT log_date, emotion FROM emotion_logs
-        WHERE user_id = ? AND log_date >= ? AND log_date < ?
-        ORDER BY created_at DESC
-    """, (user_id, start_date, end_date))
-    logs = cursor.fetchall()
-    conn.close()
+    logs = EmotionLog.query.filter_by(user_id=user.id).filter(
+        EmotionLog.log_date >= start_date,
+        EmotionLog.log_date < end_date
+    ).order_by(EmotionLog.created_at.desc()).all()
     
+    # Get latest emotion per day
     daily_emotions = {}
     for log in logs:
-        if log['log_date'] not in daily_emotions:
-            daily_emotions[log['log_date']] = log['emotion']
-    return daily_emotions
-
-def get_emotion_stats(user_id, days=30):
-    start_date = (datetime.datetime.now() - datetime.timedelta(days=days)).strftime("%Y-%m-%d")
-    conn = get_db_connection()
-    conn.row_factory = dict_factory
-    cursor = conn.cursor()
-    cursor.execute("""
-        SELECT emotion, COUNT(*) as count FROM emotion_logs
-        WHERE user_id = ? AND log_date >= ?
-        GROUP BY emotion
-    """, (user_id, start_date))
-    stats = cursor.fetchall()
-    conn.close()
-    total = sum(s['count'] for s in stats)
-    return {"total": total, "days": days, "statistics": stats}
+        date_str = log.log_date.isoformat()
+        if date_str not in daily_emotions:
+            daily_emotions[date_str] = log.emotion
+    
+    return jsonify({
+        'year': year,
+        'month': month,
+        'data': daily_emotions
+    }), 200
 
 
-# HTTP Request Handler
-class MoodTrackerHandler(BaseHTTPRequestHandler):
-    sessions = {}
+@app.route('/api/calendar/today', methods=['GET'])
+def get_today_emotion():
+    """Get today's emotion"""
+    user = get_current_user()
+    if not user:
+        return jsonify({'error': 'Unauthorized'}), 401
     
-    def get_user_id_from_cookie(self):
-        cookie = self.headers.get('Cookie', '')
-        if 'session=' in cookie:
-            token = cookie.split('session=')[1].split(';')[0]
-            return self.sessions.get(token)
-        return None
+    today = datetime.now().date()
+    log = EmotionLog.query.filter_by(
+        user_id=user.id,
+        log_date=today
+    ).order_by(EmotionLog.created_at.desc()).first()
     
-    def send_json(self, data, status=200, session_token=None):
-        response = json.dumps(data, ensure_ascii=False)
-        self.send_response(status)
-        self.send_header('Content-Type', 'application/json; charset=utf-8')
-        self.send_header('Access-Control-Allow-Origin', '*')
-        self.send_header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS')
-        self.send_header('Access-Control-Allow-Headers', 'Content-Type')
-        if session_token:
-            self.send_header('Set-Cookie', f'session={session_token}; Path=/; HttpOnly')
-        self.end_headers()
-        self.wfile.write(response.encode('utf-8'))
-    
-    def do_GET(self):
-        parsed_url = urlparse(self.path)
-        path = parsed_url.path
-        query = parse_qs(parsed_url.query)
-        user_id = self.get_user_id_from_cookie()
-        
-        if path == '/api/status':
-            self.send_json({"status": "online", "version": "1.0"})
-        
-        elif path == '/api/user':
-            if not user_id:
-                self.send_json({"error": "Unauthorized"}, 401)
-                return
-            user = get_user_by_id(user_id)
-            self.send_json(user if user else {"error": "Not found"})
-        
-        elif path == '/api/logs':
-            if not user_id:
-                self.send_json({"error": "Unauthorized"}, 401)
-                return
-            start = query.get('start_date', [None])[0]
-            end = query.get('end_date', [None])[0]
-            logs = get_emotion_logs(user_id, start, end)
-            self.send_json({"logs": logs})
-        
-        elif path == '/api/calendar':
-            if not user_id:
-                self.send_json({"error": "Unauthorized"}, 401)
-                return
-            year = int(query.get('year', [datetime.datetime.now().year])[0])
-            month = int(query.get('month', [datetime.datetime.now().month])[0])
-            data = get_calendar_data(user_id, year, month)
-            self.send_json({"year": year, "month": month, "data": data})
-        
-        elif path == '/api/stats':
-            if not user_id:
-                self.send_json({"error": "Unauthorized"}, 401)
-                return
-            days = int(query.get('days', [30])[0])
-            stats = get_emotion_stats(user_id, days)
-            self.send_json(stats)
-        
-        else:
-            self.send_json({"error": "Not found"}, 404)
-    
-    def do_POST(self):
-        parsed_url = urlparse(self.path)
-        path = parsed_url.path
-        
-        content_length = int(self.headers.get('Content-Length', 0))
-        post_data = self.rfile.read(content_length).decode('utf-8')
-        
-        try:
-            data = json.loads(post_data) if post_data else {}
-        except json.JSONDecodeError:
-            self.send_json({"error": "Invalid JSON"}, 400)
-            return
-        
-        if path == '/api/register':
-            username = data.get('username', '').strip()
-            password = data.get('password', '').strip()
-            email = data.get('email', '').strip()
-            if not username or not password:
-                self.send_json({"error": "Username and password required"}, 400)
-                return
-            result = register_user(username, password, email)
-            self.send_json(result, 200 if result['success'] else 400)
-        
-        elif path == '/api/login':
-            username = data.get('username', '').strip()
-            password = data.get('password', '').strip()
-            if not username or not password:
-                self.send_json({"error": "Username and password required"}, 400)
-                return
-            result = login_user(username, password)
-            if result['success']:
-                token = str(uuid.uuid4())
-                self.sessions[token] = result['user']['id']
-                self.send_json({"success": True, "user": result['user']}, 200, token)
-            else:
-                self.send_json(result, 401)
-        
-        elif path == '/api/logout':
-            cookie = self.headers.get('Cookie', '')
-            if 'session=' in cookie:
-                token = cookie.split('session=')[1].split(';')[0]
-                if token in self.sessions:
-                    del self.sessions[token]
-            self.send_json({"message": "Logged out"})
-        
-        elif path == '/api/log':
-            user_id = self.get_user_id_from_cookie()
-            if not user_id:
-                self.send_json({"error": "Unauthorized"}, 401)
-                return
-            emotion = data.get('emotion', '').strip()
-            note = data.get('note', '').strip()
-            log_date = data.get('date', None)
-            if not emotion:
-                self.send_json({"error": "Emotion required"}, 400)
-                return
-            result = add_emotion_log(user_id, emotion, note, log_date)
-            self.send_json(result)
-        
-        else:
-            self.send_json({"error": "Not found"}, 404)
-    
-    def do_PUT(self):
-        parsed_url = urlparse(self.path)
-        path = parsed_url.path
-        user_id = self.get_user_id_from_cookie()
-        
-        if not user_id:
-            self.send_json({"error": "Unauthorized"}, 401)
-            return
-        
-        content_length = int(self.headers.get('Content-Length', 0))
-        post_data = self.rfile.read(content_length).decode('utf-8')
-        
-        try:
-            data = json.loads(post_data) if post_data else {}
-        except json.JSONDecodeError:
-            self.send_json({"error": "Invalid JSON"}, 400)
-            return
-        
-        if path == '/api/profile':
-            email = data.get('email')
-            password = data.get('password')
-            username = data.get('username')
-            result = update_user_profile(user_id, email, password, username)
-            self.send_json(result)
-        
-        elif path.startswith('/api/log/'):
-            log_id = int(path.split('/')[-1])
-            emotion = data.get('emotion')
-            note = data.get('note')
-            result = update_emotion_log(log_id, user_id, emotion, note)
-            self.send_json(result)
-        
-        else:
-            self.send_json({"error": "Not found"}, 404)
-    
-    def do_DELETE(self):
-        parsed_url = urlparse(self.path)
-        path = parsed_url.path
-        user_id = self.get_user_id_from_cookie()
-        
-        if not user_id:
-            self.send_json({"error": "Unauthorized"}, 401)
-            return
-        
-        if path == '/api/account':
-            result = delete_user_account(user_id)
-            cookie = self.headers.get('Cookie', '')
-            if 'session=' in cookie:
-                token = cookie.split('session=')[1].split(';')[0]
-                if token in self.sessions:
-                    del self.sessions[token]
-            self.send_json(result)
-        
-        elif path.startswith('/api/log/'):
-            log_id = int(path.split('/')[-1])
-            result = delete_emotion_log(log_id, user_id)
-            self.send_json(result)
-        
-        else:
-            self.send_json({"error": "Not found"}, 404)
-    
-    def do_OPTIONS(self):
-        self.send_response(200)
-        self.send_header('Access-Control-Allow-Origin', '*')
-        self.send_header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS')
-        self.send_header('Access-Control-Allow-Headers', 'Content-Type')
-        self.end_headers()
-    
-    def log_message(self, format, *args):
-        pass
+    return jsonify({
+        'date': today.isoformat(),
+        'has_log': log is not None,
+        'emotion': log.emotion if log else None,
+        'note': log.note if log else None
+    }), 200
 
 
-# Start Server
-def run_server(port=5000):
-    print("=" * 60)
-    print("🚀 MoodTracker API Server")
-    print("=" * 60)
-    print(f"📁 Database: {DATABASE_NAME}")
-    print(f"🌐 Server: http://127.0.0.1:{port}")
-    print("🔧 Pure Python - No Flask")
-    print("=" * 60)
-    print("\n📌 Available Endpoints:")
-    print("  POST /api/register  - Register")
-    print("  POST /api/login     - Login")
-    print("  POST /api/logout    - Logout")
-    print("  GET  /api/user      - Get profile")
-    print("  PUT  /api/profile   - Update profile")
-    print("  DELETE /api/account - Delete account")
-    print("  POST /api/log       - Add emotion")
-    print("  GET  /api/logs      - Get logs")
-    print("  PUT  /api/log/{id}  - Update log")
-    print("  DELETE /api/log/{id}- Delete log")
-    print("  GET  /api/calendar  - Calendar data")
-    print("  GET  /api/stats     - Statistics")
-    print("\n📌 Press Ctrl+C to stop\n")
+@app.route('/api/stats', methods=['GET'])
+def get_stats():
+    """Get emotion statistics"""
+    user = get_current_user()
+    if not user:
+        return jsonify({'error': 'Unauthorized'}), 401
     
-    server = HTTPServer(('', port), MoodTrackerHandler)
-    try:
-        server.serve_forever()
-    except KeyboardInterrupt:
-        print("\n👋 Server stopped")
+    days = request.args.get('days', 30, type=int)
+    start_date = datetime.now().date() - timedelta(days=days)
+    
+    logs = EmotionLog.query.filter_by(user_id=user.id).filter(
+        EmotionLog.log_date >= start_date
+    ).all()
+    
+    # Count emotions
+    stats = {}
+    for log in logs:
+        stats[log.emotion] = stats.get(log.emotion, 0) + 1
+    
+    return jsonify({
+        'total': len(logs),
+        'days': days,
+        'statistics': [{'emotion': k, 'count': v} for k, v in stats.items()]
+    }), 200
+
+
+# ============================================
+# Create tables on startup
+# ============================================
+
+with app.app_context():
+    db.create_all()
+    print("✅ Database tables verified")
+
+
+# ============================================
+# Run the application
+# ============================================
 
 if __name__ == '__main__':
-    run_server()
+    print("=" * 60)
+    print("🚀 MoodTracker Server Starting...")
+    print("=" * 60)
+    print(f"📁 Database: {app.config['SQLALCHEMY_DATABASE_URI']}")
+    print(f"🌐 Server: http://127.0.0.1:5000")
+    print(f"📂 Static folder: static/")
+    print(f"🔧 Debug Mode: ON")
+    print("=" * 60)
+    print("\n📌 Access the web app:")
+    print("   http://127.0.0.1:5000")
+    print("\n📌 Press Ctrl+C to stop the server\n")
+    
+    app.run(debug=True, host='0.0.0.0', port=5000)

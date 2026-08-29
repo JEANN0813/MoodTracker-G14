@@ -42,10 +42,7 @@ ON emotion_logs (user_id, log_date);
 """
 
 
-# ============================================
 # Function to create tables
-# ============================================
-
 def create_tables():
     """Create all tables and indexes"""
     
@@ -68,10 +65,8 @@ def create_tables():
     return True
 
 
-# ============================================
-# Function to insert test data
-# ============================================
 
+# Function to insert test data
 def insert_test_data():
     """Insert test data for verification"""
     
@@ -123,11 +118,7 @@ def insert_test_data():
     print(f"   - 1 test users (JeAnn)")
     print(f"   - 3 emotion logs")
 
-
-# ============================================
 # Function to display table structures
-# ============================================
-
 def show_tables():
     """Display the structure of all tables"""
     
@@ -159,10 +150,8 @@ def show_tables():
     conn.close()
 
 
-# ============================================
-# Function to display sample data
-# ============================================
 
+# Function to display sample data
 def show_sample_data():
     """Display sample data from tables"""
     
@@ -197,11 +186,7 @@ def show_sample_data():
     print("\n" + "=" * 50)
     conn.close()
 
-
-# ============================================
 # Main program entry point
-# ============================================
-
 if __name__ == '__main__':
     print("=" * 60)
     print("🚀 MoodTracker Database Design")
