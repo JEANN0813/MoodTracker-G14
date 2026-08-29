@@ -89,8 +89,7 @@ def insert_test_data():
     
     # Insert test users
     test_users = [
-        ('alice', 'alice@email.com', 'hashed_password_123', 'What is your pet?', 'hashed_answer_1'),
-        ('bob', 'bob@email.com', 'hashed_password_456', 'What is your mother\'s name?', 'hashed_answer_2'),
+        ('JeAnn', 'annannchan08132007@gmail.com', 'Ann0813~', 'What is your pet?', 'Cat'),
     ]
     
     cursor.executemany("""
@@ -99,20 +98,17 @@ def insert_test_data():
     """, test_users)
     
     # Get user IDs
-    cursor.execute("SELECT id FROM users WHERE username = 'alice'")
-    alice_id = cursor.fetchone()[0]
+    cursor.execute("SELECT id FROM users WHERE username = 'JeAnn'")
+    JeAnn_id = cursor.fetchone()[0]
     
-    cursor.execute("SELECT id FROM users WHERE username = 'bob'")
-    bob_id = cursor.fetchone()[0]
     
     # Insert test emotion logs
     today = datetime.now().date()
     test_logs = [
-        (alice_id, 'happy', 'Great day!', today.strftime('%Y-%m-%d')),
-        (alice_id, 'sad', 'Felt a bit down', (today - timedelta(days=1)).strftime('%Y-%m-%d')),
-        (alice_id, 'excited', 'Got good news!', (today - timedelta(days=2)).strftime('%Y-%m-%d')),
-        (bob_id, 'anxious', 'Busy day at work', today.strftime('%Y-%m-%d')),
-        (bob_id, 'tired', 'Did not sleep well', (today - timedelta(days=1)).strftime('%Y-%m-%d')),
+        (JeAnn_id, 'happy', 'Great day!', today.strftime('%Y-%m-%d')),
+        (JeAnn_id, 'sad', 'Felt a bit down', (today - timedelta(days=1)).strftime('%Y-%m-%d')),
+        (JeAnn_id, 'excited', 'Got good news!', (today - timedelta(days=2)).strftime('%Y-%m-%d')),
+    
     ]
     
     cursor.executemany("""
@@ -124,8 +120,8 @@ def insert_test_data():
     conn.close()
     
     print("✅ Test data inserted successfully")
-    print(f"   - 2 test users (alice, bob)")
-    print(f"   - 5 emotion logs")
+    print(f"   - 1 test users (JeAnn)")
+    print(f"   - 3 emotion logs")
 
 
 # ============================================
