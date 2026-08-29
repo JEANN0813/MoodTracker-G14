@@ -1,3 +1,11 @@
+<<<<<<< HEAD
+=======
+# -*- coding: utf-8 -*-
+"""
+MoodTracker - Flask Application
+Backend API server with static file hosting for frontend
+"""
+>>>>>>> fb90c6c7ff4d5544f16fb04a1ab5fae5a19dcd27
 
 from flask import Flask, session, request, jsonify, send_from_directory
 from flask_sqlalchemy import SQLAlchemy
@@ -7,8 +15,15 @@ from werkzeug.security import generate_password_hash, check_password_hash
 from datetime import datetime
 import os
 
+<<<<<<< HEAD
 
 # Flask Application Configuration
+=======
+# ============================================
+# Flask Application Configuration
+# ============================================
+
+>>>>>>> fb90c6c7ff4d5544f16fb04a1ab5fae5a19dcd27
 app = Flask(__name__, static_folder='static', static_url_path='')
 
 # Secret key for session encryption (change in production)
@@ -26,12 +41,25 @@ app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(days=7)
 # Enable CORS for frontend access
 CORS(app, supports_credentials=True)
 
+<<<<<<< HEAD
 
 # Database Initialization
 db = SQLAlchemy(app)
 
 
 # Database Models
+=======
+# ============================================
+# Database Initialization
+# ============================================
+
+db = SQLAlchemy(app)
+
+# ============================================
+# Database Models
+# ============================================
+
+>>>>>>> fb90c6c7ff4d5544f16fb04a1ab5fae5a19dcd27
 class User(db.Model):
     """User account model"""
     __tablename__ = 'users'
@@ -59,7 +87,14 @@ class EmotionLog(db.Model):
     created_at = db.Column(db.DateTime, default=db.func.current_timestamp())
 
 
+<<<<<<< HEAD
 # Helper Functions
+=======
+# ============================================
+# Helper Functions
+# ============================================
+
+>>>>>>> fb90c6c7ff4d5544f16fb04a1ab5fae5a19dcd27
 def get_current_user():
     """Get current logged-in user"""
     user_id = session.get('user_id')
@@ -68,7 +103,14 @@ def get_current_user():
     return User.query.get(user_id)
 
 
+<<<<<<< HEAD
 # Static File Routes (Serve Frontend)
+=======
+# ============================================
+# Static File Routes (Serve Frontend)
+# ============================================
+
+>>>>>>> fb90c6c7ff4d5544f16fb04a1ab5fae5a19dcd27
 @app.route('/', defaults={'path': ''})
 @app.route('/<path:path>')
 def serve_static(path):
@@ -85,7 +127,14 @@ def serve_static(path):
     return jsonify({'error': 'Not found'}), 404
 
 
+<<<<<<< HEAD
 # API Routes - User Authentication
+=======
+# ============================================
+# API Routes - User Authentication
+# ============================================
+
+>>>>>>> fb90c6c7ff4d5544f16fb04a1ab5fae5a19dcd27
 @app.route('/api/status')
 def status():
     """Health check endpoint"""
@@ -221,8 +270,15 @@ def delete_user():
     return jsonify({'message': 'Account deleted successfully'}), 200
 
 
+<<<<<<< HEAD
 
 # API Routes - Emotion Logs
+=======
+# ============================================
+# API Routes - Emotion Logs
+# ============================================
+
+>>>>>>> fb90c6c7ff4d5544f16fb04a1ab5fae5a19dcd27
 @app.route('/api/logs', methods=['POST'])
 def add_emotion_log():
     """Add an emotion log"""
@@ -330,7 +386,14 @@ def delete_emotion_log(log_id):
     return jsonify({'message': 'Log deleted successfully'}), 200
 
 
+<<<<<<< HEAD
 # API Routes - Calendar & Statistics
+=======
+# ============================================
+# API Routes - Calendar & Statistics
+# ============================================
+
+>>>>>>> fb90c6c7ff4d5544f16fb04a1ab5fae5a19dcd27
 @app.route('/api/calendar/<int:year>/<int:month>', methods=['GET'])
 def get_calendar(year, month):
     """Get calendar data for a specific month"""
@@ -411,14 +474,28 @@ def get_stats():
     }), 200
 
 
+<<<<<<< HEAD
 # Create tables on startup
+=======
+# ============================================
+# Create tables on startup
+# ============================================
+
+>>>>>>> fb90c6c7ff4d5544f16fb04a1ab5fae5a19dcd27
 with app.app_context():
     db.create_all()
     print("✅ Database tables verified")
 
 
+<<<<<<< HEAD
 
 # Run the application
+=======
+# ============================================
+# Run the application
+# ============================================
+
+>>>>>>> fb90c6c7ff4d5544f16fb04a1ab5fae5a19dcd27
 if __name__ == '__main__':
     print("=" * 60)
     print("🚀 MoodTracker Server Starting...")
