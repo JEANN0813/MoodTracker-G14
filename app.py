@@ -7,15 +7,11 @@ Backend API server with static file hosting for frontend
 from flask import Flask, session, request, jsonify, send_from_directory
 from flask_sqlalchemy import SQLAlchemy
 from flask_cors import CORS
-from datetime import timedelta
+from datetime import timedelta, datetime
 from werkzeug.security import generate_password_hash, check_password_hash
-from datetime import datetime
 import os
 
-# ============================================
 # Flask Application Configuration
-# ============================================
-
 app = Flask(__name__, static_folder='static', static_url_path='')
 
 # Secret key for session encryption (change in production)
@@ -33,16 +29,12 @@ app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(days=7)
 # Enable CORS for frontend access
 CORS(app, supports_credentials=True)
 
-# ============================================
-# Database Initialization
-# ============================================
 
+# Database Initialization
 db = SQLAlchemy(app)
 
-# ============================================
-# Database Models
-# ============================================
 
+# Database Models
 class User(db.Model):
     """User account model"""
     __tablename__ = 'users'
@@ -70,10 +62,7 @@ class EmotionLog(db.Model):
     created_at = db.Column(db.DateTime, default=db.func.current_timestamp())
 
 
-# ============================================
 # Helper Functions
-# ============================================
-
 def get_current_user():
     """Get current logged-in user"""
     user_id = session.get('user_id')
@@ -82,10 +71,7 @@ def get_current_user():
     return User.query.get(user_id)
 
 
-# ============================================
 # Static File Routes (Serve Frontend)
-# ============================================
-
 @app.route('/', defaults={'path': ''})
 @app.route('/<path:path>')
 def serve_static(path):
@@ -93,19 +79,14 @@ def serve_static(path):
     if path == '':
         return send_from_directory('static', 'index.html')
     
-    # Check if file exists in static folder
     file_path = os.path.join('static', path)
     if os.path.exists(file_path):
         return send_from_directory('static', path)
     
-    # If not found, return 404
     return jsonify({'error': 'Not found'}), 404
 
 
-# ============================================
 # API Routes - User Authentication
-# ============================================
-
 @app.route('/api/status')
 def status():
     """Health check endpoint"""
@@ -128,11 +109,9 @@ def register():
     if not username or not password:
         return jsonify({'error': 'Username and password required'}), 400
     
-    # Check if username already exists
     if User.query.filter_by(username=username).first():
         return jsonify({'error': 'Username already exists'}), 400
     
-    # Create new user
     user = User(
         username=username,
         email=email,
@@ -165,7 +144,6 @@ def login():
     if not user or not check_password_hash(user.password_hash, password):
         return jsonify({'error': 'Invalid credentials'}), 401
     
-    # Save user in session
     session['user_id'] = user.id
     session.permanent = True
     
@@ -214,7 +192,6 @@ def update_user():
     if 'email' in data:
         user.email = data['email']
     if 'username' in data:
-        # Check if username is taken
         existing = User.query.filter_by(username=data['username']).first()
         if existing and existing.id != user.id:
             return jsonify({'error': 'Username already taken'}), 400
@@ -241,10 +218,7 @@ def delete_user():
     return jsonify({'message': 'Account deleted successfully'}), 200
 
 
-# ============================================
 # API Routes - Emotion Logs
-# ============================================
-
 @app.route('/api/logs', methods=['POST'])
 def add_emotion_log():
     """Add an emotion log"""
@@ -352,10 +326,7 @@ def delete_emotion_log(log_id):
     return jsonify({'message': 'Log deleted successfully'}), 200
 
 
-# ============================================
 # API Routes - Calendar & Statistics
-# ============================================
-
 @app.route('/api/calendar/<int:year>/<int:month>', methods=['GET'])
 def get_calendar(year, month):
     """Get calendar data for a specific month"""
@@ -363,7 +334,6 @@ def get_calendar(year, month):
     if not user:
         return jsonify({'error': 'Unauthorized'}), 401
     
-    # Calculate month range
     start_date = datetime(year, month, 1).date()
     if month == 12:
         end_date = datetime(year + 1, 1, 1).date()
@@ -375,7 +345,6 @@ def get_calendar(year, month):
         EmotionLog.log_date < end_date
     ).order_by(EmotionLog.created_at.desc()).all()
     
-    # Get latest emotion per day
     daily_emotions = {}
     for log in logs:
         date_str = log.log_date.isoformat()
@@ -424,7 +393,6 @@ def get_stats():
         EmotionLog.log_date >= start_date
     ).all()
     
-    # Count emotions
     stats = {}
     for log in logs:
         stats[log.emotion] = stats.get(log.emotion, 0) + 1
@@ -436,30 +404,26 @@ def get_stats():
     }), 200
 
 
-# ============================================
 # Create tables on startup
-# ============================================
-
 with app.app_context():
     db.create_all()
-    print("✅ Database tables verified")
+    print("Database tables verified")
 
 
-# ============================================
 # Run the application
-# ============================================
-
 if __name__ == '__main__':
     print("=" * 60)
-    print("🚀 MoodTracker Server Starting...")
+    print("MoodTracker Server Starting...")
     print("=" * 60)
-    print(f"📁 Database: {app.config['SQLALCHEMY_DATABASE_URI']}")
-    print(f"🌐 Server: http://127.0.0.1:5000")
-    print(f"📂 Static folder: static/")
-    print(f"🔧 Debug Mode: ON")
-    print("=" * 60)
-    print("\n📌 Access the web app:")
-    print("   http://127.0.0.1:5000")
-    print("\n📌 Press Ctrl+C to stop the server\n")
+    print(f"Database: {app.config['SQLALCHEMY_DATABASE_URI']}")
+    print(f"Server: http://127.0.0.1:5000")
+    print(f"Static folder: static/")
+    print(f"Debug Mode: ON")
+    print()
+    print("Access the web app:")
+    print("  http://127.0.0.1:5000")
+    print()
+    print("Press Ctrl+C to stop the server")
+    print()
     
     app.run(debug=True, host='0.0.0.0', port=5000)

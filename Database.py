@@ -1,4 +1,4 @@
-
+# -*- coding: utf-8 -*-
 """
 Database Design - MoodTracker
 Contains Users table and Emotion Logs table
@@ -8,6 +8,7 @@ import sqlite3
 from datetime import datetime, timedelta
 
 DATABASE_NAME = 'database.db'
+
 
 # Users table
 CREATE_USERS_TABLE = """
@@ -22,6 +23,7 @@ CREATE TABLE IF NOT EXISTS users (
 );
 """
 
+
 # Emotion Logs table
 CREATE_LOGS_TABLE = """
 CREATE TABLE IF NOT EXISTS emotion_logs (
@@ -35,6 +37,7 @@ CREATE TABLE IF NOT EXISTS emotion_logs (
 );
 """
 
+
 # Index for better query performance
 CREATE_INDEX = """
 CREATE INDEX IF NOT EXISTS idx_logs_user_date 
@@ -42,34 +45,28 @@ ON emotion_logs (user_id, log_date);
 """
 
 
-# Function to create tables
 def create_tables():
     """Create all tables and indexes"""
-    
     conn = sqlite3.connect(DATABASE_NAME)
     cursor = conn.cursor()
     
     cursor.execute(CREATE_USERS_TABLE)
-    print("✅ Users table created successfully")
+    print("Users table created successfully")
     
     cursor.execute(CREATE_LOGS_TABLE)
-    print("✅ Emotion logs table created successfully")
+    print("Emotion logs table created successfully")
     
     cursor.execute(CREATE_INDEX)
-    print("✅ Index created successfully")
+    print("Index created successfully")
     
     conn.commit()
     conn.close()
-    print("💾 Database saved successfully")
-    
+    print("Database saved successfully")
     return True
 
 
-
-# Function to insert test data
 def insert_test_data():
     """Insert test data for verification"""
-    
     conn = sqlite3.connect(DATABASE_NAME)
     cursor = conn.cursor()
     
@@ -78,13 +75,13 @@ def insert_test_data():
     count = cursor.fetchone()[0]
     
     if count > 0:
-        print("ℹ️ Test data already exists, skipping insertion")
+        print("Test data already exists, skipping insertion")
         conn.close()
         return
     
-    # Insert test users
+    # Insert test user - JeAnn
     test_users = [
-        ('JeAnn', 'annannchan08132007@gmail.com', 'Ann0813~', 'What is your pet?', 'Cat'),
+        ('JeAnn', 'jeann@email.com', '0813', 'What is your pet?', 'Cat'),
     ]
     
     cursor.executemany("""
@@ -92,18 +89,18 @@ def insert_test_data():
         VALUES (?, ?, ?, ?, ?)
     """, test_users)
     
-    # Get user IDs
+    # Get user ID
     cursor.execute("SELECT id FROM users WHERE username = 'JeAnn'")
-    JeAnn_id = cursor.fetchone()[0]
+    jeann_id = cursor.fetchone()[0]
     
-    
-    # Insert test emotion logs
+    # Insert test emotion logs for JeAnn
     today = datetime.now().date()
     test_logs = [
-        (JeAnn_id, 'happy', 'Great day!', today.strftime('%Y-%m-%d')),
-        (JeAnn_id, 'sad', 'Felt a bit down', (today - timedelta(days=1)).strftime('%Y-%m-%d')),
-        (JeAnn_id, 'excited', 'Got good news!', (today - timedelta(days=2)).strftime('%Y-%m-%d')),
-    
+        (jeann_id, 'happy', 'Great day!', today.strftime('%Y-%m-%d')),
+        (jeann_id, 'sad', 'Felt a bit down', (today - timedelta(days=1)).strftime('%Y-%m-%d')),
+        (jeann_id, 'excited', 'Got good news!', (today - timedelta(days=2)).strftime('%Y-%m-%d')),
+        (jeann_id, 'happy', 'Wonderful weather', (today - timedelta(days=3)).strftime('%Y-%m-%d')),
+        (jeann_id, 'anxious', 'Feeling stressed about exam', (today - timedelta(days=4)).strftime('%Y-%m-%d')),
     ]
     
     cursor.executemany("""
@@ -114,28 +111,27 @@ def insert_test_data():
     conn.commit()
     conn.close()
     
-    print("✅ Test data inserted successfully")
-    print(f"   - 1 test users (JeAnn)")
-    print(f"   - 3 emotion logs")
+    print("Test data inserted successfully")
+    print("   - 1 test user (JeAnn)")
+    print("   - 5 emotion logs")
 
-# Function to display table structures
+
 def show_tables():
     """Display the structure of all tables"""
-    
     conn = sqlite3.connect(DATABASE_NAME)
     cursor = conn.cursor()
     
     cursor.execute("SELECT name FROM sqlite_master WHERE type='table';")
     tables = cursor.fetchall()
     
-    print("\n" + "=" * 50)
-    print("📊 Tables in the database:")
-    print("=" * 50)
+    print("=" * 60)
+    print("Tables in the database:")
+    print("=" * 60)
     
     for table in tables:
         table_name = table[0]
-        print(f"\n📋 Table: {table_name}")
-        print("-" * 30)
+        print(f"Table: {table_name}")
+        print()
         
         cursor.execute(f"PRAGMA table_info({table_name})")
         columns = cursor.fetchall()
@@ -145,30 +141,29 @@ def show_tables():
             pk_mark = "PK " if is_pk else "   "
             nn_mark = "NOT NULL" if not_null else ""
             print(f"  {pk_mark}{name}: {data_type} {nn_mark}")
+        print()
     
-    print("\n" + "=" * 50)
     conn.close()
 
 
-
-# Function to display sample data
 def show_sample_data():
     """Display sample data from tables"""
-    
     conn = sqlite3.connect(DATABASE_NAME)
     cursor = conn.cursor()
     
-    print("\n" + "=" * 50)
-    print("📝 Sample Data:")
-    print("=" * 50)
+    print("=" * 60)
+    print("Sample Data:")
+    print("=" * 60)
     
     # Display users
     cursor.execute("SELECT id, username, email, created_at FROM users")
     users = cursor.fetchall()
     
-    print("\n👤 Users:")
+    print("Users:")
     for u in users:
         print(f"  ID: {u[0]}, Username: {u[1]}, Email: {u[2]}, Created: {u[3]}")
+    
+    print("=" * 60)
     
     # Display emotion logs
     cursor.execute("""
@@ -179,31 +174,28 @@ def show_sample_data():
     """)
     logs = cursor.fetchall()
     
-    print("\n📊 Emotion Logs:")
+    print("Emotion Logs:")
     for log in logs:
         print(f"  ID: {log[0]}, User: {log[1]}, Emotion: {log[2]}, Note: {log[3]}, Date: {log[4]}")
     
-    print("\n" + "=" * 50)
+    print("=" * 60)
     conn.close()
 
-# Main program entry point
+
 if __name__ == '__main__':
+    print("=" * 60 )
+    print("MoodTracker Database Design")
     print("=" * 60)
-    print("🚀 MoodTracker Database Design")
-    print("=" * 60)
-    print()
     
     # Create tables
-    print("📌 Creating database tables...")
-    print("-" * 40)
+    print("Creating database tables...")
     create_tables()
-    print()
+    print("=" * 60)
     
     # Insert test data
-    print("📌 Inserting test data...")
-    print("-" * 40)
+    print("Inserting test data...")
     insert_test_data()
-    print()
+    print("=" * 60)
     
     # Display table structures
     show_tables()
@@ -211,7 +203,7 @@ if __name__ == '__main__':
     # Display sample data
     show_sample_data()
     
-    print("\n✅ Database design completed!")
-    print(f"📁 Database file: {DATABASE_NAME}")
-    print("📌 Next step: Run 'python app.py' to start the server")
+    print("Database design completed!")
+    print(f"Database file: {DATABASE_NAME}")
+    print("Next step: Run 'python app.py' to start the server")
     print("=" * 60)
