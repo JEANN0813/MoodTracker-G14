@@ -1,8 +1,4 @@
-# -*- coding: utf-8 -*-
-"""
-MoodTracker - Flask Application
-Backend API server with static file hosting for frontend
-"""
+
 
 from flask import Flask, session, request, jsonify, send_from_directory
 from flask_sqlalchemy import SQLAlchemy
