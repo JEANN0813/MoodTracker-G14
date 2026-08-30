@@ -41,6 +41,34 @@ try:
 except Exception as e:
     print(f"Error: {e}")
 
+# [3.5] Testing /api/forgot-password...
+print("\n[3.5] Testing /api/forgot-password...")
+forgot_payload = {"email": "annannchan08132007@gmail.com"} # Use your registered email
+resp = requests.post("http://127.0.0.1:5000/api/forgot-password", json=forgot_payload)
+print(f"Status: {resp.status_code}")
+data = resp.json()
+print(f"Response: {data}")
+
+# Get the reset code (For testing convenience, assume the backend returns the code directly)
+reset_code = data.get('reset_code')
+if not reset_code:
+    print("Test failed: Failed to retrieve the reset code!")
+else:
+    # [3.6] Testing /api/reset-password...
+    print("\n[3.6] Testing /api/reset-password...")
+    reset_payload = {
+        "email": "annannchan08132007@gmail.com",
+        "reset_code": reset_code,
+        "new_password": "new_secure_password_123"
+    }
+    resp = requests.post("http://127.0.0.1:5000/api/reset-password", json=reset_payload)
+    print(f"Status: {resp.status_code}")
+    print(f"Response: {resp.json()}")
+    
+    # After changing the password, try logging in with the new password to verify it works
+    # (You can add a simple login test here)
+
+
 # 4. Test get user info (after login)
 print("\n[4] Testing /api/user (after login)...")
 try:
