@@ -463,3 +463,30 @@ if __name__ == '__main__':
     print("\n📌 Press Ctrl+C to stop the server\n")
     
     app.run(debug=True, host='0.0.0.0', port=5000)
+
+from flask import Flask, render_template, request, redirect, url_for
+
+app = Flask(__name__)
+
+# Home / Index Route
+@app.route('/')
+def index():
+    return render_template('index.html')
+
+# Registration Route (Allows GET to view page, POST to submit form)
+@app.route('/register', methods=['GET', 'POST'])
+def register():
+    if request.method == 'POST':
+        # Get data submitted from register.html form
+        username = request.form.get('username')
+        email = request.form.get('email')
+        password = request.form.get('password')
+        
+        # TODO: Connect with Database.py here to store user data
+        
+        return redirect(url_for('index'))
+    
+    return render_template('register.html')
+
+if __name__ == '__main__':
+    app.run(debug=True) 
