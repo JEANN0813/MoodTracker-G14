@@ -1,15 +1,14 @@
 # -*- coding: utf-8 -*-
 """
 MoodTracker - Flask Application
-Backend API server with static file hosting for frontend
+Backend API server with static file hosting and HTML template rendering
 """
 
-from flask import Flask, session, request, jsonify, send_from_directory
+from flask import Flask, session, request, jsonify, send_from_directory, render_template, redirect, url_for, flash
 from flask_sqlalchemy import SQLAlchemy
 from flask_cors import CORS
-from datetime import timedelta
+from datetime import timedelta, datetime
 from werkzeug.security import generate_password_hash, check_password_hash
-from datetime import datetime
 import os
 
 # ============================================
@@ -18,7 +17,7 @@ import os
 
 app = Flask(__name__, static_folder='static', static_url_path='')
 
-# Secret key for session encryption (change in production)
+# Secret key for session encryption
 app.config['SECRET_KEY'] = 'moodtracker-secret-key-2026'
 
 # Database configuration
@@ -34,14 +33,10 @@ app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(days=7)
 CORS(app, supports_credentials=True)
 
 # ============================================
-# Database Initialization
+# Database Initialization & Models
 # ============================================
 
 db = SQLAlchemy(app)
-
-# ============================================
-# Database Models
-# ============================================
 
 class User(db.Model):
     """User account model"""
@@ -67,7 +62,7 @@ class EmotionLog(db.Model):
     emotion = db.Column(db.String(30), nullable=False)
     note = db.Column(db.String(300))
     log_date = db.Column(db.Date, nullable=False)
-    created_at = db.Column(db.DateTime, default=db.func.current_timestamp())
+    created_at = db.Column(db.DateTime, default=default=db.func.current_timestamp())
 
 
 # ============================================
@@ -83,44 +78,57 @@ def get_current_user():
 
 
 # ============================================
-# Static File Routes (Serve Frontend)
+# Page View Routes (HTML Templates & Static)
 # ============================================
 
-@app.route('/', defaults={'path': ''})
-@app.route('/<path:path>')
-def serve_static(path):
-    """Serve static files from the 'static' folder"""
-    if path == '':
-        return send_from_directory('static', 'index.html')
-    
-    # Check if file exists in static folder
-    file_path = os.path.join('static', path)
-    if os.path.exists(file_path):
-        return send_from_directory('static', path)
-    
-    # If not found, return 404
-    return jsonify({'error': 'Not found'}), 404
+@app.route('/')
+def index():
+    """Serve login page"""
+    return render_template('index.html')
+
+
+@app.route('/register', methods=['GET', 'POST'])
+def register_page():
+    """Handle HTML form registration"""
+    if request.method == 'POST':
+        username = request.form.get('username', '').strip()
+        email = request.form.get('email', '').strip()
+        password = request.form.get('password', '').strip()
+
+        if not username or not password or not email:
+            flash('All fields are required.', 'danger')
+            return render_template('register.html')
+
+        if User.query.filter_by(username=username).first() or User.query.filter_by(email=email).first():
+            flash('User already exists with that username or email.', 'danger')
+            return render_template('register.html')
+
+        new_user = User(
+            username=username,
+            email=email,
+            password_hash=generate_password_hash(password)
+        )
+        db.session.add(new_user)
+        db.session.commit()
+
+        flash('Registration successful! Please sign in.', 'success')
+        return redirect(url_for('index'))
+
+    return render_template('register.html')
 
 
 # ============================================
-# API Routes - User Authentication
+# API Routes - User Authentication (JSON)
 # ============================================
 
 @app.route('/api/status')
 def status():
-    """Health check endpoint"""
-    return jsonify({
-        'status': 'online',
-        'message': 'MoodTracker API is running',
-        'version': '1.0.0'
-    })
+    return jsonify({'status': 'online', 'version': '1.0.0'})
 
 
 @app.route('/api/register', methods=['POST'])
-def register():
-    """Register a new user"""
-    data = request.get_json()
-    
+def api_register():
+    data = request.get_json() or {}
     username = data.get('username', '').strip()
     email = data.get('email', '').strip()
     password = data.get('password', '').strip()
@@ -128,303 +136,115 @@ def register():
     if not username or not password:
         return jsonify({'error': 'Username and password required'}), 400
     
-    # Check if username already exists
     if User.query.filter_by(username=username).first():
         return jsonify({'error': 'Username already exists'}), 400
     
-    # Create new user
     user = User(
         username=username,
         email=email,
         password_hash=generate_password_hash(password)
     )
-    
     db.session.add(user)
     db.session.commit()
     
-    return jsonify({
-        'success': True,
-        'message': 'Registration successful',
-        'user_id': user.id
-    }), 201
+    return jsonify({'success': True, 'message': 'Registration successful', 'user_id': user.id}), 201
 
 
 @app.route('/api/login', methods=['POST'])
-def login():
-    """Login user"""
-    data = request.get_json()
-    
+def api_login():
+    data = request.get_json() or {}
     username = data.get('username', '').strip()
     password = data.get('password', '').strip()
-    
-    if not username or not password:
-        return jsonify({'error': 'Username and password required'}), 400
     
     user = User.query.filter_by(username=username).first()
     
     if not user or not check_password_hash(user.password_hash, password):
         return jsonify({'error': 'Invalid credentials'}), 401
     
-    # Save user in session
     session['user_id'] = user.id
     session.permanent = True
     
     return jsonify({
         'success': True,
-        'message': 'Login successful',
-        'user': {
-            'id': user.id,
-            'username': user.username,
-            'email': user.email
-        }
+        'user': {'id': user.id, 'username': user.username, 'email': user.email}
     }), 200
 
 
 @app.route('/api/logout', methods=['POST'])
-def logout():
-    """Logout user"""
+def api_logout():
     session.clear()
     return jsonify({'message': 'Logged out successfully'}), 200
 
 
-@app.route('/api/user', methods=['GET'])
-def get_user():
-    """Get current user profile"""
+@app.route('/api/user', methods=['GET', 'PUT', 'DELETE'])
+def handle_user():
     user = get_current_user()
     if not user:
         return jsonify({'error': 'Unauthorized'}), 401
     
-    return jsonify({
-        'id': user.id,
-        'username': user.username,
-        'email': user.email,
-        'created_at': user.created_at.isoformat() if user.created_at else None
-    }), 200
-
-
-@app.route('/api/user', methods=['PUT'])
-def update_user():
-    """Update user profile"""
-    user = get_current_user()
-    if not user:
-        return jsonify({'error': 'Unauthorized'}), 401
-    
-    data = request.get_json()
-    
-    if 'email' in data:
-        user.email = data['email']
-    if 'username' in data:
-        # Check if username is taken
-        existing = User.query.filter_by(username=data['username']).first()
-        if existing and existing.id != user.id:
-            return jsonify({'error': 'Username already taken'}), 400
-        user.username = data['username']
-    if 'password' in data:
-        user.password_hash = generate_password_hash(data['password'])
-    
-    db.session.commit()
-    
-    return jsonify({'message': 'Profile updated successfully'}), 200
-
-
-@app.route('/api/user', methods=['DELETE'])
-def delete_user():
-    """Delete user account"""
-    user = get_current_user()
-    if not user:
-        return jsonify({'error': 'Unauthorized'}), 401
-    
-    db.session.delete(user)
-    db.session.commit()
-    session.clear()
-    
-    return jsonify({'message': 'Account deleted successfully'}), 200
+    if request.method == 'GET':
+        return jsonify({'id': user.id, 'username': user.username, 'email': user.email}), 200
+        
+    elif request.method == 'PUT':
+        data = request.get_json() or {}
+        if 'email' in data: user.email = data['email']
+        if 'password' in data: user.password_hash = generate_password_hash(data['password'])
+        db.session.commit()
+        return jsonify({'message': 'Profile updated successfully'}), 200
+        
+    elif request.method == 'DELETE':
+        db.session.delete(user)
+        db.session.commit()
+        session.clear()
+        return jsonify({'message': 'Account deleted successfully'}), 200
 
 
 # ============================================
-# API Routes - Emotion Logs
+# API Routes - Emotion Logs & Analytics
 # ============================================
 
-@app.route('/api/logs', methods=['POST'])
-def add_emotion_log():
-    """Add an emotion log"""
+@app.route('/api/logs', methods=['GET', 'POST'])
+def handle_emotion_logs():
     user = get_current_user()
     if not user:
         return jsonify({'error': 'Unauthorized'}), 401
-    
-    data = request.get_json()
-    
-    emotion = data.get('emotion', '').strip()
-    note = data.get('note', '').strip()
-    log_date_str = data.get('date', datetime.now().strftime('%Y-%m-%d'))
-    
-    if not emotion:
-        return jsonify({'error': 'Emotion is required'}), 400
-    
-    try:
-        log_date = datetime.strptime(log_date_str, '%Y-%m-%d').date()
-    except ValueError:
-        return jsonify({'error': 'Invalid date format. Use YYYY-MM-DD'}), 400
-    
-    log = EmotionLog(
-        user_id=user.id,
-        emotion=emotion,
-        note=note,
-        log_date=log_date
-    )
-    
-    db.session.add(log)
-    db.session.commit()
-    
-    return jsonify({
-        'success': True,
-        'message': 'Log added successfully',
-        'log_id': log.id
-    }), 201
-
-
-@app.route('/api/logs', methods=['GET'])
-def get_emotion_logs():
-    """Get all emotion logs for current user"""
-    user = get_current_user()
-    if not user:
-        return jsonify({'error': 'Unauthorized'}), 401
-    
-    logs = EmotionLog.query.filter_by(user_id=user.id).order_by(
-        EmotionLog.log_date.desc(),
-        EmotionLog.created_at.desc()
-    ).all()
-    
-    return jsonify({
-        'logs': [{
-            'id': log.id,
-            'emotion': log.emotion,
-            'note': log.note,
-            'log_date': log.log_date.isoformat(),
-            'created_at': log.created_at.isoformat() if log.created_at else None
-        } for log in logs]
-    }), 200
-
-
-@app.route('/api/logs/<int:log_id>', methods=['PUT'])
-def update_emotion_log(log_id):
-    """Update an emotion log"""
-    user = get_current_user()
-    if not user:
-        return jsonify({'error': 'Unauthorized'}), 401
-    
-    log = EmotionLog.query.get(log_id)
-    if not log:
-        return jsonify({'error': 'Log not found'}), 404
-    
-    if log.user_id != user.id:
-        return jsonify({'error': 'Permission denied'}), 403
-    
-    data = request.get_json()
-    
-    if 'emotion' in data:
-        log.emotion = data['emotion']
-    if 'note' in data:
-        log.note = data['note']
-    
-    db.session.commit()
-    
-    return jsonify({'message': 'Log updated successfully'}), 200
-
-
-@app.route('/api/logs/<int:log_id>', methods=['DELETE'])
-def delete_emotion_log(log_id):
-    """Delete an emotion log"""
-    user = get_current_user()
-    if not user:
-        return jsonify({'error': 'Unauthorized'}), 401
-    
-    log = EmotionLog.query.get(log_id)
-    if not log:
-        return jsonify({'error': 'Log not found'}), 404
-    
-    if log.user_id != user.id:
-        return jsonify({'error': 'Permission denied'}), 403
-    
-    db.session.delete(log)
-    db.session.commit()
-    
-    return jsonify({'message': 'Log deleted successfully'}), 200
-
-
-# ============================================
-# API Routes - Calendar & Statistics
-# ============================================
-
-@app.route('/api/calendar/<int:year>/<int:month>', methods=['GET'])
-def get_calendar(year, month):
-    """Get calendar data for a specific month"""
-    user = get_current_user()
-    if not user:
-        return jsonify({'error': 'Unauthorized'}), 401
-    
-    # Calculate month range
-    start_date = datetime(year, month, 1).date()
-    if month == 12:
-        end_date = datetime(year + 1, 1, 1).date()
-    else:
-        end_date = datetime(year, month + 1, 1).date()
-    
-    logs = EmotionLog.query.filter_by(user_id=user.id).filter(
-        EmotionLog.log_date >= start_date,
-        EmotionLog.log_date < end_date
-    ).order_by(EmotionLog.created_at.desc()).all()
-    
-    # Get latest emotion per day
-    daily_emotions = {}
-    for log in logs:
-        date_str = log.log_date.isoformat()
-        if date_str not in daily_emotions:
-            daily_emotions[date_str] = log.emotion
-    
-    return jsonify({
-        'year': year,
-        'month': month,
-        'data': daily_emotions
-    }), 200
-
-
-@app.route('/api/calendar/today', methods=['GET'])
-def get_today_emotion():
-    """Get today's emotion"""
-    user = get_current_user()
-    if not user:
-        return jsonify({'error': 'Unauthorized'}), 401
-    
-    today = datetime.now().date()
-    log = EmotionLog.query.filter_by(
-        user_id=user.id,
-        log_date=today
-    ).order_by(EmotionLog.created_at.desc()).first()
-    
-    return jsonify({
-        'date': today.isoformat(),
-        'has_log': log is not None,
-        'emotion': log.emotion if log else None,
-        'note': log.note if log else None
-    }), 200
+        
+    if request.method == 'POST':
+        data = request.get_json() or {}
+        emotion = data.get('emotion', '').strip()
+        note = data.get('note', '').strip()
+        log_date_str = data.get('date', datetime.now().strftime('%Y-%m-%d'))
+        
+        if not emotion:
+            return jsonify({'error': 'Emotion is required'}), 400
+            
+        log = EmotionLog(
+            user_id=user.id,
+            emotion=emotion,
+            note=note,
+            log_date=datetime.strptime(log_date_str, '%Y-%m-%d').date()
+        )
+        db.session.add(log)
+        db.session.commit()
+        return jsonify({'success': True, 'log_id': log.id}), 201
+        
+    elif request.method == 'GET':
+        logs = EmotionLog.query.filter_by(user_id=user.id).order_by(EmotionLog.log_date.desc()).all()
+        return jsonify({
+            'logs': [{'id': l.id, 'emotion': l.emotion, 'note': l.note, 'log_date': l.log_date.isoformat()} for l in logs]
+        }), 200
 
 
 @app.route('/api/stats', methods=['GET'])
 def get_stats():
-    """Get emotion statistics"""
     user = get_current_user()
     if not user:
         return jsonify({'error': 'Unauthorized'}), 401
     
     days = request.args.get('days', 30, type=int)
     start_date = datetime.now().date() - timedelta(days=days)
+    logs = EmotionLog.query.filter_by(user_id=user.id).filter(EmotionLog.log_date >= start_date).all()
     
-    logs = EmotionLog.query.filter_by(user_id=user.id).filter(
-        EmotionLog.log_date >= start_date
-    ).all()
-    
-    # Count emotions
     stats = {}
     for log in logs:
         stats[log.emotion] = stats.get(log.emotion, 0) + 1
@@ -435,58 +255,63 @@ def get_stats():
         'statistics': [{'emotion': k, 'count': v} for k, v in stats.items()]
     }), 200
 
-
 # ============================================
-# Create tables on startup
+# Database Creation & Application Runner
 # ============================================
 
 with app.app_context():
     db.create_all()
     print("✅ Database tables verified")
 
-
-# ============================================
-# Run the application
-# ============================================
-
 if __name__ == '__main__':
     print("=" * 60)
     print("🚀 MoodTracker Server Starting...")
+    print("🌐 Server: http://127.0.0.1:5000")
     print("=" * 60)
-    print(f"📁 Database: {app.config['SQLALCHEMY_DATABASE_URI']}")
-    print(f"🌐 Server: http://127.0.0.1:5000")
-    print(f"📂 Static folder: static/")
-    print(f"🔧 Debug Mode: ON")
-    print("=" * 60)
-    print("\n📌 Access the web app:")
-    print("   http://127.0.0.1:5000")
-    print("\n📌 Press Ctrl+C to stop the server\n")
-    
     app.run(debug=True, host='0.0.0.0', port=5000)
 
-from flask import Flask, render_template, request, redirect, url_for
 
-app = Flask(__name__)
+# ============================================
+# Requirement d: Rule-Based Emotion Analysis
+# ============================================
 
-# Home / Index Route
-@app.route('/')
-def index():
-    return render_template('index.html')
-
-# Registration Route (Allows GET to view page, POST to submit form)
-@app.route('/register', methods=['GET', 'POST'])
-def register():
-    if request.method == 'POST':
-        # Get data submitted from register.html form
-        username = request.form.get('username')
-        email = request.form.get('email')
-        password = request.form.get('password')
-        
-        # TODO: Connect with Database.py here to store user data
-        
-        return redirect(url_for('index'))
+def analyze_emotion_text(text):
+    """Simple rule-based emotion detector based on keywords"""
+    text_lower = text.lower()
     
-    return render_template('register.html')
+    anxious_keywords = ['anxious', 'worried', 'stressed', 'panic', 'nervous', 'scared']
+    sad_keywords = ['sad', 'depressed', 'unhappy', 'lonely', 'crying', 'down']
+    happy_keywords = ['happy', 'excited', 'joy', 'great', 'awesome', 'good', 'glad']
+    
+    if any(word in text_lower for word in anxious_keywords):
+        return 'Anxious'
+    elif any(word in text_lower for word in sad_keywords):
+        return 'Sad'
+    elif any(word in text_lower for word in happy_keywords):
+        return 'Happy'
+    
+    return 'Neutral'
 
-if __name__ == '__main__':
-    app.run(debug=True) 
+
+# ============================================
+# Requirement c: Forgot / Reset Password Endpoint
+# ============================================
+
+@app.route('/api/reset-password', methods=['POST'])
+def reset_password():
+    """Reset user password using email"""
+    data = request.get_json() or {}
+    email = data.get('email', '').strip()
+    new_password = data.get('password', '').strip()
+    
+    if not email or not new_password:
+        return jsonify({'error': 'Email and new password are required'}), 400
+        
+    user = User.query.filter_by(email=email).first()
+    if not user:
+        return jsonify({'error': 'No account found with that email address'}), 404
+        
+    user.password_hash = generate_password_hash(new_password)
+    db.session.commit()
+    
+    return jsonify({'success': True, 'message': 'Password updated successfully'}), 200
