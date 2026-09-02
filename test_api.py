@@ -5,6 +5,11 @@ print("=" * 50)
 print("Testing MoodTracker API")
 print("=" * 50)
 
+# Unified Test Data
+TEST_USERNAME = "JeAnn"
+TEST_EMAIL = "annannchan08132007@gmail.com"
+TEST_PASSWORD = "08132007" 
+
 # 1. Test status
 print("\n[1] Testing /api/status...")
 try:
@@ -18,9 +23,9 @@ except Exception as e:
 print("\n[2] Testing /api/register...")
 try:
     data = {
-        "username": "jeann",
-        "email": "jeanne@gmail.com",
-        "password": "0813"
+        "username": TEST_USERNAME,
+        "email": TEST_EMAIL,
+        "password": TEST_PASSWORD
     }
     response = requests.post('http://127.0.0.1:5000/api/register', json=data)
     print(f"Status: {response.status_code}")
@@ -32,8 +37,8 @@ except Exception as e:
 print("\n[3] Testing /api/login...")
 try:
     data = {
-        "username": "jeann",
-        "password": "0813"
+        "username": TEST_USERNAME,
+        "password": TEST_PASSWORD
     }
     response = requests.post('http://127.0.0.1:5000/api/login', json=data)
     print(f"Status: {response.status_code}")
@@ -43,36 +48,49 @@ except Exception as e:
 
 # [3.5] Testing /api/forgot-password...
 print("\n[3.5] Testing /api/forgot-password...")
-forgot_payload = {"email": "annannchan08132007@gmail.com"} # Use your registered email
-resp = requests.post("http://127.0.0.1:5000/api/forgot-password", json=forgot_payload)
-print(f"Status: {resp.status_code}")
-data = resp.json()
-print(f"Response: {data}")
-
-# Get the reset code (For testing convenience, assume the backend returns the code directly)
-reset_code = data.get('reset_code')
-if not reset_code:
-    print("Test failed: Failed to retrieve the reset code!")
-else:
-    # [3.6] Testing /api/reset-password...
-    print("\n[3.6] Testing /api/reset-password...")
-    reset_payload = {
-        "email": "annannchan08132007@gmail.com",
-        "reset_code": reset_code,
-        "new_password": "new_secure_password_123"
-    }
-    resp = requests.post("http://127.0.0.1:5000/api/reset-password", json=reset_payload)
+try:
+    forgot_payload = {"email": TEST_EMAIL}
+    resp = requests.post("http://127.0.0.1:5000/api/forgot-password", json=forgot_payload)
     print(f"Status: {resp.status_code}")
-    print(f"Response: {resp.json()}")
-    
-    # After changing the password, try logging in with the new password to verify it works
-    # (You can add a simple login test here)
+    data = resp.json()
+    print(f"Response: {data}")
 
+    reset_code = data.get('reset_code')
+    if not reset_code:
+        print("Test failed: Failed to retrieve the reset code!")
+    else:
+        # [3.6] Testing /api/reset-password...
+        print("\n[3.6] Testing /api/reset-password...")
+        reset_payload = {
+            "email": TEST_EMAIL,
+            "reset_code": reset_code,
+            "new_password": "temp_new_password_123" 
+        }
+        resp = requests.post("http://127.0.0.1:5000/api/reset-password", json=reset_payload)
+        print(f"Status: {resp.status_code}")
+        print(f"Response: {resp.json()}")
+        
+        # [3.7] Verify login with the temporary new password
+        print("\n[3.7] Testing Login with temp new password...")
+        login_new_pwd = {"username": TEST_USERNAME, "password": "temp_new_password_123"}
+        resp = requests.post('http://127.0.0.1:5000/api/login', json=login_new_pwd)
+        print(f"Status: {resp.status_code}")
+        print(f"Response: {resp.json()}")
+        
+        # [3.8] Change the password back to the original via PUT /api/user
+        print("\n[3.8] Resetting password back to original via PUT /api/user...")
+        session = requests.Session()
+        session.post('http://127.0.0.1:5000/api/login', json=login_new_pwd)
+        resp = session.put('http://127.0.0.1:5000/api/user', json={"password": TEST_PASSWORD})
+        print(f"Status: {resp.status_code}")
+        print(f"Response: {resp.json()}")
+except Exception as e:
+    print(f"Error during forgot/reset password: {e}")
 
 # 4. Test get user info (after login)
 print("\n[4] Testing /api/user (after login)...")
 try:
-    login_data = {"username": "jeann", "password": "0813"}
+    login_data = {"username": TEST_USERNAME, "password": TEST_PASSWORD}
     session = requests.Session()
     login_response = session.post('http://127.0.0.1:5000/api/login', json=login_data)
     
@@ -88,7 +106,7 @@ except Exception as e:
 # 5. Test add emotion log (after login)
 print("\n[5] Testing /api/logs (POST)...")
 try:
-    login_data = {"username": "jeann", "password": "0813"}
+    login_data = {"username": TEST_USERNAME, "password": TEST_PASSWORD}
     session = requests.Session()
     login_response = session.post('http://127.0.0.1:5000/api/login', json=login_data)
     
@@ -109,7 +127,7 @@ except Exception as e:
 # 6. Test get logs
 print("\n[6] Testing /api/logs (GET)...")
 try:
-    login_data = {"username": "jeann", "password": "0813"}
+    login_data = {"username": TEST_USERNAME, "password": TEST_PASSWORD}
     session = requests.Session()
     login_response = session.post('http://127.0.0.1:5000/api/login', json=login_data)
     
@@ -125,7 +143,7 @@ except Exception as e:
 # 7. Test calendar data
 print("\n[7] Testing /api/calendar/2026/8...")
 try:
-    login_data = {"username": "jeann", "password": "0813"}
+    login_data = {"username": TEST_USERNAME, "password": TEST_PASSWORD}
     session = requests.Session()
     login_response = session.post('http://127.0.0.1:5000/api/login', json=login_data)
     

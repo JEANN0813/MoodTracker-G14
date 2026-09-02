@@ -81,7 +81,7 @@ def insert_test_data():
     
     # Insert test user - JeAnn
     test_users = [
-        ('JeAnn', 'annannchan08132007@email.com', '0813', 'What is your pet?', 'Cat'),
+        ('JeAnn', 'annannchan08132007@gmail.com', '08132007', 'What is your pet?', 'Cat'),
     ]
     
     cursor.executemany("""
