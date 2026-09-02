@@ -1,11 +1,7 @@
-# -*- coding: utf-8 -*-
-"""
-Database Design - MoodTracker
-Contains Users table and Emotion Logs table
-"""
 
 import sqlite3
 from datetime import datetime, timedelta
+from werkzeug.security import generate_password_hash
 
 DATABASE_NAME = 'database.db'
 
@@ -78,10 +74,12 @@ def insert_test_data():
         print("Test data already exists, skipping insertion")
         conn.close()
         return
+
+    hashed_password = generate_password_hash('08132007')
     
     # Insert test user - JeAnn
     test_users = [
-        ('JeAnn', 'jeann@email.com', '0813', 'What is your pet?', 'Cat'),
+        ('JeAnn', 'annannchan08132007@gmail.com', hashed_password, 'What is your pet?', 'Cat'),
     ]
     
     cursor.executemany("""
@@ -124,9 +122,9 @@ def show_tables():
     cursor.execute("SELECT name FROM sqlite_master WHERE type='table';")
     tables = cursor.fetchall()
     
-    print("=" * 60)
+    print()
     print("Tables in the database:")
-    print("=" * 60)
+    print()
     
     for table in tables:
         table_name = table[0]
@@ -151,9 +149,9 @@ def show_sample_data():
     conn = sqlite3.connect(DATABASE_NAME)
     cursor = conn.cursor()
     
-    print("=" * 60)
+    print()
     print("Sample Data:")
-    print("=" * 60)
+    print()
     
     # Display users
     cursor.execute("SELECT id, username, email, created_at FROM users")
@@ -163,7 +161,7 @@ def show_sample_data():
     for u in users:
         print(f"  ID: {u[0]}, Username: {u[1]}, Email: {u[2]}, Created: {u[3]}")
     
-    print("=" * 60)
+    print()
     
     # Display emotion logs
     cursor.execute("""
@@ -178,24 +176,24 @@ def show_sample_data():
     for log in logs:
         print(f"  ID: {log[0]}, User: {log[1]}, Emotion: {log[2]}, Note: {log[3]}, Date: {log[4]}")
     
-    print("=" * 60)
+    print()
     conn.close()
 
 
 if __name__ == '__main__':
-    print("=" * 60 )
+    print()
     print("MoodTracker Database Design")
-    print("=" * 60)
+    print()
     
     # Create tables
     print("Creating database tables...")
     create_tables()
-    print("=" * 60)
+    print()
     
     # Insert test data
     print("Inserting test data...")
     insert_test_data()
-    print("=" * 60)
+    print()
     
     # Display table structures
     show_tables()
@@ -206,4 +204,4 @@ if __name__ == '__main__':
     print("Database design completed!")
     print(f"Database file: {DATABASE_NAME}")
     print("Next step: Run 'python app.py' to start the server")
-    print("=" * 60)
+    print()
