@@ -16,6 +16,8 @@ CREATE TABLE IF NOT EXISTS users (
     password_hash TEXT NOT NULL,
     security_question TEXT,
     security_answer_hash TEXT,
+    reset_token TEXT,
+    reset_token_expiration TIMESTAMP,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 """
