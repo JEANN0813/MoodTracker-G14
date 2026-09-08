@@ -6,6 +6,7 @@ from werkzeug.security import generate_password_hash
 DATABASE_NAME = 'database.db'
 
 
+
 # Users table
 CREATE_USERS_TABLE = """
 CREATE TABLE IF NOT EXISTS users (
@@ -20,6 +21,7 @@ CREATE TABLE IF NOT EXISTS users (
 """
 
 
+
 # Emotion Logs table
 CREATE_LOGS_TABLE = """
 CREATE TABLE IF NOT EXISTS emotion_logs (
@@ -32,6 +34,7 @@ CREATE TABLE IF NOT EXISTS emotion_logs (
     FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE
 );
 """
+
 
 
 # Index for better query performance
@@ -87,7 +90,7 @@ def insert_test_data():
         VALUES (?, ?, ?, ?, ?)
     """, test_users)
     
-    # Get user ID
+    # Get user IDs
     cursor.execute("SELECT id FROM users WHERE username = 'JeAnn'")
     jeann_id = cursor.fetchone()[0]
     
@@ -109,11 +112,11 @@ def insert_test_data():
     conn.commit()
     conn.close()
     
-    print("Test data inserted successfully")
-    print("   - 1 test user (JeAnn)")
-    print("   - 5 emotion logs")
+    print("✅ Test data inserted successfully")
+    print(f"   - 1 test users (JeAnn)")
+    print(f"   - 3 emotion logs")
 
-
+# Function to display table structures
 def show_tables():
     """Display the structure of all tables"""
     conn = sqlite3.connect(DATABASE_NAME)
