@@ -3,7 +3,9 @@ from flask import Flask, session, request, jsonify, send_from_directory
 from flask_sqlalchemy import SQLAlchemy
 from flask_cors import CORS
 from datetime import timedelta, datetime
+from datetime import timedelta, datetime
 from werkzeug.security import generate_password_hash, check_password_hash
+import secrets  
 import secrets  
 import os
 
@@ -66,6 +68,7 @@ def serve_static(path):
 @app.route('/api/status')
 def status():
     return jsonify({'status': 'online', 'message': 'MoodTracker API is running', 'version': '1.0.0'})
+    return jsonify({'status': 'online', 'message': 'MoodTracker API is running', 'version': '1.0.0'})
 
 @app.route('/api/register', methods=['POST'])
 def register():
@@ -112,6 +115,7 @@ def login():
     session['user_id'] = user.id
     session.permanent = True
     
+    return jsonify({'success': True, 'message': 'Login successful', 'user': {'id': user.id, 'username': user.username, 'email': user.email}}), 200
     return jsonify({'success': True, 'message': 'Login successful', 'user': {'id': user.id, 'username': user.username, 'email': user.email}}), 200
 
 @app.route('/api/logout', methods=['POST'])
@@ -175,6 +179,10 @@ def reset_password():
     
     if user.reset_token != reset_code:
         return jsonify({'error': 'Invalid reset code'}), 400
+        return jsonify({'error': 'User not found'}), 404
+    
+    if user.reset_token != reset_code:
+        return jsonify({'error': 'Invalid reset code'}), 400
     
     if user.reset_token_expiration and datetime.now() > user.reset_token_expiration:
         return jsonify({'error': 'Reset code expired'}), 400
@@ -206,9 +214,11 @@ def add_emotion_log():
         return jsonify({'error': 'Invalid date format. Use YYYY-MM-DD'}), 400
     
     log = EmotionLog(user_id=user.id, emotion=emotion, note=note, log_date=log_date)
+    log = EmotionLog(user_id=user.id, emotion=emotion, note=note, log_date=log_date)
     db.session.add(log)
     db.session.commit()
     
+    return jsonify({'success': True, 'message': 'Log added successfully', 'log_id': log.id}), 201
     return jsonify({'success': True, 'message': 'Log added successfully', 'log_id': log.id}), 201
 
 @app.route('/api/logs', methods=['GET'])
@@ -222,6 +232,7 @@ def get_emotion_logs():
         EmotionLog.created_at.desc()
     ).all()
     
+    return jsonify({'logs': [{'id': log.id, 'emotion': log.emotion, 'note': log.note, 'log_date': log.log_date.isoformat(), 'created_at': log.created_at.isoformat() if log.created_at else None} for log in logs]}), 200
     return jsonify({'logs': [{'id': log.id, 'emotion': log.emotion, 'note': log.note, 'log_date': log.log_date.isoformat(), 'created_at': log.created_at.isoformat() if log.created_at else None} for log in logs]}), 200
 
 @app.route('/api/logs/<int:log_id>', methods=['PUT'])
@@ -439,7 +450,6 @@ def get_suggestions():
         EmotionLog.log_date >= start_date
     ).all()
     
-    # Count emotions
     stats = {}
     for log in logs:
         stats[log.emotion] = stats.get(log.emotion, 0) + 1
@@ -469,6 +479,19 @@ def get_suggestions():
 
 # Run the application
 if __name__ == '__main__':
+    print()
+    print("MoodTracker Server Starting...")
+    print()
+    print(f"Database: {app.config['SQLALCHEMY_DATABASE_URI']}")
+    print(f"Server: http://127.0.0.1:5000")
+    print(f"Static folder: static/")
+    print(f"Debug Mode: ON")
+    print()
+    print("Access the web app:")
+    print("  http://127.0.0.1:5000")
+    print()
+    print("Press Ctrl+C to stop the server")
+    print()
     print()
     print("MoodTracker Server Starting...")
     print()
