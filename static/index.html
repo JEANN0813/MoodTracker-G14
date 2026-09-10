@@ -149,7 +149,7 @@
                 messageDiv.textContent = '✅ Login successful! Redirecting...';
                 messageDiv.style.color = '#27ae60';
                 setTimeout(() => {
-                    window.location.href = 'http://127.0.0.1:5000/dashboard.html';
+                    window.location.href = '/dashboard.html';
                 }, 1000);
             } else {
                 messageDiv.textContent = '❌ ' + (data.error || 'Login failed');
@@ -273,7 +273,7 @@
             msgDiv.style.color = '#27ae60';
             
             setTimeout(() => {
-                window.location.href = 'http://127.0.0.1:5000/index.html';
+                window.location.href = ' /index.html';
             }, 1500);
         } else {
             msgDiv.textContent = '❌ ' + (data.error || 'Registration failed');

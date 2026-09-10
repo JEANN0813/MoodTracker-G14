@@ -29,6 +29,7 @@ function logMood() {
         headers: {
             'Content-Type': 'application/json'
         },
+        credentials: 'include', // 确保携带 Cookie 进行认证
         body: JSON.stringify({
             emotion: selectedEmotion,
             note: note
@@ -41,11 +42,14 @@ function logMood() {
             document.getElementById("moodNote").value = "";
             moods.forEach(m => m.classList.remove("selected"));
             selectedEmotion = null;
-            // Refresh stats and calendar
-            fetchStats();
-            fetchCalendar();
+            
+            // Refresh stats, calendar, logs table, and history chart
+            if (typeof fetchStats === 'function') fetchStats();
+            if (typeof fetchCalendar === 'function') fetchCalendar();
+            if (typeof fetchLogs === 'function') fetchLogs();
+            if (typeof fetchMoodHistory === 'function') fetchMoodHistory();
         } else {
-            alert("Failed to log mood. Please try again.");
+            alert("Failed to log mood: " + (data.error || "Please try again."));
         }
     })
     .catch(err => {

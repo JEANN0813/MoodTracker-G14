@@ -14,9 +14,7 @@
 </head>
 <body>
 
-
-         NAVIGATION BAR
-
+    <!-- NAVIGATION BAR -->
     <nav class="navbar">
         <div class="logo">😊 MoodTracker</div>
         <div class="nav-right">
@@ -30,9 +28,7 @@
         </div>
     </nav>
 
-
-
-         MAIN CONTENT
+    <!-- MAIN CONTENT -->
     <main class="container">
 
         <!-- Welcome Section -->
@@ -163,12 +159,24 @@
                         <div class="insight-text" id="insight-most-common">😊 Happy</div>
                     </div>
 
-                    <div class="insight-box">
-                        <div class="insight-title">Mood Trend</div>
-                        <div class="insight-text" id="insight-trend">➡ Your mood is relatively stable.</div>
+                    <!-- Chart Container 1: Emotion Distribution -->
+                    <div class="insight-box mt-3">
+                        <div class="insight-title mb-2">Emotion Breakdown</div>
+                        <div style="position: relative; height:200px;">
+                            <canvas id="emotionChart"></canvas>
+                        </div>
                     </div>
 
-                    <button class="chat-button" onclick="openChat()">
+                    <div class="insight-box mt-3">
+                        <div class="insight-title">Mood Trend</div>
+                        <div class="insight-text mb-2" id="insight-trend">➡ Your mood is relatively stable.</div>
+                        <!-- Chart Container 2: Mood History Trend -->
+                        <div style="position: relative; height:180px;">
+                            <canvas id="moodHistoryChart"></canvas>
+                        </div>
+                    </div>
+
+                    <button class="chat-button mt-3" onclick="openChat()">
                         💬 Talk to Mood Assistant
                     </button>
                 </section>
@@ -178,12 +186,42 @@
 
     </main>
 
-         JAVASCRIPT
-
-    <!-- Custom JS -->
+    <!-- JAVASCRIPT -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="log.js"></script>
     <script src="calendar.js"></script>
     <script src="analytics.js"></script>
+
+
+<script>
+    document.addEventListener("DOMContentLoaded", function () {
+       
+        fetchUserProfile();
+
+       
+        if (typeof fetchStats === 'function') fetchStats();
+
+       
+        if (typeof fetchLogs === 'function') fetchLogs();
+
+       
+        if (typeof fetchCalendar === 'function') fetchCalendar();
+
+       
+        if (typeof fetchMoodHistory === 'function') fetchMoodHistory();
+    });
+
+    function fetchUserProfile() {
+        fetch('/api/user/profile', { credentials: 'include' })
+            .then(res => res.json())
+            .then(data => {
+                if (data.username) {
+                    document.getElementById('username-display').textContent = data.username;
+                }
+            })
+            .catch(err => console.log("User profile fetch skipped/failed"));
+    }
+</script>
 
 </body>
 </html>

@@ -1,63 +1,3 @@
-// Aya: Calendar
-
-let currentDate = new Date();
-
-function generateCalendar() {
-    const calendar = document.getElementById("calendarDays");
-    if (!calendar) return;
-
-    calendar.innerHTML = "";
-
-    const year = currentDate.getFullYear();
-    const month = currentDate.getMonth();
-
-    const monthNames = [
-        "January", "February", "March", "April", "May", "June",
-        "July", "August", "September", "October", "November", "December"
-    ];
-
-    const monthYearDisplay = document.getElementById("monthYear");
-    if (monthYearDisplay) {
-        monthYearDisplay.textContent = monthNames[month] + " " + year;
-    }
-
-    const firstDay = new Date(year, month, 1).getDay();
-    const daysInMonth = new Date(year, month + 1, 0).getDate();
-
-    // Empty spaces
-    for (let i = 0; i < firstDay; i++) {
-        const emptyDay = document.createElement("div");
-        emptyDay.className = "day";
-        calendar.appendChild(emptyDay);
-    }
-
-    // Days
-    for (let day = 1; day <= daysInMonth; day++) {
-        const dayElement = document.createElement("div");
-        dayElement.className = "day";
-        dayElement.innerHTML = `<span>${day}</span>`;
-        calendar.appendChild(dayElement);
-    }
-}
-
-function previousMonth() {
-    currentDate.setMonth(currentDate.getMonth() - 1);
-    generateCalendar();
-}
-
-function nextMonth() {
-    currentDate.setMonth(currentDate.getMonth() + 1);
-    generateCalendar();
-}
-
-// Fetch calendar data from API
-function fetchCalendar() {
-    // This will be expanded when API is ready
-    generateCalendar();
-}
-
-
-
 // ReRay: Emotion Analysis & Stats
 
 // Chart instances
@@ -1062,3 +1002,49 @@ document.addEventListener(
     }
 );
 
+// Overall Mood 
+function updateOverallMoodCard(happy, calm, neutral, anxious, sad, total) {
+    const positiveCount = happy + calm;
+    const negativeCount = anxious + sad;
+
+   
+    const allDivs = document.querySelectorAll('div, section, article');
+    let targetCard = null;
+
+    allDivs.forEach(div => {
+        if (div.children.length < 5 && div.textContent.includes('Overall Mood')) {
+            targetCard = div;
+        }
+    });
+
+    if (!targetCard) return;
+
+    let titleText = 'Positive 😊';
+    let descText = 'Your mood has been mostly positive recently.';
+
+    if (total > 0) {
+        if (negativeCount > positiveCount) {
+            titleText = 'Needs Care 💙';
+            descText = 'You have experienced more stress or negative emotions recently.';
+        } else if (positiveCount === 0 && negativeCount === 0) {
+            titleText = 'Neutral 😐';
+            descText = 'Your mood has been relatively balanced recently.';
+        }
+    }
+
+ 
+    const pTags = targetCard.querySelectorAll('p');
+    const hTags = targetCard.querySelectorAll('h1, h2, h3, h4, div');
+
+    hTags.forEach(h => {
+        if (h.textContent.includes('Positive') || h.textContent.includes('Needs Care') || h.textContent.includes('Neutral')) {
+            h.innerHTML = titleText;
+        }
+    });
+
+    pTags.forEach(p => {
+        if (p.textContent.includes('recently')) {
+            p.innerText = descText;
+        }
+    });
+}
