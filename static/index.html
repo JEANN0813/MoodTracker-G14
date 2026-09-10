@@ -4,10 +4,14 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Mood Tracker | Sanctuary & Dashboard</title>
+
+    <!-- Stylesheet and Main Script -->
     <link rel="stylesheet" href="style.css">
+    <script src="dashboard.js" defer></script>
+
+    <!-- Fonts & Icons -->
     <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=Plus+Jakarta+Sans:wght@500;600;700;800&display=swap" rel="stylesheet">
-   <script src="https://unpkg.com/lucide@latest"></script>
-<script src="{{ url_for('static', filename='dashboard.js') }}" defer></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
 </head>
 <body>
 
@@ -38,14 +42,14 @@
                 <h1 class="auth-title">Log In.</h1>
                 <p class="auth-subtitle">Enter your email address and password to access your account.</p>
 
-                <form onsubmit="handleAuthSubmit(event, 'Mara')">
+                <form onsubmit="handleAuthSubmit(event)">
                     <div class="form-group">
-                        <label>Email Address</label>
-                        <input type="email" class="input-box" value="mara@example.com" required>
+                        <label for="loginEmail">Email Address</label>
+                        <input type="email" class="input-box" id="loginEmail" placeholder="you@example.com" required>
                     </div>
                     <div class="form-group">
-                        <label>Password</label>
-                        <input type="password" class="input-box" value="password123" required>
+                        <label for="loginPassword">Password</label>
+                        <input type="password" class="input-box" id="loginPassword" placeholder="••••••••" required>
                     </div>
 
                     <button type="submit" class="btn-primary" style="width: 100%;">
@@ -61,12 +65,16 @@
 
                 <form onsubmit="handleRegisterSubmit(event)">
                     <div class="form-group">
-                        <label>Full Name</label>
+                        <label for="regFullName">Full Name</label>
                         <input type="text" class="input-box" id="regFullName" placeholder="e.g. Mara Smith" required>
                     </div>
                     <div class="form-group">
-                        <label>Email Address</label>
-                        <input type="email" class="input-box" placeholder="you@example.com" required>
+                        <label for="regEmail">Email Address</label>
+                        <input type="email" class="input-box" id="regEmail" placeholder="you@example.com" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="regPassword">Password</label>
+                        <input type="password" class="input-box" id="regPassword" placeholder="••••••••" required>
                     </div>
 
                     <button type="submit" class="btn-primary" style="width: 100%;">
@@ -80,10 +88,10 @@
                 <h1 class="auth-title">Reset Password.</h1>
                 <p class="auth-subtitle">Enter your registered email address to receive a password reset link.</p>
 
-                <form onsubmit="event.preventDefault(); showToastCard('Reset link sent to your email!');">
+                <form onsubmit="handleResetSubmit(event)">
                     <div class="form-group">
-                        <label>Email Address</label>
-                        <input type="email" class="input-box" placeholder="you@example.com" required>
+                        <label for="resetEmail">Email Address</label>
+                        <input type="email" class="input-box" id="resetEmail" placeholder="you@example.com" required>
                     </div>
 
                     <button type="submit" class="btn-primary" style="width: 100%;">
@@ -125,8 +133,8 @@
 
             <!-- DASHBOARD VIEW -->
             <div id="dashboardView">
-                <div class="date-label" id="currentDateLabel">Sunday, Sep 6, 2026</div>
-                <h1 class="main-heading">Good morning, <span id="userDisplayName">Mara</span></h1>
+                <div class="date-label" id="currentDateLabel"></div>
+                <h1 class="main-heading">Good day, <span id="userDisplayName">User</span></h1>
                 <p class="sub-heading">How are you feeling today?</p>
 
                 <!-- STATS ROW -->
@@ -160,10 +168,10 @@
                     <div>
                         <!-- Mood Logging Card -->
                         <div class="content-card">
-                            <div style="display: flex; justify-content: space-between; align-items: flex-start;">
+                            <div style="display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 0.5rem;">
                                 <div>
                                     <h2 class="card-title">Log Your Mood</h2>
-                                    <p style="color: var(--text-muted); font-size: 0.85rem; font-weight: 600;">Logging for date: <strong id="loggingDateDisplay" style="color: var(--text-dark);">2026-09-06</strong></p>
+                                    <p style="color: var(--text-muted); font-size: 0.85rem; font-weight: 600;">Logging for date: <strong id="loggingDateDisplay" style="color: var(--text-dark);">Today</strong></p>
                                 </div>
                                 <button class="btn-primary" style="padding: 0.4rem 0.8rem; font-size: 0.75rem; background: var(--canvas-bg);" onclick="resetLoggingDateToToday()">Reset to Today</button>
                             </div>
@@ -193,26 +201,28 @@
 
                             <div class="note-area">
                                 <textarea id="moodNote" placeholder="Add a note about your day (optional)..."></textarea>
-                                <button class="btn-primary" onclick="logMood()">Stamp Mood Entry</button>
+                                <button class="btn-primary" style="width: 100%;" onclick="logMood()">Stamp Mood Entry</button>
                             </div>
                         </div>
 
                         <!-- Recent Logs Table -->
                         <div class="content-card">
                             <h2 class="card-title">Recent Emotion Logs</h2>
-                            <table class="logs-table">
-                                <thead>
-                                    <tr>
-                                        <th>Date</th>
-                                        <th>Emotion</th>
-                                        <th>Note</th>
-                                        <th>Action</th>
-                                    </tr>
-                                </thead>
-                                <tbody id="logs-table-body">
-                                    <tr><td colspan="4" style="text-align: center; color: var(--text-muted);">No logs yet. Select an emotion above to log!</td></tr>
-                                </tbody>
-                            </table>
+                            <div style="overflow-x: auto;">
+                                <table class="logs-table">
+                                    <thead>
+                                        <tr>
+                                            <th>Date</th>
+                                            <th>Emotion</th>
+                                            <th>Note</th>
+                                            <th>Action</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="logs-table-body">
+                                        <tr><td colspan="4" style="text-align: center; color: var(--text-muted);">No logs yet. Select an emotion above to log!</td></tr>
+                                    </tbody>
+                                </table>
+                            </div>
                         </div>
                     </div>
 
@@ -222,7 +232,7 @@
                         <div class="content-card">
                             <div class="calendar-header">
                                 <button class="cal-nav-btn" onclick="previousMonth()">‹</button>
-                                <h2 class="card-title" id="monthYear" style="font-size: 1.4rem; margin: 0;">September 2026</h2>
+                                <h2 class="card-title" id="monthYear" style="font-size: 1.4rem; margin: 0;"></h2>
                                 <button class="cal-nav-btn" onclick="nextMonth()">›</button>
                             </div>
 
@@ -289,9 +299,9 @@
                 <h1 class="main-heading">User Profile</h1>
                 <p class="sub-heading">Settings and preferences.</p>
                 <div class="content-card" style="max-width: 500px;">
-                    <p style="font-weight: 700; margin-bottom: 1rem;" id="profileUserText">Active User: Mara</p>
+                    <p style="font-weight: 700; margin-bottom: 1rem;" id="profileUserText">Active User: User</p>
                     <p style="font-size: 0.85rem; color: var(--text-muted); font-weight: 600; margin-bottom: 1.5rem;">
-                        Logged entries are stored locally within your secure session.
+                        Logged entries are saved across your sessions.
                     </p>
                     <button class="btn-primary" style="background: #f88a8a;" onclick="logout()">Log Out</button>
                 </div>
@@ -336,7 +346,7 @@
             <div class="auth-tag">
                 <i data-lucide="calendar" style="width: 14px;"></i> Date Inspection
             </div>
-            <h2 class="card-title" id="dayModalDateTitle" style="font-size: 1.6rem;">2026-09-06</h2>
+            <h2 class="card-title" id="dayModalDateTitle" style="font-size: 1.6rem;"></h2>
             
             <div id="dayModalContent" style="margin: 1.2rem 0;">
                 <!-- Dynamically populated -->
@@ -345,10 +355,8 @@
             <button class="btn-primary" style="width: 100%;" id="dayModalActionBtn">
                 Set as Active Target Date
             </button>
+        </div>
     </div>
-  </div>
 
-  <script src="{{ url_for('static', filename='dashboard.js') }}"></script>
 </body>
 </html>
-
