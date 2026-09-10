@@ -1415,7 +1415,212 @@
             toast.remove();
         }, 2500);
     }
-    </script>
+        async function handleLogin(event) {
+        event.preventDefault();
+        const email = document.getElementById('login-email').value.trim();
+        const password = document.getElementById('login-password').value.trim();
+        const messageDiv = document.getElementById('loginMessage');
+        
+        if (!messageDiv) {
+          const form = document.querySelector('.auth-form');
+          const newDiv = document.createElement('div');
+          newDiv.id = 'loginMessage';
+          newDiv.style.cssText = 'color: #e74c3c; font-size: 0.9rem; text-align: center; margin-top: 0.5rem;';
+          form.appendChild(newDiv);
+          }
+          const msgDiv = document.getElementById('loginMessage') || messageDiv;
+          msgDiv.textContent = '';
+          msgDiv.style.color = '#e74c3c';
+
+        if (!email || !password) {
+            messageDiv.textContent = '❌ Please enter both email and password';
+            return;
+           }
+
+        const submitBtn = document.querySelector('.btn-primary');
+        const originalText = submitBtn.innerHTML;
+        submitBtn.innerHTML = '⏳ Signing in...';
+        submitBtn.disabled = true;
+
+        try {
+            const response = await fetch('/api/login', {
+               method: 'POST',
+               headers: {
+                   'Content-Type': 'application/json'
+                },
+                credentials: 'include',  
+                body: JSON.stringify({
+                    email: email,       
+                    username: email,
+                    password: password
+                  })
+              });
+              
+            
+            const data = await response.json();
+
+            if (data.success) {
+                messageDiv.textContent = '✅ Login successful! Redirecting...';
+                messageDiv.style.color = '#27ae60';
+                setTimeout(() => {
+                    window.location.href = '/dashboard.html';
+                }, 1000);
+            } else {
+                messageDiv.textContent = '❌ ' + (data.error || 'Login failed');
+            }
+        } catch (error) {
+            messageDiv.textContent = '❌ Network error. Make sure server is running.';
+            console.error('Login error:', error);
+        } finally {
+            submitBtn.innerHTML = originalText;
+            submitBtn.disabled = false;
+        }
+    }
+
+    async function showForgotPassword(event) {
+        event.preventDefault();
+        const email = prompt("Please enter your registered email address:");
+        if (!email) return;
+
+        try {
+            const response = await fetch('/api/forgot-password', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                credentials: 'include',
+                body: JSON.stringify({ email: email })
+            });
+            const data = await response.json();
+
+            if (response.ok) {
+                const resetCode = prompt("Verification code generated!\n(For local development, your code is: " + data.reset_code + ")\n\nPlease enter the 6-digit verification code:", "");
+                if (!resetCode) return;
+
+                const newPassword = prompt("Please enter your new password:", "");
+                if (!newPassword) return;
+
+                const resetResponse = await fetch('/api/reset-password', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email: email, reset_code: resetCode, new_password: newPassword })
+                });
+                const resetData = await resetResponse.json();
+
+                if (resetResponse.ok) {
+                    alert('✅ Password reset successfully! Please log in with your new password.');
+                } else {
+                    alert('❌ Reset failed: ' + (resetData.error || 'Unknown error'));
+                }
+            } else {
+                alert('❌ Error: ' + data.error);
+            }
+        } catch (error) {
+            console.error(error);
+            alert('❌ Network error. Please check the console.');
+        }
+    }
+
+    async function checkLoginStatus() {
+    try {
+        const response = await fetch('/api/user', { credentials: 'include' });
+        if (response.status === 200) {
+            
+            window.location.href = '/dashboard.html';
+        }
+    } catch (error) {
+        console.log('Not logged in');
+      }
+    }
+    async function handleRegister(event) {
+      event.preventDefault();
+    
+      const firstName = document.getElementById('first-name').value.trim();
+      const lastName = document.getElementById('last-name').value.trim();
+      const email = document.getElementById('reg-email').value.trim();
+      const password = document.getElementById('reg-password').value.trim();
+      const termsChecked = document.getElementById('terms-agree')?.checked;
+      const messageDiv = document.getElementById('registerMessage');
+    
+      if (!messageDiv) {
+        const form = document.querySelector('.auth-form');
+        const newDiv = document.createElement('div');
+        newDiv.id = 'registerMessage';
+        newDiv.style.cssText = 'color: #e74c3c; font-size: 0.9rem; text-align: center; margin-top: 0.5rem;';
+        form.appendChild(newDiv);
+    }
+      const msgDiv = document.getElementById('registerMessage') || messageDiv;
+      msgDiv.textContent = '';
+      msgDiv.style.color = '#e74c3c';
+    
+      if (!firstName || !lastName || !email || !password) {
+        msgDiv.textContent = '❌ Please fill in all fields';
+        return;
+    }
+    
+      if (!termsChecked) {
+        msgDiv.textContent = '❌ Please agree to Terms of Service';
+        return;
+    }
+    
+      const submitBtn = document.querySelector('.btn-primary');
+      const originalText = submitBtn.innerHTML;
+      submitBtn.innerHTML = '⏳ Creating account...';
+      submitBtn.disabled = true;
+    
+      try {
+        const response = await fetch('/api/register', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            credentials: 'include',
+            body: JSON.stringify({
+                username: firstName + lastName,
+                email: email,
+                password: password
+            })
+        });
+        
+        const data = await response.json();
+        
+        if (data.success) {
+            msgDiv.textContent = '✅ Registration successful! Redirecting to login...';
+            msgDiv.style.color = '#27ae60';
+            
+            setTimeout(() => {
+                window.location.href = ' /index.html';
+            }, 1500);
+        } else {
+            msgDiv.textContent = '❌ ' + (data.error || 'Registration failed');
+        }
+    } catch (error) {
+        msgDiv.textContent = '❌ Network error: ' + error.message;
+    } finally {
+        submitBtn.innerHTML = originalText;
+        submitBtn.disabled = false;
+    }
+} 
+
+
+
+    document.addEventListener('DOMContentLoaded', function() {
+  
+    checkLoginStatus();
+    
+  
+    const loginForm = document.querySelector('.auth-form');
+    if (loginForm && !loginForm.hasAttribute('data-bound')) {
+        loginForm.setAttribute('data-bound', 'true');
+        loginForm.addEventListener('submit', handleLogin);
+    }
+    
+
+    const registerForm = document.querySelector('.auth-form');
+    if (registerForm && registerForm.id === 'registerForm') {
+        registerForm.addEventListener('submit', handleRegister);
+    }
+});
+    </script> 
+
 </body>
 </html>
 </html>
