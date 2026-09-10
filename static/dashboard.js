@@ -13,6 +13,14 @@ let moodLogs = JSON.parse(localStorage.getItem('moodLogs')) || [
     { id: 1, log_date: new Date().toISOString().split('T')[0], emotion: "Happy", iconName: "smile", note: "Welcome to your fresh sanctuary dashboard!" }
 ];
 
+const EMOTION_ICON_MAP = {
+    'Happy': 'smile',
+    'Calm': 'sun',
+    'Neutral': 'meh',
+    'Sad': 'frown',
+    'Anxious': 'alert-circle'
+};
+
 // ==========================================
 // 2. AUTHENTICATION & TAB SWITCHING
 // ==========================================

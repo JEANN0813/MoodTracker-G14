@@ -84,42 +84,44 @@
             </div>
 
             <!-- OPTION 3: RESET PASSWORD -->
-           <div id="authViewReset" class="hidden">
-                <h1 class="auth-title">Reset Password.</h1>
-                <p class="auth-subtitle">Enter your email to receive a verification code.</p>
+            <div id="authViewReset" class="hidden">
+    <h1 class="auth-title">Reset Password.</h1>
+    <p class="auth-subtitle">Follow the steps below to reset your account password.</p>
 
-             <!-- STEP 1: Enter Email -->
-                <div id="resetStep1">
-                  <form onsubmit="handleResetSubmit(event)">
-                     <div class="form-group">
-                        <label for="resetEmail">Email Address</label>
-                        <input type="email" class="input-box" id="resetEmail" placeholder="you@example.com" required>
-                     </div>
+    <div id="resetStep1">
+        <form onsubmit="handleResetSubmit(event)">
+            <div class="form-group">
+                <label for="resetEmail">Email Address</label>
+                <input type="email" class="input-box" id="resetEmail" placeholder="you@example.com" required>
+            </div>
 
-                     <button type="submit" class="btn-primary" style="width: 100%;">
-                        Send Verification Code <i data-lucide="mail" style="width: 18px;"></i>
+            <button type="submit" class="btn-primary" style="width: 100%;">
+                Send Verification Code <i data-lucide="mail" style="width: 18px;"></i>
             </button>
         </form>
     </div>
 
-             <!-- STEP 2: Enter Code + New Password -->
-                <div id="resetStep2" class="hidden">
-                   <form onsubmit="handlePasswordResetConfirm(event)">
-                     <div class="form-group">
-                       <label for="resetCode">Verification Code</label>
-                       <input type="text" class="input-box" id="resetCode" placeholder="6-digit code" maxlength="6" required>
-                     </div>
-                     <div class="form-group">
-                        <label for="resetNewPassword">New Password</label>
-                        <input type="password" class="input-box" id="resetNewPassword" placeholder="At least 8 characters" required>
-                     </div>
+    
+    <div id="resetStep2" class="hidden">
+        <form onsubmit="handlePasswordResetConfirm(event)">
+            <div class="form-group">
+                <label for="resetCode">Verification Code</label>
+                <input type="text" class="input-box" id="resetCode" placeholder="Enter 6-digit code" required>
+            </div>
 
-                     <button type="submit" class="btn-primary" style="width: 100%;">
-                        Reset Password <i data-lucide="key" style="width: 18px;"></i>
+            <div class="form-group">
+                <label for="resetNewPassword">New Password</label>
+                <input type="password" class="input-box" id="resetNewPassword" placeholder="••••••••" required>
+            </div>
+
+            <button type="submit" class="btn-primary" style="width: 100%;">
+                Confirm New Password <i data-lucide="check-circle" style="width: 18px;"></i>
             </button>
         </form>
     </div>
 </div>
+        </div>
+    </div>
 
     <!-- 2. MAIN DASHBOARD LAYOUT -->
     <div class="app-layout hidden" id="appLayout">
