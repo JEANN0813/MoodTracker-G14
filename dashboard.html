@@ -1,0 +1,244 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MoodTracker - Dashboard</title>
+    <!-- Bootstrap 5 CSS & FontAwesome Icons -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <style>
+        body { background-color: #f4f7fe; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+        .sidebar { min-height: 100vh; background: #ffffff; border-right: 1px solid #e9ecef; }
+        .card { border: none; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.03); }
+        .stat-card { transition: transform 0.2s; }
+        .stat-card:hover { transform: translateY(-3px); }
+        .emotion-btn { border-radius: 20px; font-weight: 600; padding: 8px 16px; }
+    </style>
+</head>
+<body>
+
+<div class="container-fluid">
+    <div class="row">
+        <!-- Sidebar Navigation -->
+        <nav class="col-md-3 col-lg-2 d-md-block sidebar collapse p-3">
+            <h4 class="text-primary fw-bold mb-4"><i class="fa-solid fa-face-smile me-2"></i>MoodTracker</h4>
+            <ul class="nav flex-column gap-2">
+                <li class="nav-item">
+                    <a class="nav-link active fw-semibold text-primary" href="#"><i class="fa-solid fa-chart-line me-2"></i>Dashboard</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link text-secondary" href="/register"><i class="fa-solid fa-user me-2"></i>Profile / Account</a>
+                </li>
+                <li class="nav-item mt-4">
+                    <button class="btn btn-outline-danger w-100 text-start" onclick="logout()"><i class="fa-solid fa-right-from-bracket me-2"></i>Sign Out</button>
+                </li>
+            </ul>
+        </nav>
+
+        <!-- Main Dashboard Body -->
+        <main class="col-md-9 ms-sm-auto col-lg-10 px-md-4 py-4">
+            
+            <!-- Top Header -->
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <div>
+                    <h2 class="fw-bold mb-1">Welcome back, <span id="username-display">User</span>! 👋</h2>
+                    <p class="text-muted mb-0">Here is your emotional health summary for the past 30 days.</p>
+                </div>
+                <span class="badge bg-white text-dark shadow-sm p-2 fs-6"><i class="fa-regular fa-calendar me-1"></i> <span id="current-date"></span></span>
+            </div>
+
+            <!-- Stats & Trends Overview (Requirement e) -->
+            <div class="row g-3 mb-4">
+                <div class="col-md-3">
+                    <div class="card stat-card p-3 border-start border-4 border-primary">
+                        <div class="text-muted small">Total Logs (30 Days)</div>
+                        <h3 class="fw-bold my-1" id="stat-total">0</h3>
+                        <div class="text-primary small"><i class="fa-solid fa-pen-to-square me-1"></i> Recorded entries</div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="card stat-card p-3 border-start border-4 border-warning">
+                        <div class="text-muted small">Anxious / Low Days</div>
+                        <h3 class="fw-bold my-1" id="stat-anxious">0</h3>
+                        <div class="text-warning small"><i class="fa-solid fa-triangle-exclamation me-1"></i> Tracked instances</div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="card stat-card p-3 border-start border-4 border-success">
+                        <div class="text-muted small">Positive / Happy Days</div>
+                        <h3 class="fw-bold my-1" id="stat-happy">0</h3>
+                        <div class="text-success small"><i class="fa-solid fa-circle-check me-1"></i> Mood boosts</div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="card stat-card p-3 border-start border-4 border-secondary">
+                        <div class="text-muted small">Neutral Days</div>
+                        <h3 class="fw-bold my-1" id="stat-neutral">0</h3>
+                        <div class="text-secondary small"><i class="fa-solid fa-minus me-1"></i> Balanced feelings</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Emotion Logger & Analysis Block (Requirement d) -->
+            <div class="row g-4 mb-4">
+                <div class="col-lg-7">
+                    <div class="card p-4 h-100">
+                        <h5 class="fw-bold mb-3"><i class="fa-solid fa-heart me-2 text-danger"></i>How are you feeling today?</h5>
+                        <form id="log-form" onsubmit="submitEmotion(event)">
+                            <div class="mb-3">
+                                <label class="form-label small text-muted">Describe your thoughts (Rule-Based AI will auto-detect your emotion):</label>
+                                <textarea id="note-input" class="form-control" rows="3" placeholder="e.g., I have been feeling a bit stressed and worried about my exam..." required></textarea>
+                            </div>
+                            <div class="d-flex justify-content-between align-items-center">
+                                <span class="small text-muted">Selected Emotion: <strong id="detected-emotion-label" class="text-primary">None</strong></span>
+                                <button type="submit" class="btn btn-primary px-4 fw-semibold"><i class="fa-solid fa-paper-plane me-1"></i> Save Entry</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+
+                <!-- Quick Selection Panel -->
+                <div class="col-lg-5">
+                    <div class="card p-4 h-100">
+                        <h5 class="fw-bold mb-3"><i class="fa-solid fa-bolt me-2 text-warning"></i>Quick Select</h5>
+                        <p class="text-muted small">Click an emotion directly to pre-fill your log:</p>
+                        <div class="d-flex flex-wrap gap-2">
+                            <button class="btn btn-outline-success emotion-btn" onclick="quickSelect('Happy')">😊 Happy</button>
+                            <button class="btn btn-outline-warning emotion-btn" onclick="quickSelect('Anxious')">😰 Anxious</button>
+                            <button class="btn btn-outline-danger emotion-btn" onclick="quickSelect('Sad')">😢 Sad</button>
+                            <button class="btn btn-outline-secondary emotion-btn" onclick="quickSelect('Neutral')">😐 Neutral</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Recent Entries List -->
+            <div class="card p-4">
+                <h5 class="fw-bold mb-3"><i class="fa-solid fa-clock-rotate-left me-2 text-info"></i>Recent Emotion Logs</h5>
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Date</th>
+                                <th>Detected Emotion</th>
+                                <th>Notes / Reflection</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="logs-table-body">
+                            <tr><td colspan="4" class="text-center text-muted">Loading logs...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+        </main>
+    </div>
+</div>
+
+<script>
+    document.getElementById('current-date').innerText = new Date().toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' });
+
+    // Load initial user & stats on page render
+    window.onload = function() {
+        fetchUserData();
+        fetchStats();
+        fetchLogs();
+    };
+
+    function fetchUserData() {
+        fetch('/api/user')
+            .then(res => res.json())
+            .then(data => {
+                if(data.username) document.getElementById('username-display').innerText = data.username;
+            })
+            .catch(() => {});
+    }
+
+    function fetchStats() {
+        fetch('/api/stats?days=30')
+            .then(res => res.json())
+            .then(data => {
+                document.getElementById('stat-total').innerText = data.total || 0;
+                let anxious = 0, happy = 0, neutral = 0;
+                (data.statistics || []).forEach(item => {
+                    if (item.emotion === 'Anxious' || item.emotion === 'Sad') anxious += item.count;
+                    else if (item.emotion === 'Happy') happy += item.count;
+                    else neutral += item.count;
+                });
+                document.getElementById('stat-anxious').innerText = anxious;
+                document.getElementById('stat-happy').innerText = happy;
+                document.getElementById('stat-neutral').innerText = neutral;
+            });
+    }
+
+    function fetchLogs() {
+        fetch('/api/logs')
+            .then(res => res.json())
+            .then(data => {
+                const tbody = document.getElementById('logs-table-body');
+                if (!data.logs || data.logs.length === 0) {
+                    tbody.innerHTML = `<tr><td colspan="4" class="text-center text-muted">No entries logged yet. Write your first reflection above!</td></tr>`;
+                    return;
+                }
+                tbody.innerHTML = data.logs.map(log => `
+                    <tr>
+                        <td class="fw-semibold">${log.log_date}</td>
+                        <td><span class="badge ${getEmotionBadge(log.emotion)}">${log.emotion}</span></td>
+                        <td class="text-muted">${log.note || '-'}</td>
+                        <td><button class="btn btn-sm btn-outline-danger" onclick="deleteLog(${log.id})"><i class="fa-solid fa-trash"></i></button></td>
+                    </tr>
+                `).join('');
+            });
+    }
+
+    function getEmotionBadge(emotion) {
+        if (emotion === 'Happy') return 'bg-success';
+        if (emotion === 'Anxious' || emotion === 'Sad') return 'bg-warning text-dark';
+        return 'bg-secondary';
+    }
+
+    function quickSelect(emotion) {
+        document.getElementById('detected-emotion-label').innerText = emotion;
+    }
+
+    function submitEmotion(e) {
+        e.preventDefault();
+        const note = document.getElementById('note-input').value;
+        let emotion = document.getElementById('detected-emotion-label').innerText;
+
+        // Auto-detect if quick selection wasn't made
+        if (emotion === 'None') {
+            const lower = note.toLowerCase();
+            if (['stressed', 'anxious', 'worried', 'panic'].some(w => lower.includes(w))) emotion = 'Anxious';
+            else if (['sad', 'depressed', 'down'].some(w => lower.includes(w))) emotion = 'Sad';
+            else if (['happy', 'excited', 'good', 'great'].some(w => lower.includes(w))) emotion = 'Happy';
+            else emotion = 'Neutral';
+        }
+
+        fetch('/api/logs', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ emotion: emotion, note: note })
+        }).then(res => res.json()).then(() => {
+            document.getElementById('note-input').value = '';
+            document.getElementById('detected-emotion-label').innerText = 'None';
+            fetchStats();
+            fetchLogs();
+        });
+    }
+
+    function deleteLog(id) {
+        fetch(`/api/logs/${id}`, { method: 'DELETE' }).then(() => {
+            fetchStats();
+            fetchLogs();
+        });
+    }
+
+    function logout() {
+        fetch('/api/logout', { method: 'POST' }).then(() => window.location.href = '/');
+    }
+</script>
+</body>
+</html>
