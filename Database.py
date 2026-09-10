@@ -14,8 +14,6 @@ CREATE TABLE IF NOT EXISTS users (
     username TEXT UNIQUE NOT NULL,
     email TEXT UNIQUE NOT NULL,
     password_hash TEXT NOT NULL,
-    security_question TEXT,
-    security_answer_hash TEXT,
     reset_token TEXT,
     reset_token_expiration TIMESTAMP,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
@@ -71,32 +69,36 @@ def insert_test_data():
     conn = sqlite3.connect(DATABASE_NAME)
     cursor = conn.cursor()
     
-    # Check if data already exists
+     
     cursor.execute("SELECT COUNT(*) FROM users")
     count = cursor.fetchone()[0]
     
     if count > 0:
         print("Test data already exists, skipping insertion")
-        conn.close()
+        conn.close()   
         return
 
     hashed_password = generate_password_hash('08132007')
     
-    # Insert test user - JeAnn
+     
     test_users = [
-        ('JeAnn', 'annannchan08132007@gmail.com', hashed_password, 'What is your pet?', 'Cat'),
+        ('JeAnn', 'annannchan08132007@gmail.com', hashed_password),
     ]
     
     cursor.executemany("""
-        INSERT INTO users (username, email, password_hash, security_question, security_answer_hash)
-        VALUES (?, ?, ?, ?, ?)
+        INSERT INTO users (username, email, password_hash)
+        VALUES (?, ?, ?)
     """, test_users)
     
-    # Get user IDs
+   
     cursor.execute("SELECT id FROM users WHERE username = 'JeAnn'")
-    jeann_id = cursor.fetchone()[0]
+    row = cursor.fetchone()
+    if not row:
+        conn.close()
+        return
+    jeann_id = row[0]
     
-    # Insert test emotion logs for JeAnn
+    
     today = datetime.now().date()
     test_logs = [
         (jeann_id, 'happy', 'Great day!', today.strftime('%Y-%m-%d')),
@@ -111,12 +113,13 @@ def insert_test_data():
         VALUES (?, ?, ?, ?)
     """, test_logs)
     
+    
     conn.commit()
     conn.close()
     
     print("✅ Test data inserted successfully")
-    print(f"   - 1 test users (JeAnn)")
-    print(f"   - 3 emotion logs")
+    print(f"   - 1 test user (JeAnn)")
+    print(f"   - 5 emotion logs")
 
 # Function to display table structures
 def show_tables():

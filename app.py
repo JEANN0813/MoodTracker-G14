@@ -1,14 +1,27 @@
-import requests
 from flask import Flask, session, request, jsonify, send_from_directory
 from flask_sqlalchemy import SQLAlchemy
 from flask_cors import CORS
 from datetime import timedelta, datetime
 from werkzeug.security import generate_password_hash, check_password_hash
-import secrets   
-import os
+from flask_mail import Mail, Message
 from sqlalchemy import func
+import secrets
+import os
+import random
+import string
+
 
 app = Flask(__name__, static_folder='static', static_url_path='')
+
+# Email configuration
+app.config['MAIL_SERVER'] = 'smtp.gmail.com'
+app.config['MAIL_PORT'] = 587
+app.config['MAIL_USE_TLS'] = True
+app.config['MAIL_USERNAME'] = os.environ.get('MAIL_USERNAME')
+app.config['MAIL_PASSWORD'] = os.environ.get('MAIL_PASSWORD')  
+app.config['MAIL_DEFAULT_SENDER'] = ('MoodTracker Support', 'annannchan08132007@gmail.com')
+
+mail = Mail(app)
 
 BASE_DIR = os.path.abspath(os.path.dirname(__file__))
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///' + os.path.join(BASE_DIR, 'database.db')
@@ -21,6 +34,7 @@ app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(days=7)
 
 CORS(app, supports_credentials=True)
 db = SQLAlchemy(app)
+verification_codes = {}
 
 # Database Models
 class User(db.Model):
@@ -30,8 +44,6 @@ class User(db.Model):
     username = db.Column(db.String(80), unique=True, nullable=False)
     email = db.Column(db.String(120), unique=True, nullable=False)
     password_hash = db.Column(db.String(200), nullable=False)
-    security_question = db.Column(db.String(200))
-    security_answer_hash = db.Column(db.String(200))
     created_at = db.Column(db.DateTime, default=db.func.current_timestamp())
     
     reset_token = db.Column(db.String(100), nullable=True)
@@ -75,8 +87,6 @@ def register():
     username = data.get('username', '').strip()
     email = data.get('email', '').strip()
     password = data.get('password', '').strip()
-    sec_question = data.get('security_question', '').strip()
-    sec_answer = data.get('security_answer', '').strip()
     
     if not username or not password or not email:
         return jsonify({'error': 'Username, email and password required'}), 400
@@ -87,14 +97,10 @@ def register():
     if User.query.filter_by(email=email).first():
         return jsonify({"error": "Email already registered"}), 400
     
-    sec_answer_hash = generate_password_hash(sec_answer.lower()) if sec_answer else None
-    
     user = User(
         username=username, 
         email=email, 
-        password_hash=generate_password_hash(password),
-        security_question=sec_question,
-        security_answer_hash=sec_answer_hash
+        password_hash=generate_password_hash(password)
     )
     try:
         db.session.add(user)
@@ -165,9 +171,11 @@ def delete_account():
     session.clear()
     return jsonify({'message': 'Account deleted successfully'}), 200
 
-# Security Question Reset Password Logic
-@app.route('/api/security-question', methods=['POST'])
-def get_security_question():
+
+verification_codes = {}
+
+@app.route('/api/send-code', methods=['POST'])
+def send_code():
     data = request.get_json() or {}
     email = data.get('email', '').strip()
     
@@ -175,33 +183,59 @@ def get_security_question():
         return jsonify({'error': 'Email is required'}), 400
         
     user = User.query.filter_by(email=email).first()
-    if not user or not user.security_question:
-        return jsonify({'error': 'User or security question not found'}), 404
-        
-    return jsonify({'security_question': user.security_question}), 200
+    if not user:
+        return jsonify({'error': 'User not found'}), 404
 
-@app.route('/api/reset-password-security', methods=['POST'])
-def reset_password_security():
+    
+    code = ''.join(random.choices(string.digits, k=6))
+    verification_codes[email] = {
+        'code': code,
+        'expires': datetime.now() + timedelta(minutes=5) 
+    }
+
+    
+    try:
+        msg = Message("Your Password Reset Verification Code", recipients=[email])
+        msg.body = f"Hello,\n\nYour verification code is: {code}\n\nIt will expire in 5 minutes."
+        mail.send(msg)
+        return jsonify({'message': 'Verification code sent successfully!'}), 200
+    except Exception as e:
+        return jsonify({'error': f'Failed to send email: {str(e)}'}), 500
+
+@app.route('/api/reset-password', methods=['POST'])
+def reset_password():
     data = request.get_json() or {}
     email = data.get('email', '').strip()
-    answer = data.get('answer', '').strip()
-    new_password = data.get('new_password', '').strip()
+    code = data.get('code', '').strip()
+    new_password = data.get('password', '').strip()
     
-    if not email or not answer or not new_password:
+    if not email or not code or not new_password:
         return jsonify({'error': 'All fields are required'}), 400
-        
+    
+    # Check verification code
+    record = verification_codes.get(email)
+    if not record:
+        return jsonify({'error': 'No verification code found'}), 400
+    
+    if datetime.now() > record['expires']:
+        del verification_codes[email]
+        return jsonify({'error': 'Verification code expired'}), 400
+    
+    if record['code'] != code:
+        return jsonify({'error': 'Invalid verification code'}), 400
+    
+    # Update password
     user = User.query.filter_by(email=email).first()
-    if not user or not user.security_answer_hash:
-        return jsonify({'error': 'Security verification failed'}), 400
-        
-    if not check_password_hash(user.security_answer_hash, answer.lower()):
-        return jsonify({'error': 'Incorrect answer to the security question'}), 400
-        
+    if not user:
+        return jsonify({'error': 'User not found'}), 404
+    
     user.password_hash = generate_password_hash(new_password)
     db.session.commit()
     
-    return jsonify({'message': 'Password reset successfully'}), 200
-
+    # Remove used code
+    del verification_codes[email]
+    
+    return jsonify({'success': True, 'message': 'Password reset successfully!'}), 200
 # Logs Routes
 @app.route('/api/logs', methods=['POST'])
 def add_emotion_log():

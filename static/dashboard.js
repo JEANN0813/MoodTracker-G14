@@ -1,249 +1,9 @@
-<<<<<<< HEAD:static/analytics.js
-// ReRay: Emotion Analysis & Stats
-
-// Chart instances
-let emotionChart = null;
-let moodHistoryChart = null;
-
-// FETCH USER DATA
-
-function fetchUserData() {
-    fetch('/api/user')
-        .then(res => {
-            if (res.status === 401) {
-                window.location.href = '/index.html';
-                return;
-            }
-
-            return res.json();
-        })
-        .then(data => {
-            if (data && data.username) {
-                document.getElementById('username-display').innerText =
-                    data.username;
-            }
-        })
-        .catch(err => {
-            console.error('User data error:', err);
-        });
-}
-
-// FETCH STATISTICS
-
-function fetchStats() {
-
-    fetch('/api/stats?days=30')
-        .then(res => res.json())
-        .then(data => {
-
-            const stats = data.statistics || [];
-            const total = data.total || 0;
-
-            // ----------------------------------------------------
-            // Total logs
-            // ----------------------------------------------------
-
-            document.getElementById('stat-total').innerText = total;
-
-
-            // ----------------------------------------------------
-            // Emotion breakdown
-            // ----------------------------------------------------
-
-            let anxious = 0;
-            let happy = 0;
-            let neutral = 0;
-            let sad = 0;
-            let calm = 0;
-
-            stats.forEach(item => {
-
-                switch (item.emotion) {
-
-                    case 'Happy':
-                        happy += item.count;
-                        break;
-
-                    case 'Sad':
-                        sad += item.count;
-                        break;
-
-                    case 'Anxious':
-                        anxious += item.count;
-                        break;
-
-                    case 'Calm':
-                        calm += item.count;
-                        break;
-
-                    default:
-                        neutral += item.count;
-                        break;
-                }
-            });
-
-
-            // Update dashboard statistics
-
-            document.getElementById('stat-anxious').innerText =
-                anxious + sad;
-
-            document.getElementById('stat-happy').innerText =
-                happy;
-
-            document.getElementById('stat-neutral').innerText =
-                neutral + calm;
-
-            // WEEKLY STATISTICS
-
-            fetchWeeklyStats();
-
-            // EMOTION PERCENTAGES
-
-            updateEmotionPercentages(
-                happy,
-                sad,
-                anxious,
-                neutral,
-                calm,
-                total
-            );
-
-
-            // MOOD SCORE
-
-            const moodScore = calculateMoodScore(stats);
-
-            const moodScoreElement =
-                document.getElementById('mood-score');
-
-            if (moodScoreElement) {
-                moodScoreElement.innerText =
-                    moodScore + '/100';
-            }
-
-            // TREND ANALYSIS
-
-            updateTrendAnalysis(data);
-
-
-            // EMOTION DISTRIBUTION CHART
-
-            createEmotionChart(
-                happy,
-                sad,
-                anxious,
-                neutral,
-                calm
-            );
-
-
-            // RULE-BASED INSIGHTS
-
-            updateInsights(data);
-
-        })
-        .catch(err => {
-            console.error('Stats error:', err);
-        });
-}
-
-
-// WEEKLY STATISTICS
-
-function fetchWeeklyStats() {
-
-    fetch('/api/stats?days=7')
-        .then(res => res.json())
-        .then(data => {
-
-            const stats = data.statistics || [];
-
-            let happy = 0;
-            let sad = 0;
-            let anxious = 0;
-            let neutral = 0;
-            let calm = 0;
-
-            stats.forEach(item => {
-
-                switch (item.emotion) {
-
-                    case 'Happy':
-                        happy += item.count;
-                        break;
-
-                    case 'Sad':
-                        sad += item.count;
-                        break;
-
-                    case 'Anxious':
-                        anxious += item.count;
-                        break;
-
-                    case 'Calm':
-                        calm += item.count;
-                        break;
-
-                    default:
-                        neutral += item.count;
-                        break;
-                }
-            });
-
-
-            // Update weekly elements if they exist
-
-            const weeklyHappy =
-                document.getElementById('weekly-happy');
-
-            const weeklyAnxious =
-                document.getElementById('weekly-anxious');
-
-            const weeklySad =
-                document.getElementById('weekly-sad');
-
-            const weeklyNeutral =
-                document.getElementById('weekly-neutral');
-
-
-            if (weeklyHappy)
-                weeklyHappy.innerText = happy;
-
-            if (weeklyAnxious)
-                weeklyAnxious.innerText = anxious;
-
-            if (weeklySad)
-                weeklySad.innerText = sad;
-
-            if (weeklyNeutral)
-                weeklyNeutral.innerText =
-                    neutral + calm;
-
-        })
-        .catch(err => {
-            console.error('Weekly stats error:', err);
-        });
-}
-
-// 2. EMOTION PERCENTAGES
-
-function updateEmotionPercentages(
-    happy,
-    sad,
-    anxious,
-    neutral,
-    calm,
-    total
-) {
-
-    if (total === 0) {
-=======
 
 // ==========================================
 // 1. STATE & GLOBAL VARIABLES
 // ==========================================
 let activeUser = "User";
+let activeUserId = null;
 let selectedEmotion = null;
 let selectedIcon = "";
 let currentDate = new Date();
@@ -278,37 +38,138 @@ function switchAuthTab(tab) {
         if (tabHeader && tabHeader.children[1]) tabHeader.children[1].classList.add('active');
     } else if (tab === 'reset') {
         if (vReset) vReset.classList.remove('hidden');
-        if (tabHeader && tabHeader.children[2]) tabHeader.children[2].classList.add('active');
-    }
+    if (tabHeader && tabHeader.children[2]) tabHeader.children[2].classList.add('active');
+    
+    // Reset to Step 1 when switching to Reset tab
+    const step1 = document.getElementById('resetStep1');
+    const step2 = document.getElementById('resetStep2');
+    if (step1) step1.classList.remove('hidden');
+    if (step2) step2.classList.add('hidden');
+}
     if (window.lucide) lucide.createIcons();
 }
 
-function handleAuthSubmit(event) {
+async function handleAuthSubmit(event) {
     event.preventDefault();
     const emailInput = document.getElementById('loginEmail');
-    const email = emailInput ? emailInput.value.trim() : '';
+    const passwordInput = document.getElementById('loginPassword');
     
-    if (email) {
-        const rawName = email.split('@')[0];
-        activeUser = rawName.charAt(0).toUpperCase() + rawName.slice(1);
+    const usernameOrEmail = emailInput ? emailInput.value.trim() : '';
+    const password = passwordInput ? passwordInput.value.trim() : '';
+
+    try {
+        const response = await fetch('/api/login', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ username: usernameOrEmail, password: password })
+        });
+
+        const data = await response.json();
+
+        if (response.ok && data.success) {
+            activeUser = data.user.username;
+            activeUserId = data.user.id;
+            showToastCard('Login successful!');
+            enterSanctuary();
+        } else {
+            showToastCard('❌ ' + (data.error || 'Login failed'));
+        }
+    } catch (err) {
+        showToastCard('❌ Network error during login.');
     }
-    enterSanctuary();
 }
 
-function handleRegisterSubmit(event) {
+async function handleRegisterSubmit(event) {
     event.preventDefault();
     const nameInput = document.getElementById('regFullName');
-    if (nameInput && nameInput.value.trim()) {
-        activeUser = nameInput.value.trim();
+    const emailInput = document.getElementById('regEmail');
+    const passwordInput = document.getElementById('regPassword');
+
+    const username = nameInput ? nameInput.value.trim() : '';
+    const email = emailInput ? emailInput.value.trim() : '';
+    const password = passwordInput ? passwordInput.value.trim() : '';
+
+    try {
+        const response = await fetch('/api/register', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ username, email, password })
+        });
+
+        const data = await response.json();
+
+        if (response.ok && data.success) {
+            showToastCard('✅ Account created successfully! Please log in.');
+            switchAuthTab('login');
+        } else {
+            showToastCard('❌ ' + (data.error || 'Registration failed'));
+        }
+    } catch (err) {
+        showToastCard('❌ Network error during registration.');
     }
-    showToastCard('Account created successfully!');
-    enterSanctuary();
 }
 
-function handleResetSubmit(event) {
+async function handleResetSubmit(event) {
     event.preventDefault();
-    showToastCard('Password reset link sent to your email!');
-    switchAuthTab('login');
+    const email = document.getElementById('resetEmail').value.trim();
+
+    if (!email) {
+        showToastCard('Please enter your email address');
+        return;
+    }
+
+    try {
+        const response = await fetch('/api/send-code', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email: email })
+        });
+
+        const data = await response.json();
+        
+        if (response.ok) {
+            showToastCard('✅ Verification code sent! Check your email.');
+            document.getElementById('resetStep1').classList.add('hidden');
+            document.getElementById('resetStep2').classList.remove('hidden');
+        } else {
+            showToastCard('❌ ' + (data.error || 'Failed to send code'));
+        }
+    } catch (err) {
+        showToastCard('❌ Server error. Please try again later.');
+    }
+}
+
+async function handlePasswordResetConfirm(event) {
+    event.preventDefault();
+    const email = document.getElementById('resetEmail').value.trim();
+    const code = document.getElementById('resetCode').value.trim();
+    const newPassword = document.getElementById('resetNewPassword').value.trim();
+
+    if (!email || !code || !newPassword) {
+        showToastCard('Please fill in all fields.');
+        return;
+    }
+
+    try {
+        const response = await fetch('/api/reset-password', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email, code, password: newPassword })
+        });
+
+        const data = await response.json();
+        
+        if (response.ok) {
+            showToastCard('✅ Password updated! Redirecting to login...');
+            document.getElementById('resetStep1').classList.remove('hidden');
+            document.getElementById('resetStep2').classList.add('hidden');
+            setTimeout(() => { switchAuthTab('login'); }, 1500);
+        } else {
+            showToastCard('❌ ' + (data.error || 'Failed to reset password.'));
+        }
+    } catch (err) {
+        showToastCard('❌ Server error. Please try again later.');
+    }
 }
 
 function enterSanctuary() {
@@ -322,10 +183,16 @@ function enterSanctuary() {
     if (authScr) authScr.classList.add('hidden');
     if (appLay) appLay.classList.remove('hidden');
 
-    refreshUI();
+    fetchLogsAndRefresh();
 }
 
-function logout() {
+async function logout() {
+    try {
+        await fetch('/api/logout', { method: 'POST' });
+    } catch (e) {
+        console.error('Logout error', e);
+    }
+
     const authScr = document.getElementById('authScreen');
     const appLay = document.getElementById('appLayout');
 
@@ -367,7 +234,25 @@ function selectEmotion(btn, emotion, iconName) {
 // ==========================================
 // 4. MOOD LOGGING & LOCAL DATA HANDLERS
 // ==========================================
-function logMood() {
+async function fetchLogsAndRefresh() {
+    try {
+        const response = await fetch('/api/logs', { method: 'GET' });
+        if (response.ok) {
+            const data = await response.json();
+            moodLogs = (data.logs || []).map(log => ({
+                ...log,
+                iconName: EMOTION_ICON_MAP[log.emotion] || 'smile'
+            }));
+            refreshUI();
+        } else if (response.status === 401) {
+            logout();
+        }
+    } catch (err) {
+        showToastCard('❌ Failed to load logs from server.');
+    }
+}
+
+async function logMood() {
     const noteElem = document.getElementById("moodNote");
     const note = noteElem ? noteElem.value.trim() : "";
 
@@ -376,34 +261,49 @@ function logMood() {
         return;
     }
 
-    // Filter out previous entries on the target date so days update cleanly
-    moodLogs = moodLogs.filter(l => l.log_date !== activeTargetDate);
-    
-    const newEntry = {
-        id: Date.now(),
-        log_date: activeTargetDate,
-        emotion: selectedEmotion,
-        iconName: selectedIcon,
-        note: note || "-"
-    };
+    try {
+        const response = await fetch('/api/logs', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                emotion: selectedEmotion,
+                note: note,
+                date: activeTargetDate
+            })
+        });
 
-    moodLogs.unshift(newEntry);
-    localStorage.setItem('moodLogs', JSON.stringify(moodLogs));
+        const data = await response.json();
 
-    if (noteElem) noteElem.value = "";
-    document.querySelectorAll('.mood-btn').forEach(b => b.classList.remove('selected'));
-    selectedEmotion = null;
-    selectedIcon = "";
+        if (response.ok && data.success) {
+            if (noteElem) noteElem.value = "";
+            document.querySelectorAll('.mood-btn').forEach(b => b.classList.remove('selected'));
+            selectedEmotion = null;
+            selectedIcon = "";
 
-    refreshUI();
-    showToastCard(`Mood successfully stamped for ${activeTargetDate}!`);
+            showToastCard(`Mood successfully stamped for ${activeTargetDate}!`);
+            await fetchLogsAndRefresh();
+        } else {
+            showToastCard('❌ ' + (data.error || 'Failed to save log'));
+        }
+    } catch (err) {
+        showToastCard('❌ Network error while saving log.');
+    }
 }
 
-function deleteLog(id) {
-    moodLogs = moodLogs.filter(log => log.id !== id);
-    localStorage.setItem('moodLogs', JSON.stringify(moodLogs));
-    refreshUI();
-    showToastCard("Entry removed.");
+async function deleteLog(id) {
+    try {
+        const response = await fetch(`/api/logs/${id}`, { method: 'DELETE' });
+        const data = await response.json();
+
+        if (response.ok) {
+            showToastCard("Entry removed.");
+            await fetchLogsAndRefresh();
+        } else {
+            showToastCard('❌ ' + (data.error || 'Failed to delete log'));
+        }
+    } catch (err) {
+        showToastCard('❌ Network error while deleting log.');
+    }
 }
 
 function resetLoggingDateToToday() {
@@ -525,7 +425,6 @@ function renderTable() {
 
     if (moodLogs.length === 0) {
         tbody.innerHTML = `<tr><td colspan="4" style="text-align: center; color: var(--text-muted); padding: 1.5rem 0;">No logs yet. Select an emotion above to stamp your day!</td></tr>`;
->>>>>>> main:static/dashboard.js
         return;
     }
 
@@ -644,54 +543,6 @@ function toggleDayDetailModal(show) {
     }
 }
 
-<<<<<<< HEAD:static/analytics.js
-// Overall Mood 
-function updateOverallMoodCard(happy, calm, neutral, anxious, sad, total) {
-    const positiveCount = happy + calm;
-    const negativeCount = anxious + sad;
-
-   
-    const allDivs = document.querySelectorAll('div, section, article');
-    let targetCard = null;
-
-    allDivs.forEach(div => {
-        if (div.children.length < 5 && div.textContent.includes('Overall Mood')) {
-            targetCard = div;
-        }
-    });
-
-    if (!targetCard) return;
-
-    let titleText = 'Positive 😊';
-    let descText = 'Your mood has been mostly positive recently.';
-
-    if (total > 0) {
-        if (negativeCount > positiveCount) {
-            titleText = 'Needs Care 💙';
-            descText = 'You have experienced more stress or negative emotions recently.';
-        } else if (positiveCount === 0 && negativeCount === 0) {
-            titleText = 'Neutral 😐';
-            descText = 'Your mood has been relatively balanced recently.';
-        }
-    }
-
- 
-    const pTags = targetCard.querySelectorAll('p');
-    const hTags = targetCard.querySelectorAll('h1, h2, h3, h4, div');
-
-    hTags.forEach(h => {
-        if (h.textContent.includes('Positive') || h.textContent.includes('Needs Care') || h.textContent.includes('Neutral')) {
-            h.innerHTML = titleText;
-        }
-    });
-
-    pTags.forEach(p => {
-        if (p.textContent.includes('recently')) {
-            p.innerText = descText;
-        }
-    });
-}
-=======
 function toggleAssistantModal(show) {
     const modal = document.getElementById('assistantModal');
     if (modal) {
@@ -754,11 +605,23 @@ function showToastCard(message) {
 // ==========================================
 // 8. INITIALIZATION
 // ==========================================
-document.addEventListener('DOMContentLoaded', function () {
+document.addEventListener('DOMContentLoaded', async function () {
     const splash = document.getElementById("welcomeSplash");
     if (splash) {
         setTimeout(() => { splash.classList.add("hidden-splash"); }, 1500);
     }
-    refreshUI();
+
+    try {
+        const response = await fetch('/api/user', { method: 'GET' });
+        if (response.ok) {
+            const user = await response.json();
+            activeUser = user.username;
+            activeUserId = user.id;
+            enterSanctuary();
+        } else {
+            switchAuthTab('login');
+        }
+    } catch (err) {
+        switchAuthTab('login');
+    }
 });
->>>>>>> main:static/dashboard.js
