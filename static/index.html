@@ -8,6 +8,7 @@
     <!-- Stylesheet and Main Script -->
     <link rel="stylesheet" href="style.css">
     <script src="dashboard.js" defer></script>
+    <script src="alarm.js" defer></script>
 
     <!-- Fonts & Icons -->
     <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=Plus+Jakarta+Sans:wght@500;600;700;800&display=swap" rel="stylesheet">
@@ -138,6 +139,9 @@
             </a>
             <a class="nav-pill" id="navProfile" onclick="switchView('profileView', this)">
                 <span>Profile</span>
+            </a>
+            <a class="nav-pill" id="navAlarm" onclick="switchView('alarmView', this)">
+                <span>Alarm</span>
             </a>
         </aside>
 
@@ -326,7 +330,65 @@
                     <button class="btn-primary" style="background: #f88a8a;" onclick="logout()">Log Out</button>
                 </div>
             </div>
+            
+            <!-- ALARM VIEW SECTION -->
+            <div id="alarmView" class="hidden">
+                <h1 class="main-heading">Alarm Manager</h1>
+                <p class="sub-heading">Set up and control your active reminders.</p>
 
+                <div class="dashboard-grid" style="grid-template-columns: 1fr;">
+           
+             <!-- Alarm Setting Card -->
+             <div class="content-card" style="max-width: 550px;">
+                <h2 class="card-title">Add New Alarm</h2>
+            
+                <form id="alarmForm"  style="margin-top: 1rem;">
+                  <div class="form-group">
+                      <label for="alarmTime">Time</label>
+                      <input type="time" id="alarmTime" class="input-box" required>
+                  </div>
+
+                  <div class="form-group">
+                      <label for="alarmTitle">Title</label>
+                      <input type="text" id="alarmTitle" class="input-box" placeholder="e.g. Morning Alarm">
+                  </div>
+
+                  <div class="form-group">
+                    <label>Repeat Days</label>
+                     <div class="repeat-days" style="display: flex; gap: 0.5rem; flex-wrap: wrap; margin-top: 0.5rem;">
+                        <label><input type="checkbox" value="1"> Mon</label>
+                        <label><input type="checkbox" value="2"> Tue</label>
+                        <label><input type="checkbox" value="3"> Wed</label>
+                        <label><input type="checkbox" value="4"> Thu</label>
+                        <label><input type="checkbox" value="5"> Fri</label>
+                        <label><input type="checkbox" value="6"> Sat</label>
+                        <label><input type="checkbox" value="7"> Sun</label>
+                     </div>
+                  </div>
+
+                  <button type="submit" class="btn-primary" style="width: 100%; margin-top: 0.5rem;">
+                    <i data-lucide="plus-circle" style="width: 18px;"></i> Add Alarm
+                  </button>
+              </form>
+
+                      <h2 class="card-title" style="font-size: 1.4rem; margin-top: 2rem;">Active Alarms</h2>
+                      <ul id="alarmList" class="alarm-list" style="list-style: none; padding: 0; margin-top: 1rem;">
+                
+                      </ul>
+                 </div>
+               </div>
+            </div>
+
+
+          <div id="alarmModal" class="modal-overlay hidden">
+              <div class="modal-card" style="text-align: center;">
+                <h2 id="modalTitle" class="card-title" style="font-size: 1.8rem;">⏰ Alarm Ringing!</h2>
+                <p id="modalTime" style="font-size: 1.1rem; font-weight: 700; margin: 1rem 0; color: var(--text-muted);"></p>
+                <button id="stopAlarmBtn" class="btn-primary" style="width: 100%; background: #f88a8a;">
+                 Dismiss
+                </button>
+              </div>
+          </div>
         </main>
     </div>
 

@@ -10,13 +10,13 @@ import os
 import random
 import string
 from datetime import datetime
-from app import db
 from flask import Blueprint, request, jsonify
 from datetime import datetime, time
+from alarm import alarm_bp
 
 
 app = Flask(__name__, static_folder='static', static_url_path='')
-alarm_bp = Blueprint('alarm', __name__)
+
 
 # Email configuration
 app.config['MAIL_SERVER'] = 'smtp.gmail.com'
@@ -567,6 +567,9 @@ with app.app_context():
 
 
 # Alarm Routes
+alarm_bp = Blueprint('alarm', __name__)
+
+
 @alarm_bp.route('/api/alarms', methods=['POST'])
 def create_alarm():
     data = request.get_json()
@@ -633,6 +636,8 @@ def check_due_alarms():
 
     db.session.commit()
     return jsonify({'triggered': len(triggered) > 0, 'alarms': triggered})
+
+app.register_blueprint(alarm_bp)
 
 if __name__ == '__main__':
     print()
