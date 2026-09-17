@@ -1,7 +1,6 @@
 
-// ==========================================
+
 // 1. STATE & GLOBAL VARIABLES
-// ==========================================
 let activeUser = "User";
 let activeUserId = null;
 let selectedEmotion = null;
@@ -21,9 +20,8 @@ const EMOTION_ICON_MAP = {
     'Anxious': 'alert-circle'
 };
 
-// ==========================================
+
 // 2. AUTHENTICATION & TAB SWITCHING
-// ==========================================
 function switchAuthTab(tab) {
     const vLogin = document.getElementById('authViewLogin');
     const vReg = document.getElementById('authViewRegister');
@@ -211,9 +209,8 @@ async function logout() {
     showToastCard('Portal locked successfully.');
 }
 
-// ==========================================
+
 // 3. UI NAVIGATION & SELECTION
-// ==========================================
 function switchView(viewId, element) {
     const views = ['dashboardView', 'calendarView', 'profileView'];
     views.forEach(id => {
@@ -239,9 +236,8 @@ function selectEmotion(btn, emotion, iconName) {
     selectedIcon = iconName || 'smile';
 }
 
-// ==========================================
+
 // 4. MOOD LOGGING & LOCAL DATA HANDLERS
-// ==========================================
 async function fetchLogsAndRefresh() {
     try {
         const response = await fetch('/api/logs', { method: 'GET' });
@@ -319,9 +315,8 @@ function resetLoggingDateToToday() {
     refreshUI();
 }
 
-// ==========================================
+
 // 5. CALENDAR LOGIC
-// ==========================================
 function generateCalendar() {
     const calendarGrid = document.getElementById("calendarDays");
     if (!calendarGrid) return;
@@ -360,15 +355,42 @@ function generateCalendar() {
 
         if (dateStr === activeTargetDate) dayCell.classList.add("selected-day");
 
-        const logged = moodLogs.find(l => l.log_date === dateStr);
+       
+        const dayLogs = moodLogs.filter(l => l.log_date === dateStr);
 
-        dayCell.innerHTML = `<span>${day}</span>${logged ? `<span class="day-mood-icon"><i data-lucide="${logged.iconName || 'smile'}" style="width: 14px;"></i></span>` : ''}`;
+        if (dayLogs.length > 0) {
+            
+            const emotionCounts = {};
+            dayLogs.forEach(l => {
+                emotionCounts[l.emotion] = (emotionCounts[l.emotion] || 0) + 1;
+            });
+
+            
+            const dominantEmotion = Object.keys(emotionCounts).reduce((a, b) => 
+                emotionCounts[a] > emotionCounts[b] ? a : (emotionCounts[a] === emotionCounts[b] ? a : b)
+            );
+
+            const iconName = EMOTION_ICON_MAP[dominantEmotion] || 'smile';
+            const totalCount = dayLogs.length;
+
+            let cellContent = `<span>${day}</span><span class="day-mood-icon"><i data-lucide="${iconName}" style="width: 14px;"></i></span>`;
+            
+            
+            if (totalCount > 1) {
+                cellContent += `<span class="multi-entry-badge" style="position: absolute; top: 2px; right: 2px; background: #ff6b6b; color: white; font-size: 0.65rem; padding: 1px 5px; border-radius: 8px; font-weight: 800;">${totalCount}</span>`;
+            }
+            
+            dayCell.style.position = 'relative';
+            dayCell.innerHTML = cellContent;
+        } else {
+            dayCell.innerHTML = `<span>${day}</span>`;
+        }
         
-        dayCell.onclick = () => openDayDetailModal(dateStr, logged);
+    
+        dayCell.onclick = () => openDayDetailModal(dateStr, dayLogs);
         calendarGrid.appendChild(dayCell);
     }
 }
-
 function renderStandaloneCalendar() {
     const container = document.getElementById('standaloneCalendarContainer');
     if (!container) return;
@@ -407,9 +429,8 @@ function nextMonth() {
     refreshUI();
 }
 
-// ==========================================
+
 // 6. REFRESH UI & STATS CALCULATIONS
-// ==========================================
 function refreshUI() {
     const loggingDateDisp = document.getElementById('loggingDateDisplay');
     const selectedTargetLbl = document.getElementById('selectedTargetDateLabel');
@@ -503,9 +524,8 @@ function calculateStats() {
     }
 }
 
-// ==========================================
+
 // 7. MODALS & UTILITIES
-// ==========================================
 function openDayDetailModal(dateStr, loggedEntry) {
     const dateTitle = document.getElementById('dayModalDateTitle');
     if (dateTitle) dateTitle.innerText = dateStr;
@@ -612,7 +632,6 @@ function showToastCard(message) {
 
 // ==========================================
 // 8. INITIALIZATION
-// ==========================================
 document.addEventListener('DOMContentLoaded', async function () {
     const splash = document.getElementById("welcomeSplash");
     if (splash) {

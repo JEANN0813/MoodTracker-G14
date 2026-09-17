@@ -326,18 +326,49 @@ def get_calendar(year, month):
     else:
         end_date = datetime(year, month + 1, 1).date()
     
+    
     logs = EmotionLog.query.filter_by(user_id=user.id).filter(
         EmotionLog.log_date >= start_date,
         EmotionLog.log_date < end_date
-    ).order_by(EmotionLog.created_at.desc()).all()
+    ).order_by(EmotionLog.created_at.asc()).all()
     
-    daily_emotions = {}
+    
+    daily_logs = {}
     for log in logs:
         date_str = log.log_date.isoformat()
-        if date_str not in daily_emotions:
-            daily_emotions[date_str] = log.emotion
+        if date_str not in daily_logs:
+            daily_logs[date_str] = []
+        daily_logs[date_str].append({
+            'id': log.id,
+            'emotion': log.emotion,
+            'note': log.note,
+            'created_at': log.created_at.isoformat() if log.created_at else None
+        })
     
-    return jsonify({'year': year, 'month': month, 'data': daily_emotions}), 200
+    
+    daily_summary = {}
+    for date_str, entries in daily_logs.items():
+        counts = {}
+        latest_timestamps = {}
+        for entry in entries:
+            emo = entry['emotion']
+            counts[emo] = counts.get(emo, 0) + 1
+            latest_timestamps[emo] = entry['created_at'] or ''
+        
+        
+        dominant_emotion = sorted(
+            counts.keys(), 
+            key=lambda e: (counts[e], latest_timestamps[e]), 
+            reverse=True
+        )[0]
+        
+        daily_summary[date_str] = {
+            'dominant_emotion': dominant_emotion,
+            'total_count': len(entries),
+            'entries': entries
+        }
+    
+    return jsonify({'year': year, 'month': month, 'data': daily_summary}), 200
 
 @app.route('/api/stats', methods=['GET'])
 def get_stats():
