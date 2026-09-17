@@ -630,7 +630,6 @@ function showToastCard(message) {
     setTimeout(() => { toast.remove(); }, 2500);
 }
 
-// ==========================================
 // 8. INITIALIZATION
 document.addEventListener('DOMContentLoaded', async function () {
     const splash = document.getElementById("welcomeSplash");
@@ -652,3 +651,97 @@ document.addEventListener('DOMContentLoaded', async function () {
         switchAuthTab('login');
     }
 });
+
+// 9. Alarm Polling Logic
+class AlarmPoller {
+    constructor(checkUrl = '/api/alarms/check', intervalMs = 10000) {
+        this.checkUrl = checkUrl;
+        this.intervalMs = intervalMs; 
+        this.timer = null;
+        this.audio = new Audio('/static/audio/alarm-sound.mp3');
+        this.audio.loop = true; 
+        this.triggeredKeys = new Set(); 
+    }
+
+    // 启动轮询
+    start() {
+        this.checkAlarms();
+        this.timer = setInterval(() => this.checkAlarms(), this.intervalMs);
+        this.bindVisibilityChange();
+    }
+
+   
+    stop() {
+        if (this.timer) clearInterval(this.timer);
+    }
+
+    
+    async checkAlarms() {
+        try {
+            const response = await fetch(this.checkUrl);
+            if (!response.ok) return;
+
+            const data = await response.json();
+            if (data.triggered && data.alarms.length > 0) {
+                data.alarms.forEach(alarm => this.handleTrigger(alarm));
+            }
+        } catch (error) {
+            console.error('Polling check failed:', error);
+        }
+    }
+
+    
+    handleTrigger(alarm) {
+        
+        const now = new Date();
+        const minuteKey = `${alarm.id}-${now.getFullYear()}${now.getMonth()}${now.getDate()}${now.getHours()}${now.getMinutes()}`;
+
+        if (this.triggeredKeys.has(minuteKey)) return;
+        this.triggeredKeys.add(minuteKey);
+
+        
+        this.audio.play().catch(err => {
+            console.warn('Audio play blocked by browser autoplay policy:', err);
+        });
+
+       
+        if (window.Notification && Notification.permission === 'granted') {
+            new Notification(`⏰ 闹钟响了: ${alarm.title}`, {
+                body: `设定时间为 ${alarm.alarm_time}`,
+                requireInteraction: true
+            });
+        }
+
+        
+        if (confirm(`⏰ 闹钟: ${alarm.title}\n点击“确定”关闭响铃`)) {
+            this.audio.pause();
+            this.audio.currentTime = 0;
+        }
+    }
+
+   
+    bindVisibilityChange() {
+        document.addEventListener('visibilitychange', () => {
+            if (document.visibilityState === 'visible') {
+                this.checkAlarms(); // 页面切回前台时立即补查一次
+            }
+        });
+    }
+}
+
+
+
+const poller = new AlarmPoller('/api/alarms/check', 15000);
+
+
+if ('Notification' in window && Notification.permission === 'default') {
+    Notification.requestPermission();
+}
+
+
+document.addEventListener('click', () => {
+    poller.audio.load();
+}, { once: true });
+
+
+poller.start();
