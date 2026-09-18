@@ -255,12 +255,33 @@ def add_emotion_log():
         log_date = datetime.strptime(log_date_str, '%Y-%m-%d').date()
     except ValueError:
         return jsonify({'error': 'Invalid date format. Use YYYY-MM-DD'}), 400
+
+    # Maximum 5 emotion logs per user per day
+    today_log_count = EmotionLog.query.filter_by(
+        user_id=user.id,
+        log_date=log_date
+    ).count()
+
+    if today_log_count >= 5:
+        return jsonify({
+            'error': 'Daily emotion log limit reached. You can only record 5 emotions per day.'
+        }), 400
     
-    log = EmotionLog(user_id=user.id, emotion=emotion, note=note, log_date=log_date)
+    log = EmotionLog(
+        user_id=user.id,
+        emotion=emotion,
+        note=note,
+        log_date=log_date
+    )
+
     db.session.add(log)
     db.session.commit()
     
-    return jsonify({'success': True, 'message': 'Log added successfully', 'log_id': log.id}), 201
+    return jsonify({
+        'success': True,
+        'message': 'Log added successfully',
+        'log_id': log.id
+    }), 201
 
 @app.route('/api/logs', methods=['GET'])
 def get_emotion_logs():
