@@ -1,43 +1,75 @@
 // ReRay: Emotion Analysis & Smart Features
 // Existing dashboard functions + Advanced Analytics
+// Daily emotion limit: maximum 5 logs per day
 
+
+// ============================================================
 // FETCH USER DATA
+// ============================================================
 
 function fetchUserData() {
+
     fetch('/api/user')
+
         .then(res => {
+
             if (res.status === 401) {
                 window.location.href = '/index.html';
                 return;
             }
 
             return res.json();
+
         })
+
         .then(data => {
+
             if (data && data.username) {
-                document.getElementById('username-display').innerText =
-                    data.username;
+
+                const usernameElement =
+                    document.getElementById('username-display');
+
+                if (usernameElement) {
+
+                    usernameElement.innerText =
+                        data.username;
+                }
             }
+
         })
+
         .catch(() => {});
 }
 
+
+// ============================================================
 // FETCH BASIC STATS
+// ============================================================
 
 function fetchStats() {
+
     fetch('/api/stats?days=30')
+
         .then(res => res.json())
+
         .then(data => {
 
-            // Update total logs
-            document.getElementById('stat-total').innerText =
-                data.total || 0;
+            const totalElement =
+                document.getElementById('stat-total');
+
+            if (totalElement) {
+
+                totalElement.innerText =
+                    data.total || 0;
+            }
 
 
             // Existing emotion breakdown
+
             let anxious = 0;
             let happy = 0;
             let neutral = 0;
+
 
             (data.statistics || []).forEach(item => {
 
@@ -45,9 +77,12 @@ function fetchStats() {
                     item.emotion === 'Anxious' ||
                     item.emotion === 'Sad'
                 ) {
+
                     anxious += item.count;
 
-                } else if (item.emotion === 'Happy') {
+                } else if (
+                    item.emotion === 'Happy'
+                ) {
 
                     happy += item.count;
 
@@ -55,41 +90,68 @@ function fetchStats() {
 
                     neutral += item.count;
                 }
+
             });
 
 
-            document.getElementById('stat-anxious').innerText =
-                anxious;
+            const anxiousElement =
+                document.getElementById('stat-anxious');
 
-            document.getElementById('stat-happy').innerText =
-                happy;
+            const happyElement =
+                document.getElementById('stat-happy');
 
-            document.getElementById('stat-neutral').innerText =
-                neutral;
+            const neutralElement =
+                document.getElementById('stat-neutral');
 
 
-            // Existing insights
+            if (anxiousElement) {
+                anxiousElement.innerText = anxious;
+            }
+
+            if (happyElement) {
+                happyElement.innerText = happy;
+            }
+
+            if (neutralElement) {
+                neutralElement.innerText = neutral;
+            }
+
+
             updateInsights(data);
 
         })
+
         .catch(err => {
-            console.error('Stats error:', err);
+
+            console.error(
+                'Stats error:',
+                err
+            );
+
         });
 }
 
+
+// ============================================================
 // EXISTING INSIGHTS
+// ============================================================
 
 function updateInsights(data) {
 
-    const stats = data.statistics || [];
+    const stats =
+        data.statistics || [];
 
 
+    // --------------------------------------------------------
     // Most common emotion
+    // --------------------------------------------------------
+
     if (stats.length > 0) {
 
-        const top = stats.reduce((a, b) =>
-            a.count > b.count ? a : b
-        );
+        const top =
+            stats.reduce((a, b) =>
+                a.count > b.count ? a : b
+            );
 
 
         const emotionNames = {
@@ -99,6 +161,7 @@ function updateInsights(data) {
             'Anxious': '😰 Anxious',
             'Neutral': '😐 Neutral',
             'Calm': '😌 Calm'
+
         };
 
 
@@ -117,71 +180,361 @@ function updateInsights(data) {
     }
 
 
+    // --------------------------------------------------------
     // Existing trend analysis
+    // --------------------------------------------------------
+
     const trendElement =
         document.getElementById(
             'insight-trend'
         );
 
 
-    if (trendElement) {
-
-        const happy =
-            stats.find(s =>
-                s.emotion === 'Happy'
-            );
-
-        const sad =
-            stats.find(s =>
-                s.emotion === 'Sad'
-            );
-
-        const anxious =
-            stats.find(s =>
-                s.emotion === 'Anxious'
-            );
+    if (!trendElement) {
+        return;
+    }
 
 
-        if (
-            happy &&
-            happy.count > 5 &&
-            (!sad || sad.count < 3)
-        ) {
+    const happy =
+        stats.find(
+            s => s.emotion === 'Happy'
+        );
 
-            trendElement.innerText =
-                'Your mood appears to be improving! Keep it up!';
 
-            trendElement.style.color =
-                '#27ae60';
+    const sad =
+        stats.find(
+            s => s.emotion === 'Sad'
+        );
 
-        } else if (
-            sad &&
-            sad.count > 3
-        ) {
 
-            trendElement.innerText =
-                'You seem to be feeling down lately. Consider talking to someone.';
+    const anxious =
+        stats.find(
+            s => s.emotion === 'Anxious'
+        );
 
-            trendElement.style.color =
-                '#e74c3c';
 
-        } else {
+    if (
+        happy &&
+        happy.count > 5 &&
+        (!sad || sad.count < 3)
+    ) {
 
-            trendElement.innerText =
-                '➡ Your mood is relatively stable.';
+        trendElement.innerText =
+            'Your mood appears to be improving! Keep it up!';
 
-            trendElement.style.color =
-                '#555';
-        }
+        trendElement.style.color =
+            '#27ae60';
+
+    } else if (
+        sad &&
+        sad.count > 3
+    ) {
+
+        trendElement.innerText =
+            'You seem to be feeling down lately. Consider talking to someone.';
+
+        trendElement.style.color =
+            '#e74c3c';
+
+    } else {
+
+        trendElement.innerText =
+            '➡ Your mood is relatively stable.';
+
+        trendElement.style.color =
+            '#555';
     }
 }
 
-// FETCH RECENT LOGS
+
+// ============================================================
+// DAILY EMOTION LOG LIMIT
+// ============================================================
+//
+// Maximum: 5 emotion logs per calendar day.
+//
+// IMPORTANT:
+// - Logs are NOT deleted at midnight.
+// - Old logs remain in the database/history.
+// - The current log display only shows today's logs.
+// - The counter resets when the calendar date changes.
+// ============================================================
+
+const DAILY_EMOTION_LIMIT = 5;
+
+
+// ------------------------------------------------------------
+// GET TODAY'S DATE
+// ------------------------------------------------------------
+
+function getTodayDate() {
+
+    const today =
+        new Date();
+
+
+    const year =
+        today.getFullYear();
+
+
+    const month =
+        String(
+            today.getMonth() + 1
+        ).padStart(2, '0');
+
+
+    const day =
+        String(
+            today.getDate()
+        ).padStart(2, '0');
+
+
+    return `${year}-${month}-${day}`;
+}
+
+
+// ------------------------------------------------------------
+// GET TODAY'S EMOTION COUNT
+// ------------------------------------------------------------
+
+function getTodayEmotionCount() {
+
+    const today =
+        getTodayDate();
+
+
+    const storedDate =
+        localStorage.getItem(
+            'moodtracker_log_date'
+        );
+
+
+    const storedCount =
+        parseInt(
+            localStorage.getItem(
+                'moodtracker_daily_count'
+            ),
+            10
+        );
+
+
+    // New day = reset local counter
+
+    if (storedDate !== today) {
+
+        localStorage.setItem(
+            'moodtracker_log_date',
+            today
+        );
+
+
+        localStorage.setItem(
+            'moodtracker_daily_count',
+            '0'
+        );
+
+
+        return 0;
+    }
+
+
+    return isNaN(storedCount)
+        ? 0
+        : storedCount;
+}
+
+
+// ------------------------------------------------------------
+// CHECK WHETHER USER CAN LOG AN EMOTION
+// ------------------------------------------------------------
+
+function canLogEmotion() {
+
+    const count =
+        getTodayEmotionCount();
+
+
+    if (
+        count >= DAILY_EMOTION_LIMIT
+    ) {
+
+        alert(
+            'You have reached the daily limit of 5 emotion logs. Your limit will reset at midnight.'
+        );
+
+
+        return false;
+    }
+
+
+    return true;
+}
+
+
+// ------------------------------------------------------------
+// RECORD SUCCESSFUL EMOTION USE
+// ------------------------------------------------------------
+
+function recordEmotionUse() {
+
+    const today =
+        getTodayDate();
+
+
+    let count =
+        getTodayEmotionCount();
+
+
+    count++;
+
+
+    localStorage.setItem(
+        'moodtracker_log_date',
+        today
+    );
+
+
+    localStorage.setItem(
+        'moodtracker_daily_count',
+        count.toString()
+    );
+
+
+    updateDailyLimitDisplay();
+}
+
+
+// ------------------------------------------------------------
+// GET REMAINING USES
+// ------------------------------------------------------------
+
+function getRemainingEmotionUses() {
+
+    const count =
+        getTodayEmotionCount();
+
+
+    return Math.max(
+        0,
+        DAILY_EMOTION_LIMIT - count
+    );
+}
+
+
+// ------------------------------------------------------------
+// UPDATE DAILY LIMIT DISPLAY
+// ------------------------------------------------------------
+
+function updateDailyLimitDisplay() {
+
+    const element =
+        document.getElementById(
+            'emotion-limit'
+        );
+
+
+    if (!element) {
+        return;
+    }
+
+
+    const used =
+        getTodayEmotionCount();
+
+
+    const remaining =
+        getRemainingEmotionUses();
+
+
+    element.innerText =
+        `${used}/${DAILY_EMOTION_LIMIT} emotion logs used today (${remaining} remaining)`;
+}
+
+
+// ------------------------------------------------------------
+// AUTOMATIC MIDNIGHT CHECK
+// ------------------------------------------------------------
+
+function startDailyResetChecker() {
+
+    setInterval(() => {
+
+        const storedDate =
+            localStorage.getItem(
+                'moodtracker_log_date'
+            );
+
+
+        const today =
+            getTodayDate();
+
+
+        if (
+            storedDate !== today
+        ) {
+
+            // Reset counter
+
+            localStorage.setItem(
+                'moodtracker_log_date',
+                today
+            );
+
+
+            localStorage.setItem(
+                'moodtracker_daily_count',
+                '0'
+            );
+
+
+            // Update display
+
+            updateDailyLimitDisplay();
+
+
+            // Refresh today's visible logs
+
+            fetchLogs();
+
+
+            // Refresh analysis
+
+            generateAnalysis();
+        }
+
+
+    }, 30000);
+}
+
+
+// ------------------------------------------------------------
+// INITIALIZE DAILY LIMIT
+// ------------------------------------------------------------
+
+function initializeDailyLimit() {
+
+    getTodayEmotionCount();
+
+    updateDailyLimitDisplay();
+
+    startDailyResetChecker();
+}
+
+
+// ============================================================
+// FETCH LOGS
+// ============================================================
+//
+// Only today's logs are displayed in the current log table.
+// Previous logs remain in the database for history.
+// ============================================================
 
 function fetchLogs() {
 
     fetch('/api/logs')
+
         .then(res => res.json())
+
         .then(data => {
 
             const tbody =
@@ -190,9 +543,35 @@ function fetchLogs() {
                 );
 
 
+            if (!tbody) {
+                return;
+            }
+
+
+            const today =
+                getTodayDate();
+
+
+            // Only show today's logs
+
+            const todayLogs =
+                (data.logs || []).filter(
+                    log => {
+
+                        // Handles YYYY-MM-DD values
+
+                        return (
+                            log.log_date &&
+                            String(log.log_date)
+                                .substring(0, 10) === today
+                        );
+
+                    }
+                );
+
+
             if (
-                !data.logs ||
-                data.logs.length === 0
+                todayLogs.length === 0
             ) {
 
                 tbody.innerHTML = `
@@ -200,18 +579,20 @@ function fetchLogs() {
                         <td colspan="4"
                             class="text-center text-muted">
 
-                            No entries logged yet.
-                            Write your first reflection above!
+                            No entries logged today.
+                            Write your first reflection!
 
                         </td>
-                    </tr>`;
+                    </tr>
+                `;
+
 
                 return;
             }
 
 
             tbody.innerHTML =
-                data.logs
+                todayLogs
                     .slice(0, 10)
                     .map(log => `
 
@@ -222,13 +603,19 @@ function fetchLogs() {
                     </td>
 
                     <td>
+
                         <span class="badge ${getEmotionBadge(log.emotion)}">
+
                             ${log.emotion}
+
                         </span>
+
                     </td>
 
                     <td class="text-muted">
+
                         ${log.note || '-'}
+
                     </td>
 
                     <td>
@@ -247,32 +634,161 @@ function fetchLogs() {
 
             `)
                     .join('');
+
         })
+
         .catch(err => {
+
             console.error(
                 'Logs error:',
                 err
             );
+
         });
 }
 
+
+// ============================================================
+// SUBMIT EMOTION LOG
+// ============================================================
+
+function submitEmotionLog(
+    emotion,
+    note
+) {
+
+    // Check daily limit first
+
+    if (!canLogEmotion()) {
+        return;
+    }
+
+
+    fetch('/api/logs', {
+
+        method: 'POST',
+
+        headers: {
+
+            'Content-Type':
+                'application/json'
+
+        },
+
+        body: JSON.stringify({
+
+            emotion: emotion,
+
+            note: note
+
+        })
+
+    })
+
+        .then(res => {
+
+            if (!res.ok) {
+
+                return res.json()
+
+                    .then(data => {
+
+                        throw new Error(
+                            data.error ||
+                            'Unable to create emotion log.'
+                        );
+
+                    });
+
+            }
+
+
+            return res.json();
+
+        })
+
+        .then(data => {
+
+            // Only increase counter after
+            // successful database insertion.
+
+            recordEmotionUse();
+
+
+            // Refresh dashboard
+
+            fetchStats();
+
+            fetchLogs();
+
+            generateAnalysis();
+
+
+            // fetchCalendar may not exist
+            // on every page.
+
+            if (
+                typeof fetchCalendar ===
+                'function'
+            ) {
+
+                fetchCalendar();
+            }
+
+
+            alert(
+                'Emotion logged successfully!'
+            );
+
+        })
+
+        .catch(err => {
+
+            console.error(
+                'Emotion logging error:',
+                err
+            );
+
+
+            alert(
+                'Error logging emotion: ' +
+                err.message
+            );
+
+        });
+}
+
+
+// ============================================================
 // EMOTION BADGE
+// ============================================================
 
 function getEmotionBadge(emotion) {
 
-    if (emotion === 'Happy')
+    if (
+        emotion === 'Happy'
+    ) {
+
         return 'bg-success';
+    }
+
 
     if (
         emotion === 'Anxious' ||
         emotion === 'Sad'
-    )
+    ) {
+
         return 'bg-warning text-dark';
+    }
+
 
     return 'bg-secondary';
 }
 
+
+// ============================================================
 // DELETE LOG
+// ============================================================
 
 function deleteLog(id) {
 
@@ -281,12 +797,15 @@ function deleteLog(id) {
             'Delete this log?'
         )
     ) {
+
         return;
     }
 
 
     fetch(`/api/logs/${id}`, {
+
         method: 'DELETE'
+
     })
 
         .then(res => res.json())
@@ -297,10 +816,16 @@ function deleteLog(id) {
 
             fetchLogs();
 
-            fetchCalendar();
-
-            // Refresh advanced analysis
             generateAnalysis();
+
+
+            if (
+                typeof fetchCalendar ===
+                'function'
+            ) {
+
+                fetchCalendar();
+            }
 
         })
 
@@ -314,16 +839,18 @@ function deleteLog(id) {
         });
 }
 
+
+// ============================================================
 // ADVANCED ANALYTICS MODULE
-// Rule-based emotion analysis
+// ============================================================
 //
 // Features:
 // 1. Emotion frequency
 // 2. Weekly trends
-// 3. Repeated negative emotions
+// 3. Unique emotion days
 // 4. Rule-based feedback
-// 5. Analysis report for frontend
-
+// 5. Analysis report
+// ============================================================
 
 function generateAnalysis() {
 
@@ -333,20 +860,29 @@ function generateAnalysis() {
 
         .then(data => {
 
-            const logs = data.logs || [];
+            const logs =
+                data.logs || [];
 
 
-            if (logs.length === 0) {
+            if (
+                logs.length === 0
+            ) {
 
                 displayAnalysis({
+
                     message:
                         'Not enough data yet. Keep logging your emotions to receive personalized analysis.'
+
                 });
+
 
                 return;
             }
 
-            // Count emotion frequencies
+
+            // ------------------------------------------------
+            // Count overall emotion frequencies
+            // ------------------------------------------------
 
             const emotionCounts = {
 
@@ -355,6 +891,7 @@ function generateAnalysis() {
                 Anxious: 0,
                 Neutral: 0,
                 Calm: 0
+
             };
 
 
@@ -367,45 +904,95 @@ function generateAnalysis() {
                     )
                 ) {
 
-                    emotionCounts[log.emotion]++;
+                    emotionCounts[
+                        log.emotion
+                    ]++;
+
                 }
 
             });
 
-            // Calculate this week's logs
 
-            const today = new Date();
+            // ------------------------------------------------
+            // Calculate current 7 calendar days
+            // ------------------------------------------------
+
+            const today =
+                new Date();
+
+
+            const todayString =
+                getTodayDate();
+
 
             const sevenDaysAgo =
                 new Date(today);
+
+
+            sevenDaysAgo.setHours(
+                0,
+                0,
+                0,
+                0
+            );
+
 
             sevenDaysAgo.setDate(
                 today.getDate() - 6
             );
 
 
+            // ------------------------------------------------
+            // Filter weekly logs
+            // ------------------------------------------------
+
             const weeklyLogs =
                 logs.filter(log => {
 
+                    if (!log.log_date) {
+                        return false;
+                    }
+
+
+                    const dateString =
+                        String(log.log_date)
+                            .substring(0, 10);
+
+
                     const logDate =
-                        new Date(log.log_date);
+                        new Date(
+                            dateString + 'T00:00:00'
+                        );
+
 
                     return (
                         logDate >= sevenDaysAgo &&
-                        logDate <= today
+                        dateString <= todayString
                     );
 
                 });
 
-            // Weekly emotion counts
 
-            const weeklyCounts = {
+            // ------------------------------------------------
+            // Count UNIQUE DAYS for each emotion
+            //
+            // Example:
+            //
+            // Monday: Anxious
+            // Monday: Anxious
+            // Monday: Anxious
+            //
+            // = 1 anxious day, NOT 3.
+            // ------------------------------------------------
 
-                Happy: 0,
-                Sad: 0,
-                Anxious: 0,
-                Neutral: 0,
-                Calm: 0
+            const emotionDates = {
+
+                Happy: new Set(),
+                Sad: new Set(),
+                Anxious: new Set(),
+                Neutral: new Set(),
+                Calm: new Set()
+
             };
 
 
@@ -413,48 +1000,89 @@ function generateAnalysis() {
 
                 if (
                     Object.prototype.hasOwnProperty.call(
-                        weeklyCounts,
+                        emotionDates,
                         log.emotion
                     )
                 ) {
 
-                    weeklyCounts[log.emotion]++;
+                    const dateString =
+                        String(log.log_date)
+                            .substring(0, 10);
+
+
+                    emotionDates[
+                        log.emotion
+                    ].add(dateString);
+
                 }
 
             });
 
+
+            const weeklyCounts = {
+
+                Happy:
+                    emotionDates.Happy.size,
+
+                Sad:
+                    emotionDates.Sad.size,
+
+                Anxious:
+                    emotionDates.Anxious.size,
+
+                Neutral:
+                    emotionDates.Neutral.size,
+
+                Calm:
+                    emotionDates.Calm.size
+
+            };
+
+
+            // ------------------------------------------------
             // Find most common emotion
+            // ------------------------------------------------
 
             let mostCommonEmotion =
                 'No data';
 
-            let highestCount = 0;
+
+            let highestCount =
+                0;
 
 
-            Object.keys(emotionCounts)
-                .forEach(emotion => {
+            Object.keys(
+                emotionCounts
+            ).forEach(emotion => {
 
-                    if (
-                        emotionCounts[emotion] >
-                        highestCount
-                    ) {
+                if (
+                    emotionCounts[emotion] >
+                    highestCount
+                ) {
 
-                        highestCount =
-                            emotionCounts[emotion];
+                    highestCount =
+                        emotionCounts[emotion];
 
-                        mostCommonEmotion =
-                            emotion;
-                    }
 
-                });
+                    mostCommonEmotion =
+                        emotion;
+                }
 
+            });
+
+
+            // ------------------------------------------------
             // Negative emotion count
+            // ------------------------------------------------
 
             const negativeCount =
                 emotionCounts.Sad +
                 emotionCounts.Anxious;
 
-            // Generate rule-based feedback
+
+            // ------------------------------------------------
+            // Rule-based feedback
+            // ------------------------------------------------
 
             const feedback =
                 generateRuleBasedFeedback(
@@ -464,17 +1092,23 @@ function generateAnalysis() {
                 );
 
 
+            // ------------------------------------------------
             // Create analysis report
+            // ------------------------------------------------
 
             const analysisReport = {
 
-                totalLogs: logs.length,
+                totalLogs:
+                    logs.length,
+
 
                 emotionFrequencies:
                     emotionCounts,
 
+
                 mostCommonEmotion:
                     mostCommonEmotion,
+
 
                 weeklyTrends: {
 
@@ -492,23 +1126,29 @@ function generateAnalysis() {
 
                     calmDays:
                         weeklyCounts.Calm
+
                 },
+
 
                 negativeEmotionCount:
                     negativeCount,
 
+
                 feedback:
                     feedback
+
             };
 
 
             // Display analysis
+
             displayAnalysis(
                 analysisReport
             );
 
 
-            // Store report for other frontend functions
+            // Store report
+
             window.moodAnalysis =
                 analysisReport;
 
@@ -530,7 +1170,10 @@ function generateAnalysis() {
         });
 }
 
+
+// ============================================================
 // RULE-BASED FEEDBACK ENGINE
+// ============================================================
 
 function generateRuleBasedFeedback(
     emotionCounts,
@@ -540,6 +1183,7 @@ function generateRuleBasedFeedback(
 
     const feedback = [];
 
+
     // Rule 1: Frequent anxiety
 
     if (
@@ -547,11 +1191,15 @@ function generateRuleBasedFeedback(
     ) {
 
         feedback.push(
-            '😰 You have experienced anxiety on ' +
+
+            '😰 You have recorded feeling anxious on ' +
             weeklyCounts.Anxious +
             ' days this week. Try relaxation exercises, deep breathing, or taking a short break.'
+
         );
+
     }
+
 
     // Rule 2: Repeated sadness
 
@@ -560,11 +1208,15 @@ function generateRuleBasedFeedback(
     ) {
 
         feedback.push(
-            '😢 You have recorded feeling sad for ' +
+
+            '😢 You have recorded feeling sad on ' +
             weeklyCounts.Sad +
             ' days this week. Consider doing an enjoyable activity or talking to someone you trust.'
+
         );
+
     }
+
 
     // Rule 3: Positive mood
 
@@ -573,9 +1225,13 @@ function generateRuleBasedFeedback(
     ) {
 
         feedback.push(
+
             '😊 You have recorded several happy days this week. Keep doing activities that contribute to your positive mood.'
+
         );
+
     }
+
 
     // Rule 4: Calm emotions
 
@@ -584,9 +1240,13 @@ function generateRuleBasedFeedback(
     ) {
 
         feedback.push(
+
             '😌 You have experienced several calm days. Continue making time for activities that help you relax.'
+
         );
+
     }
+
 
     // Rule 5: Negative emotions dominate
 
@@ -606,9 +1266,13 @@ function generateRuleBasedFeedback(
     ) {
 
         feedback.push(
+
             'Negative emotions have been more frequent than positive emotions this week. Consider giving yourself some rest and support.'
+
         );
+
     }
+
 
     // Rule 6: Very little data
 
@@ -617,9 +1281,13 @@ function generateRuleBasedFeedback(
     ) {
 
         feedback.push(
+
             'Keep logging your emotions regularly so MoodTracker can identify meaningful patterns.'
+
         );
+
     }
+
 
     // Rule 7: No feedback triggered
 
@@ -628,15 +1296,21 @@ function generateRuleBasedFeedback(
     ) {
 
         feedback.push(
+
             'Your mood pattern appears relatively stable. Continue tracking your emotions to discover longer-term trends.'
+
         );
+
     }
 
 
     return feedback;
 }
 
+
+// ============================================================
 // DISPLAY ANALYSIS REPORT
+// ============================================================
 
 function displayAnalysis(report) {
 
@@ -646,21 +1320,25 @@ function displayAnalysis(report) {
         );
 
 
-    // If the analysis section does not exist,
-    // do not cause errors on the dashboard.
-
     if (!container) {
         return;
     }
 
 
-    if (report.message) {
+    // No data yet
+
+    if (
+        report.message
+    ) {
 
         container.innerHTML = `
+
             <p class="text-muted">
                 ${report.message}
             </p>
+
         `;
+
 
         return;
     }
@@ -673,7 +1351,9 @@ function displayAnalysis(report) {
     const feedbackHTML =
         report.feedback
             .map(item =>
+
                 `<p class="mb-2">${item}</p>`
+
             )
             .join('');
 
@@ -687,44 +1367,63 @@ function displayAnalysis(report) {
             </h5>
 
             <p>
-                <strong>Most common emotion:</strong>
+                <strong>
+                    Most common emotion:
+                </strong>
+
                 ${report.mostCommonEmotion}
+
             </p>
 
+
             <p>
-                <strong>Anxious days this week:</strong>
+                <strong>
+                    Anxious days this week:
+                </strong>
+
                 ${weekly.anxiousDays}
+
             </p>
 
+
             <p>
-                <strong>Sad days this week:</strong>
+                <strong>
+                    Sad days this week:
+                </strong>
+
                 ${weekly.sadDays}
+
             </p>
 
+
             <p>
-                <strong>Happy days this week:</strong>
+                <strong>
+                    Happy days this week:
+                </strong>
+
                 ${weekly.happyDays}
+
             </p>
+
 
             <hr>
+
 
             <h6>
                 Personalized Feedback
             </h6>
 
+
             ${feedbackHTML}
 
         </div>
+
     `;
 }
 
 // SMART CHAT MODULE
-// Simple keyword-based chatbot.
-//
-// This can be connected to a chat UI later.
-// The website does NOT need to display a chat window
-// if the team decides not to use one.
-
+// The website does not need to display a chat window.
+// These functions can remain available for future use.
 
 function getChatResponse(message) {
 
@@ -742,6 +1441,7 @@ function getChatResponse(message) {
             .toLowerCase()
             .trim();
 
+
     // Anxiety
 
     if (
@@ -756,6 +1456,7 @@ function getChatResponse(message) {
             'Try taking a few slow, deep breaths and give yourself a short break.'
         );
     }
+
 
     // Sadness
 
@@ -772,6 +1473,7 @@ function getChatResponse(message) {
         );
     }
 
+
     // Stress
 
     if (
@@ -785,6 +1487,7 @@ function getChatResponse(message) {
             'doing some slow breathing, and focusing on one task at a time.'
         );
     }
+
 
     // Happiness
 
@@ -800,6 +1503,7 @@ function getChatResponse(message) {
         );
     }
 
+
     // Tiredness
 
     if (
@@ -814,6 +1518,7 @@ function getChatResponse(message) {
         );
     }
 
+
     // Greeting
 
     if (
@@ -827,6 +1532,7 @@ function getChatResponse(message) {
         );
     }
 
+
     // Thanks
 
     if (
@@ -839,7 +1545,8 @@ function getChatResponse(message) {
         );
     }
 
-    // Default response
+
+    // Default
 
     return (
         'I am here to listen. You can tell me how you are feeling, ' +
@@ -847,10 +1554,10 @@ function getChatResponse(message) {
     );
 }
 
+
+// ============================================================
 // CHAT API FUNCTION
-// If the team creates /api/chat in the backend,
-// this function can be used by the frontend chat UI.
-// The chatbot logic above can also work independently.
+// ============================================================
 
 function sendChatMessage(message) {
 
@@ -859,12 +1566,17 @@ function sendChatMessage(message) {
         method: 'POST',
 
         headers: {
+
             'Content-Type':
                 'application/json'
+
         },
 
         body: JSON.stringify({
-            message: message
+
+            message:
+                message
+
         })
 
     })
@@ -872,10 +1584,12 @@ function sendChatMessage(message) {
         .then(res => {
 
             if (!res.ok) {
+
                 throw new Error(
                     'Chat API error'
                 );
             }
+
 
             return res.json();
 
@@ -895,21 +1609,26 @@ function sendChatMessage(message) {
             );
 
 
-            // Fallback to local
-            // keyword-based chatbot
+            // Local keyword fallback
 
             return getChatResponse(
                 message
             );
+
         });
 }
 
+
+// ============================================================
 // LOGOUT
+// ============================================================
 
 function logout() {
 
     fetch('/api/logout', {
+
         method: 'POST'
+
     })
 
         .then(() =>
@@ -923,7 +1642,10 @@ function logout() {
         );
 }
 
+
+// ============================================================
 // INITIALIZE
+// ============================================================
 
 document.addEventListener(
     'DOMContentLoaded',
@@ -935,8 +1657,9 @@ document.addEventListener(
 
         fetchLogs();
 
-        // Advanced analytics
         generateAnalysis();
+
+        initializeDailyLimit();
 
     }
 );
