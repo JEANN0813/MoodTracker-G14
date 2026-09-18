@@ -26,9 +26,7 @@
     <div class="auth-container" id="authScreen">
         <div class="auth-card">
             
-            <div class="auth-tag">
-                <i data-lucide="shield-check" style="width: 14px;"></i> Secure App Portal
-            </div>
+           
 
             <!-- TAB HEADER -->
             <div class="auth-tabs" id="authTabsHeader">
@@ -39,8 +37,8 @@
 
             <!-- OPTION 1: LOG IN -->
             <div id="authViewLogin">
-                <h1 class="auth-title">Log In.</h1>
-                <p class="auth-subtitle">Enter your email address and password to access your account.</p>
+                <h1 class="auth-title">Log In</h1>
+                <p class="auth-subtitle">Enter your email address and password to access your account</p>
 
                 <form onsubmit="handleAuthSubmit(event)">
                     <div class="form-group">
@@ -60,8 +58,8 @@
 
             <!-- OPTION 2: REGISTER -->
             <div id="authViewRegister" class="hidden">
-                <h1 class="auth-title">Register Account.</h1>
-                <p class="auth-subtitle">Provide your credentials below to register a new user profile.</p>
+                <h1 class="auth-title">Register Account</h1>
+                <p class="auth-subtitle">Provide your credentials below to register a new user profile</p>
 
                 <form onsubmit="handleRegisterSubmit(event)">
                     <div class="form-group">
@@ -85,8 +83,8 @@
 
             <!-- OPTION 3: RESET PASSWORD -->
             <div id="authViewReset" class="hidden">
-    <h1 class="auth-title">Reset Password.</h1>
-    <p class="auth-subtitle">Follow the steps below to reset your account password.</p>
+    <h1 class="auth-title">Reset Password</h1>
+    <p class="auth-subtitle">Follow the steps below to reset your account password</p>
 
     <div id="resetStep1">
         <form onsubmit="handleResetSubmit(event)">
@@ -314,21 +312,111 @@
                 </div>
             </div>
 
-            <!-- STANDALONE PROFILE VIEW -->
-            <div id="profileView" class="hidden">
-                <h1 class="main-heading">User Profile</h1>
-                <p class="sub-heading">Settings and preferences.</p>
-                <div class="content-card" style="max-width: 500px;">
-                    <p style="font-weight: 700; margin-bottom: 1rem;" id="profileUserText">Active User: User</p>
-                    <p style="font-size: 0.85rem; color: var(--text-muted); font-weight: 600; margin-bottom: 1.5rem;">
-                        Logged entries are saved across your sessions.
-                    </p>
-                    <button class="btn-primary" style="background: #f88a8a;" onclick="logout()">Log Out</button>
-                </div>
-            </div>
-
-        </main>
+<!-- PROFILE SECTION -->
+<section id="profileView" class="view-section">
+  
+  <!-- HEADER ROW -->
+  <div class="profile-header">
+    <div class="profile-title-group">
+      <h2 class="section-title">User Profile</h2>
+      <p class="section-subtitle">Manage your account, customize your sanctuary, and track your logging journey.</p>
     </div>
+    <button type="button" class="logout-btn" id="profileLogoutBtn" onclick="handleLogout()">Log Out</button>
+  </div>
+
+  <!-- MAIN STACK -->
+  <div class="profile-grid">
+    
+    <!-- CARD 1: USER INFO & AVATAR PICKER -->
+    <div class="profile-card user-info-card">
+      <div class="user-main-details">
+        <div class="avatar-wrapper">
+          <div class="current-avatar" id="currentAvatarDisplay">
+            <img id="currentAvatarImg" src="https://api.iconify.design/fluent-emoji:fox.svg" alt="Fox Avatar" />
+          </div>
+          <div class="avatar-badge">Active</div>
+        </div>
+
+<div class="user-info-list">
+  <div class="info-row">
+    <span class="info-label">Name</span>
+    <span class="info-value" id="profileUserName">--</span>
+  </div>
+  <div class="info-row">
+    <span class="info-label">Email</span>
+    <span class="info-value" id="profileUserEmail">--</span>
+  </div>
+</div>
+      <div class="avatar-picker-section">
+        <label class="picker-label">CHOOSE AVATAR</label>
+        <div class="avatar-options">
+          <button type="button" class="avatar-opt active" data-avatar="fox" onclick="selectAvatar('fox', 'https://api.iconify.design/fluent-emoji:fox.svg')">
+            <img src="https://api.iconify.design/fluent-emoji:fox.svg" alt="Fox" />
+          </button>
+          <button type="button" class="avatar-opt" data-avatar="panda" onclick="selectAvatar('panda', 'https://api.iconify.design/fluent-emoji:panda.svg')">
+            <img src="https://api.iconify.design/fluent-emoji:panda.svg" alt="Panda" />
+          </button>
+          <button type="button" class="avatar-opt" data-avatar="rabbit" onclick="selectAvatar('rabbit', 'https://api.iconify.design/fluent-emoji:rabbit-face.svg')">
+            <img src="https://api.iconify.design/fluent-emoji:rabbit-face.svg" alt="Rabbit" />
+          </button>
+          <button type="button" class="avatar-opt" data-avatar="cat" onclick="selectAvatar('cat', 'https://api.iconify.design/fluent-emoji:cat-face.svg')">
+            <img src="https://api.iconify.design/fluent-emoji:cat-face.svg" alt="Cat" />
+          </button>
+          <button type="button" class="avatar-opt" data-avatar="koala" onclick="selectAvatar('koala', 'https://api.iconify.design/fluent-emoji:koala.svg')">
+            <img src="https://api.iconify.design/fluent-emoji:koala.svg" alt="Koala" />
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- CARD 2: THREE STATS IN A ROW -->
+    <div class="profile-stats-container">
+      <div class="stat-card">
+        <div class="stat-icon">📝</div>
+        <div class="stat-content">
+          <span class="stat-value" id="profileTotalLogs">0</span>
+          <span class="stat-label">TOTAL ENTRIES</span>
+        </div>
+      </div>
+
+      <div class="stat-card">
+        <div class="stat-icon">🔥</div>
+        <div class="stat-content">
+          <span class="stat-value" id="profileStreak">0 Days</span>
+          <span class="stat-label">LOGGING STREAK</span>
+        </div>
+      </div>
+
+      <div class="stat-card">
+        <div class="stat-icon">🌟</div>
+        <div class="stat-content">
+          <span class="stat-value" id="profileTopMood">None</span>
+          <span class="stat-label">DOMINANT MOOD</span>
+        </div>
+      </div>
+    </div>
+
+
+
+    <!-- CARD 3: HABIT PROGRESS -->
+    <div class="profile-card progress-card">
+      <h4 class="card-subtitle">Monthly Habit Progress</h4>
+      <p class="progress-desc">Consistently logging helps identify emotional patterns.</p>
+      
+      <div class="progress-bar-container">
+        <div class="progress-bar-fill" id="profileProgressBar" style="width: 0%;"></div>
+      </div>
+      
+      <div class="progress-labels">
+        <span id="progressPercentText">0% Complete</span>
+        <span>Goal: 30 Days</span>
+      </div>
+    </div>
+
+  </div>
+</section>
+<div class="user-info-list">
+
 
     <!-- 3. ASSISTANT POPUP MODAL CARD -->
     <div class="modal-overlay hidden" id="assistantModal">
