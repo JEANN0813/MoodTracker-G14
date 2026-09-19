@@ -1043,128 +1043,6 @@ function displayAnalysis(report) {
 // The website does NOT need to display a chat window
 // if the team decides not to use one.
 
-
-function getChatResponse(message) {
-
-    if (
-        !message ||
-        message.trim() === ''
-    ) {
-
-        return 'Please tell me how you are feeling.';
-    }
-
-
-    const text =
-        message
-            .toLowerCase()
-            .trim();
-
-    // Anxiety
-
-    if (
-        text.includes('anxious') ||
-        text.includes('anxiety') ||
-        text.includes('worried') ||
-        text.includes('worry')
-    ) {
-
-        return (
-            'It sounds like you may be feeling anxious. ' +
-            'Try taking a few slow, deep breaths and give yourself a short break.'
-        );
-    }
-
-    // Sadness
-
-    if (
-        text.includes('sad') ||
-        text.includes('depressed') ||
-        text.includes('unhappy') ||
-        text.includes('down')
-    ) {
-
-        return (
-            'I am sorry that you are feeling down. ' +
-            'Consider doing something you enjoy or talking to someone you trust.'
-        );
-    }
-
-    // Stress
-
-    if (
-        text.includes('stress') ||
-        text.includes('stressed') ||
-        text.includes('pressure')
-    ) {
-
-        return (
-            'When you feel stressed, try taking a short break, ' +
-            'doing some slow breathing, and focusing on one task at a time.'
-        );
-    }
-
-    // Happiness
-
-    if (
-        text.includes('happy') ||
-        text.includes('great') ||
-        text.includes('good') ||
-        text.includes('excited')
-    ) {
-
-        return (
-            '😊 That is great to hear! Keep doing the things that make you feel positive.'
-        );
-    }
-
-    // Tiredness
-
-    if (
-        text.includes('tired') ||
-        text.includes('exhausted') ||
-        text.includes('sleep')
-    ) {
-
-        return (
-            'You may need some time to rest. ' +
-            'Try taking a break and getting enough sleep if possible.'
-        );
-    }
-
-    // Greeting
-
-    if (
-        text.includes('hello') ||
-        text.includes('hi') ||
-        text.includes('hey')
-    ) {
-
-        return (
-            'Hello! How are you feeling today?'
-        );
-    }
-
-    // Thanks
-
-    if (
-        text.includes('thank') ||
-        text.includes('thanks')
-    ) {
-
-        return (
-            'You are welcome! Remember to take care of yourself.'
-        );
-    }
-
-    // Default response
-
-    return (
-        'I am here to listen. You can tell me how you are feeling, ' +
-        'for example, anxious, sad, stressed, happy, or tired.'
-    );
-}
-
 // CHAT API FUNCTION
 // If the team creates /api/chat in the backend,
 // this function can be used by the frontend chat UI.
@@ -1172,13 +1050,18 @@ function getChatResponse(message) {
 
 function sendChatMessage(message) {
 
+    if (!message || message.trim() === '') {
+        return Promise.resolve(
+            'Please tell me how you are feeling.'
+        );
+    }
+
     return fetch('/api/chat', {
 
         method: 'POST',
 
         headers: {
-            'Content-Type':
-                'application/json'
+            'Content-Type': 'application/json'
         },
 
         body: JSON.stringify({
@@ -1190,9 +1073,13 @@ function sendChatMessage(message) {
         .then(res => {
 
             if (!res.ok) {
-                throw new Error(
-                    'Chat API error'
-                );
+                return res.json()
+                    .then(data => {
+                        throw new Error(
+                            data.error ||
+                            'Chat API error'
+                        );
+                    });
             }
 
             return res.json();
@@ -1212,15 +1099,11 @@ function sendChatMessage(message) {
                 err
             );
 
-
-            // Fallback to local
-            // keyword-based chatbot
-
-            return getChatResponse(
-                message
-            );
+            return 'Sorry, I could not process your message right now.';
         });
 }
+```
+
 
 // LOGOUT
 

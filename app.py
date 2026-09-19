@@ -5,11 +5,15 @@ from datetime import timedelta, datetime
 from werkzeug.security import generate_password_hash, check_password_hash
 from flask_mail import Mail, Message
 from sqlalchemy import func
+from openai import OpenAI
 import secrets
 import os
 import random
 import string
 
+client = OpenAI(
+    api_key=os.environ.get("OPENAI_API_KEY")
+)
 
 app = Flask(__name__, static_folder='static', static_url_path='')
 
@@ -313,6 +317,46 @@ def delete_emotion_log(log_id):
     db.session.delete(log)
     db.session.commit()
     return jsonify({'message': 'Log deleted successfully'}), 200
+
+@app.route('/api/chat', methods=['POST'])
+def chat():
+
+    data = request.get_json()
+
+    if not data or not data.get('message'):
+        return jsonify({
+            'error': 'Message is required.'
+        }), 400
+
+    message = data['message'].strip()
+
+    try:
+
+        response = client.responses.create(
+            model="gpt-5.6-luna",
+
+            instructions=(
+                "You are the MoodTracker assistant. "
+                "You help users reflect on their emotions "
+                "in a friendly and supportive way. "
+                "Keep responses short and simple. "
+                "Do not diagnose mental health conditions."
+            ),
+
+            input=message
+        )
+
+        return jsonify({
+            'reply': response.output_text
+        })
+
+    except Exception as e:
+
+        print("Chat API error:", e)
+
+        return jsonify({
+            'error': 'Unable to generate a response.'
+        }), 500
 
 @app.route('/api/calendar/<int:year>/<int:month>', methods=['GET'])
 def get_calendar(year, month):
