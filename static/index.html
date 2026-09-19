@@ -330,32 +330,76 @@
         </main>
     </div>
 
-    <!-- 3. ASSISTANT POPUP MODAL CARD -->
-    <div class="modal-overlay hidden" id="assistantModal">
-        <div class="modal-card">
-            <button class="modal-close-btn" onclick="toggleAssistantModal(false)">
-                <i data-lucide="x" style="width: 18px;"></i>
-            </button>
-            <div class="auth-tag" style="background: var(--card-mint);">
-                <i data-lucide="bot" style="width: 14px;"></i> Active Companion
-            </div>
-            <h2 class="card-title" style="font-size: 1.6rem; margin-top: 0.2rem;">Mood Assistant</h2>
-            <p style="font-size: 0.85rem; color: var(--text-muted); font-weight: 600;">Share how you are feeling or ask for a grounding technique.</p>
+    <!-- <!-- 3. ASSISTANT POPUP MODAL CARD -->
+<div class="modal-overlay hidden" id="assistantModal">
+    <div class="modal-card">
 
-            <div class="chat-history" id="chatHistory">
-                <div class="chat-bubble assistant">
-                    Hi there! I'm your sanctuary assistant. How are you feeling right now?
-                </div>
-            </div>
+        <button
+            class="modal-close-btn"
+            onclick="toggleAssistantModal(false)"
+        >
+            <i data-lucide="x" style="width: 18px;"></i>
+        </button>
 
-            <div style="display: flex; gap: 8px;">
-                <input type="text" class="input-box" id="chatInput" placeholder="Type your message..." onkeypress="handleChatKey(event)">
-                <button class="btn-primary" style="padding: 0.8rem 1.2rem;" onclick="sendChatMessage()">
-                    <i data-lucide="send" style="width: 16px;"></i>
-                </button>
+        <div class="auth-tag" style="background: var(--card-mint);">
+            <i data-lucide="bot" style="width: 14px;"></i>
+            Active Companion
+        </div>
+
+        <h2
+            class="card-title"
+            style="font-size: 1.6rem; margin-top: 0.2rem;"
+        >
+            Mood Assistant
+        </h2>
+
+        <p
+            style="
+                font-size: 0.85rem;
+                color: var(--text-muted);
+                font-weight: 600;
+            "
+        >
+            Share how you are feeling or ask for a grounding technique.
+        </p>
+
+        <!-- CHAT HISTORY -->
+        <div
+            class="chat-history"
+            id="chatHistory"
+        >
+            <div class="chat-bubble assistant">
+                Hi there! I'm your MoodTracker assistant.
+                How are you feeling right now?
             </div>
         </div>
+
+        <!-- CHAT INPUT -->
+        <div style="display: flex; gap: 8px;">
+
+            <input
+                type="text"
+                class="input-box"
+                id="chatInput"
+                placeholder="Type your message..."
+                autocomplete="off"
+                onkeypress="handleChatKey(event)"
+            >
+
+            <button
+                type="button"
+                class="btn-primary"
+                id="chatSendButton"
+                style="padding: 0.8rem 1.2rem;"
+                onclick="handleChatSend()"
+            >
+                <i data-lucide="send" style="width: 16px;"></i>
+            </button>
+
+        </div>
+
     </div>
+</div>
 
     <!-- 4. CALENDAR ENTRY POPUP MODAL -->
     <div class="modal-overlay hidden" id="dayDetailModal">

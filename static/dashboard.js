@@ -504,8 +504,9 @@ function calculateStats() {
 }
 
 // ==========================================
-// 7. MODALS & UTILITIES
+// 7. MODALS, AI CHATBOT & UTILITIES
 // ==========================================
+
 function openDayDetailModal(dateStr, loggedEntry) {
     const dateTitle = document.getElementById('dayModalDateTitle');
     if (dateTitle) dateTitle.innerText = dateStr;
@@ -518,15 +519,20 @@ function openDayDetailModal(dateStr, loggedEntry) {
             contentDiv.innerHTML = `
                 <div style="background: var(--sidebar-bg); border: 2px solid var(--border-dark); border-radius: 16px; padding: 1rem;">
                     <div style="display: flex; align-items: center; gap: 8px; font-weight: 800; font-size: 1.1rem; margin-bottom: 0.4rem;">
-                        <i data-lucide="${loggedEntry.iconName || 'smile'}" style="width: 20px;"></i> ${loggedEntry.emotion}
+                        <i data-lucide="${loggedEntry.iconName || 'smile'}" style="width: 20px;"></i>
+                        ${loggedEntry.emotion}
                     </div>
-                    <p style="font-size: 0.85rem; font-weight: 600; color: var(--text-dark);">"${loggedEntry.note}"</p>
+
+                    <p style="font-size: 0.85rem; font-weight: 600; color: var(--text-dark);">
+                        "${loggedEntry.note || ''}"
+                    </p>
                 </div>
             `;
         } else {
             contentDiv.innerHTML = `
                 <p style="font-size: 0.9rem; font-weight: 600; color: var(--text-muted);">
-                    No mood logged for this date yet. You can set this as your active target date to log an entry!
+                    No mood logged for this date yet.
+                    You can set this as your active target date to log an entry!
                 </p>
             `;
         }
@@ -541,95 +547,339 @@ function openDayDetailModal(dateStr, loggedEntry) {
     }
 
     toggleDayDetailModal(true);
-    if (window.lucide) lucide.createIcons();
+
+    if (window.lucide) {
+        lucide.createIcons();
+    }
 }
+
 
 function toggleDayDetailModal(show) {
-    const modal = document.getElementById('dayDetailModal');
+
+    const modal =
+        document.getElementById('dayDetailModal');
+
     if (modal) {
-        modal.classList.toggle('hidden', !show);
+        modal.classList.toggle(
+            'hidden',
+            !show
+        );
     }
+
 }
+
 
 function toggleAssistantModal(show) {
-    const modal = document.getElementById('assistantModal');
+
+    const modal =
+        document.getElementById('assistantModal');
+
     if (modal) {
-        modal.classList.toggle('hidden', !show);
+
+        modal.classList.toggle(
+            'hidden',
+            !show
+        );
+
     }
+
 }
 
-function handleChatKey(e) {
-    if (e.key === 'Enter') sendChatMessage();
+
+// ==========================================
+// AI CHATBOT
+// ==========================================
+//
+// User
+//   ↓
+// handleChatSend()
+//   ↓
+// sendChatMessage()
+//   ↓
+// POST /api/chat
+//   ↓
+// Flask
+//   ↓
+// OpenAI Responses API
+//   ↓
+// AI response
+//   ↓
+// Chat window
+// ==========================================
+
+
+function handleChatKey(event) {
+
+    if (event.key === 'Enter') {
+
+        event.preventDefault();
+
+        handleChatSend();
+
+    }
+
 }
 
-function sendChatMessage() {
-    const input = document.getElementById('chatInput');
-    const userMsg = input ? input.value.trim() : '';
-    if (!userMsg) return;
 
-    const chatHistory = document.getElementById('chatHistory');
-    if (!chatHistory) return;
+function handleChatSend() {
 
-    const userBubble = document.createElement('div');
-    userBubble.className = 'chat-bubble user';
-    userBubble.innerText = userMsg;
-    chatHistory.appendChild(userBubble);
+    const input =
+        document.getElementById('chatInput');
+
+    const chatHistory =
+        document.getElementById('chatHistory');
+
+    if (!input || !chatHistory) {
+        return;
+    }
+
+    const message =
+        input.value.trim();
+
+    if (!message) {
+        return;
+    }
+
+
+    // Display user's message
+
+    const userBubble =
+        document.createElement('div');
+
+    userBubble.className =
+        'chat-bubble user';
+
+    userBubble.textContent =
+        message;
+
+    chatHistory.appendChild(
+        userBubble
+    );
+
+
+    // Clear input
 
     input.value = '';
-    chatHistory.scrollTop = chatHistory.scrollHeight;
 
-    setTimeout(() => {
-        const lower = userMsg.toLowerCase();
-        let response = "";
 
-        if (['sad', 'down', 'depressed', 'unhappy'].some(w => lower.includes(w))) {
-            response = "I'm sorry you're feeling down. Remember that it's okay to take things slow today. Try writing down one small positive thing.";
-        } else if (['anxious', 'stressed', 'worried', 'panic'].some(w => lower.includes(w))) {
-            response = "Take a deep breath in for 4 seconds, hold for 4, and release for 4. You are completely safe right now.";
-        } else if (['happy', 'great', 'good', 'awesome'].some(w => lower.includes(w))) {
-            response = "That is wonderful to hear! Keep carrying that positive momentum through your day.";
-        } else {
-            response = "Thank you for sharing that with me. Every emotion you experience is valid and worth acknowledging.";
+    // Scroll to bottom
+
+    chatHistory.scrollTop =
+        chatHistory.scrollHeight;
+
+
+    // Disable send button while waiting
+
+    const sendButton =
+        document.getElementById(
+            'chatSendButton'
+        );
+
+    if (sendButton) {
+        sendButton.disabled = true;
+    }
+
+
+    // Show temporary AI response
+
+    const thinkingBubble =
+        document.createElement('div');
+
+    thinkingBubble.className =
+        'chat-bubble assistant';
+
+    thinkingBubble.textContent =
+        'Thinking...';
+
+    thinkingBubble.id =
+        'chatThinkingBubble';
+
+    chatHistory.appendChild(
+        thinkingBubble
+    );
+
+
+    chatHistory.scrollTop =
+        chatHistory.scrollHeight;
+
+
+    // Send message to Flask/OpenAI
+
+    sendChatMessage(message)
+        .then(reply => {
+
+            const thinking =
+                document.getElementById(
+                    'chatThinkingBubble'
+                );
+
+            if (thinking) {
+
+                thinking.textContent =
+                    reply;
+
+                thinking.removeAttribute(
+                    'id'
+                );
+
+            }
+
+            chatHistory.scrollTop =
+                chatHistory.scrollHeight;
+
+        })
+        .catch(error => {
+
+            console.error(
+                'Chat error:',
+                error
+            );
+
+            const thinking =
+                document.getElementById(
+                    'chatThinkingBubble'
+                );
+
+            if (thinking) {
+
+                thinking.textContent =
+                    'Sorry, I could not process your message right now.';
+
+                thinking.removeAttribute(
+                    'id'
+                );
+
+            }
+
+        })
+        .finally(() => {
+
+            if (sendButton) {
+                sendButton.disabled = false;
+            }
+
+            input.focus();
+
+        });
+
+}
+
+
+// ==========================================
+// SEND MESSAGE TO AI API
+// ==========================================
+
+function sendChatMessage(message) {
+
+    if (
+        !message ||
+        message.trim() === ''
+    ) {
+
+        return Promise.resolve(
+            'Please tell me how you are feeling.'
+        );
+
+    }
+
+
+    return fetch(
+        '/api/chat',
+        {
+            method: 'POST',
+
+            headers: {
+                'Content-Type':
+                    'application/json'
+            },
+
+            body: JSON.stringify({
+                message:
+                    message.trim()
+            })
+        }
+    )
+
+    .then(response => {
+
+        if (!response.ok) {
+
+            return response.json()
+                .then(data => {
+
+                    throw new Error(
+                        data.error ||
+                        'Chat API error.'
+                    );
+
+                })
+                .catch(error => {
+
+                    if (
+                        error.message ===
+                        'Chat API error.'
+                    ) {
+                        throw error;
+                    }
+
+                    throw new Error(
+                        'Chat API error.'
+                    );
+
+                });
+
         }
 
-        const botBubble = document.createElement('div');
-        botBubble.className = 'chat-bubble assistant';
-        botBubble.innerText = response;
-        chatHistory.appendChild(botBubble);
-        chatHistory.scrollTop = chatHistory.scrollHeight;
-    }, 400);
+        return response.json();
+
+    })
+
+    .then(data => {
+
+        if (
+            !data ||
+            !data.reply
+        ) {
+
+            throw new Error(
+                'No AI response was returned.'
+            );
+
+        }
+
+        return data.reply;
+
+    });
+
 }
+
+
+// ==========================================
+// TOAST MESSAGE
+// ==========================================
 
 function showToastCard(message) {
-    const toast = document.createElement('div');
-    toast.className = 'modal-card';
-    toast.style.cssText = 'position: fixed; bottom: 20px; right: 20px; width: auto; padding: 1rem 1.5rem; z-index: 2000; background: var(--accent-yellow); font-weight: 800; font-size: 0.85rem; border: 2px solid var(--border-dark); box-shadow: 4px 4px 0px var(--border-dark);';
-    toast.innerText = message;
-    document.body.appendChild(toast);
 
-    setTimeout(() => { toast.remove(); }, 2500);
+    const toast =
+        document.createElement('div');
+
+    toast.className =
+        'modal-card';
+
+    toast.style.cssText =
+        'position: fixed; bottom: 20px; right: 20px; width: auto; padding: 1rem 1.5rem; z-index: 2000; background: var(--accent-yellow); font-weight: 800; font-size: 0.85rem; border: 2px solid var(--border-dark); box-shadow: 4px 4px 0px var(--border-dark);';
+
+    toast.innerText =
+        message;
+
+    document.body.appendChild(
+        toast
+    );
+
+    setTimeout(() => {
+
+        toast.remove();
+
+    }, 2500);
+
 }
-
-// ==========================================
-// 8. INITIALIZATION
-// ==========================================
-document.addEventListener('DOMContentLoaded', async function () {
-    const splash = document.getElementById("welcomeSplash");
-    if (splash) {
-        setTimeout(() => { splash.classList.add("hidden-splash"); }, 1500);
-    }
-
-    try {
-        const response = await fetch('/api/user', { method: 'GET' });
-        if (response.ok) {
-            const user = await response.json();
-            activeUser = user.username;
-            activeUserId = user.id;
-            enterSanctuary();
-        } else {
-            switchAuthTab('login');
-        }
-    } catch (err) {
-        switchAuthTab('login');
-    }
-});

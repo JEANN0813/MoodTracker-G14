@@ -769,9 +769,166 @@ function displayAnalysis(report) {
 // AI CHATBOT
 // ==========================================
 //
-// The chatbot now communicates with the Flask
-// backend through /api/chat.
-// The backend sends the message to OpenAI.
+// User message
+//      ↓
+// sendChatMessage()
+//      ↓
+// POST /api/chat
+//      ↓
+// Flask backend
+//      ↓
+// OpenAI API
+//      ↓
+// AI response
+//      ↓
+// Display in chatHistory
+// ==========================================
+
+
+function handleChatSend() {
+
+    const input =
+        document.getElementById('chatInput');
+
+    const chatHistory =
+        document.getElementById('chatHistory');
+
+    if (!input || !chatHistory) {
+        return;
+    }
+
+    const message =
+        input.value.trim();
+
+    if (!message) {
+        return;
+    }
+
+
+    // Display user's message immediately
+
+    const userBubble =
+        document.createElement('div');
+
+    userBubble.className =
+        'chat-bubble user';
+
+    userBubble.textContent =
+        message;
+
+    chatHistory.appendChild(
+        userBubble
+    );
+
+
+    // Clear input
+
+    input.value = '';
+
+
+    // Scroll to newest message
+
+    chatHistory.scrollTop =
+        chatHistory.scrollHeight;
+
+
+    // Disable button while waiting
+
+    const sendButton =
+        document.getElementById('chatSendButton');
+
+    if (sendButton) {
+        sendButton.disabled = true;
+    }
+
+
+    // Show temporary thinking message
+
+    const thinkingBubble =
+        document.createElement('div');
+
+    thinkingBubble.className =
+        'chat-bubble assistant';
+
+    thinkingBubble.textContent =
+        'Thinking...';
+
+    thinkingBubble.id =
+        'chatThinkingBubble';
+
+    chatHistory.appendChild(
+        thinkingBubble
+    );
+
+
+    chatHistory.scrollTop =
+        chatHistory.scrollHeight;
+
+
+    // Send message to the API
+
+    sendChatMessage(message)
+        .then(reply => {
+
+            const thinking =
+                document.getElementById(
+                    'chatThinkingBubble'
+                );
+
+            if (thinking) {
+
+                thinking.textContent =
+                    reply;
+
+                thinking.removeAttribute(
+                    'id'
+                );
+
+            }
+
+            chatHistory.scrollTop =
+                chatHistory.scrollHeight;
+
+        })
+        .catch(error => {
+
+            console.error(
+                'Chat error:',
+                error
+            );
+
+            const thinking =
+                document.getElementById(
+                    'chatThinkingBubble'
+                );
+
+            if (thinking) {
+
+                thinking.textContent =
+                    'Sorry, I could not process your message right now.';
+
+                thinking.removeAttribute(
+                    'id'
+                );
+
+            }
+
+        })
+        .finally(() => {
+
+            if (sendButton) {
+                sendButton.disabled = false;
+            }
+
+            input.focus();
+
+        });
+
+}
+
+
+// ==========================================
+// SEND CHAT MESSAGE TO FLASK API
 // ==========================================
 
 function sendChatMessage(message) {
@@ -787,80 +944,92 @@ function sendChatMessage(message) {
 
     }
 
-    return fetch('/api/chat', {
 
-        method: 'POST',
+    return fetch(
+        '/api/chat',
+        {
 
-        headers: {
+            method: 'POST',
 
-            'Content-Type':
-                'application/json'
+            headers: {
+                'Content-Type':
+                    'application/json'
+            },
 
-        },
+            body: JSON.stringify({
+                message:
+                    message.trim()
+            })
 
-        body: JSON.stringify({
+        }
+    )
 
-            message:
-                message.trim()
+    .then(response => {
 
-        })
+        if (!response.ok) {
+
+            return response.json()
+                .then(data => {
+
+                    throw new Error(
+                        data.error ||
+                        'Chat API error.'
+                    );
+
+                })
+                .catch(error => {
+
+                    if (
+                        error.message ===
+                        'Chat API error.'
+                    ) {
+                        throw error;
+                    }
+
+                    throw new Error(
+                        'Chat API error.'
+                    );
+
+                });
+
+        }
+
+        return response.json();
 
     })
 
-        .then(response => {
+    .then(data => {
 
-            if (!response.ok) {
+        if (!data || !data.reply) {
 
-                return response.json()
-                    .then(data => {
-
-                        throw new Error(
-                            data.error ||
-                            'Chat API error.'
-                        );
-
-                    })
-                    .catch(() => {
-
-                        throw new Error(
-                            'Chat API error.'
-                        );
-
-                    });
-
-            }
-
-            return response.json();
-
-        })
-
-        .then(data => {
-
-            if (!data.reply) {
-
-                throw new Error(
-                    'No reply was returned by the server.'
-                );
-
-            }
-
-            return data.reply;
-
-        })
-
-        .catch(error => {
-
-            console.error(
-                'Chat error:',
-                error
+            throw new Error(
+                'No response received from AI.'
             );
 
-            return 'Sorry, I could not process your message right now.';
+        }
 
-        });
+        return data.reply;
+
+    });
 
 }
 
+
+// ==========================================
+// ENTER KEY SUPPORT
+// ==========================================
+
+function handleChatKey(event) {
+
+    if (event.key === 'Enter') {
+
+        event.preventDefault();
+
+        handleChatSend();
+
+    }
+
+}
 
 // ==========================================
 // LOGOUT
