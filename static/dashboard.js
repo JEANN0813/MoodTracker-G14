@@ -659,7 +659,7 @@ document.addEventListener('DOMContentLoaded', async function () {
 });
 
 // ==========================================================================
-// PROFILE VIEW LOGIC (MEMBER B)
+// PROFILE VIEW LOGIC (Aya)
 // ==========================================================================
 
 /**
