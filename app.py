@@ -10,12 +10,17 @@ import secrets
 import os
 import random
 import string
+from datetime import datetime
+from flask import Blueprint, request, jsonify
+from datetime import datetime, time
+from alarm import alarm_bp
 
 client = OpenAI(
     api_key=os.environ.get("OPENAI_API_KEY")
 )
 
 app = Flask(__name__, static_folder='static', static_url_path='')
+
 
 # Email configuration
 app.config['MAIL_SERVER'] = 'smtp.gmail.com'
@@ -64,6 +69,31 @@ class EmotionLog(db.Model):
     note = db.Column(db.String(300))
     log_date = db.Column(db.Date, nullable=False)
     created_at = db.Column(db.DateTime, default=db.func.current_timestamp())
+
+class Alarm(db.Model):
+    __tablename__ = 'alarms'
+
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+    title = db.Column(db.String(100), default="Alarm")
+    
+   
+    alarm_time = db.Column(db.Time, nullable=False) 
+    
+    
+    repeat_days = db.Column(db.String(20), default="") 
+    
+    is_enabled = db.Column(db.Boolean, default=True)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'title': self.title,
+            'alarm_time': self.alarm_time.strftime('%H:%M'),
+            'repeat_days': self.repeat_days.split(',') if self.repeat_days else [],
+            'is_enabled': self.is_enabled
+        }
 
 def get_current_user():
     user_id = session.get('user_id')
@@ -370,18 +400,49 @@ def get_calendar(year, month):
     else:
         end_date = datetime(year, month + 1, 1).date()
     
+    
     logs = EmotionLog.query.filter_by(user_id=user.id).filter(
         EmotionLog.log_date >= start_date,
         EmotionLog.log_date < end_date
-    ).order_by(EmotionLog.created_at.desc()).all()
+    ).order_by(EmotionLog.created_at.asc()).all()
     
-    daily_emotions = {}
+    
+    daily_logs = {}
     for log in logs:
         date_str = log.log_date.isoformat()
-        if date_str not in daily_emotions:
-            daily_emotions[date_str] = log.emotion
+        if date_str not in daily_logs:
+            daily_logs[date_str] = []
+        daily_logs[date_str].append({
+            'id': log.id,
+            'emotion': log.emotion,
+            'note': log.note,
+            'created_at': log.created_at.isoformat() if log.created_at else None
+        })
     
-    return jsonify({'year': year, 'month': month, 'data': daily_emotions}), 200
+    
+    daily_summary = {}
+    for date_str, entries in daily_logs.items():
+        counts = {}
+        latest_timestamps = {}
+        for entry in entries:
+            emo = entry['emotion']
+            counts[emo] = counts.get(emo, 0) + 1
+            latest_timestamps[emo] = entry['created_at'] or ''
+        
+        
+        dominant_emotion = sorted(
+            counts.keys(), 
+            key=lambda e: (counts[e], latest_timestamps[e]), 
+            reverse=True
+        )[0]
+        
+        daily_summary[date_str] = {
+            'dominant_emotion': dominant_emotion,
+            'total_count': len(entries),
+            'entries': entries
+        }
+    
+    return jsonify({'year': year, 'month': month, 'data': daily_summary}), 200
 
 @app.route('/api/stats', methods=['GET'])
 def get_stats():
@@ -547,6 +608,80 @@ def get_suggestions():
 
 with app.app_context():
     db.create_all()
+
+
+# Alarm Routes
+alarm_bp = Blueprint('alarm', __name__)
+
+
+@alarm_bp.route('/api/alarms', methods=['POST'])
+def create_alarm():
+    data = request.get_json()
+    time_str = data.get('time') 
+    
+    if not time_str:
+        return jsonify({'error': 'Time is required'}), 400
+        
+    hour, minute = map(int, time_str.split(':'))
+    
+    new_alarm = Alarm(
+        user_id=1,  
+        title=data.get('title', 'Alarm'),
+        alarm_time=time(hour, minute),
+        repeat_days=",".join(map(str, data.get('repeat_days', []))), # 传入 [1,2,3] 转成 "1,2,3"
+        is_enabled=True
+    )
+    db.session.add(new_alarm)
+    db.session.commit()
+    return jsonify({'message': 'Alarm created', 'alarm': new_alarm.to_dict()}), 201
+
+
+@alarm_bp.route('/api/alarms', methods=['GET'])
+def get_alarms():
+    alarms = Alarm.query.filter_by(user_id=1).all()
+    return jsonify([a.to_dict() for a in alarms]), 200
+
+
+@alarm_bp.route('/api/alarms/<int:alarm_id>/toggle', methods=['PATCH'])
+def toggle_alarm(alarm_id):
+    alarm = Alarm.query.get_or_404(alarm_id)
+    alarm.is_enabled = not alarm.is_enabled
+    db.session.commit()
+    return jsonify({'message': 'Status updated', 'is_enabled': alarm.is_enabled})
+
+
+@alarm_bp.route('/api/alarms/<int:alarm_id>', methods=['DELETE'])
+def delete_alarm(alarm_id):
+    alarm = Alarm.query.get_or_404(alarm_id)
+    db.session.delete(alarm)
+    db.session.commit()
+    return jsonify({'message': 'Alarm deleted'}), 200  
+
+@alarm_bp.route('/api/alarms/check', methods=['GET'])
+def check_due_alarms():
+    now = datetime.now()
+    current_time = now.time().replace(second=0, microsecond=0)
+    current_weekday = str(now.weekday() + 1) 
+
+    active_alarms = Alarm.query.filter_by(user_id=1, is_enabled=True).all()
+    triggered = []
+
+    for alarm in active_alarms:
+        
+        if alarm.alarm_time.hour == current_time.hour and alarm.alarm_time.minute == current_time.minute:
+
+            repeat_list = alarm.repeat_days.split(',') if alarm.repeat_days else []
+            if not repeat_list or current_weekday in repeat_list:
+                triggered.append(alarm.to_dict())
+                
+                
+                if not repeat_list:
+                    alarm.is_enabled = False
+
+    db.session.commit()
+    return jsonify({'triggered': len(triggered) > 0, 'alarms': triggered})
+
+app.register_blueprint(alarm_bp)
 
 if __name__ == '__main__':
     print()
