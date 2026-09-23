@@ -966,3 +966,58 @@ function loadUserProfile() {
   }
 }
 
+function switchDashboardTab(tabName) {
+    const overviewSec = document.getElementById('dashboardOverviewSection');
+    const historySec = document.getElementById('dashboardHistorySection');
+    const btnOverview = document.getElementById('btnDashboardOverview');
+    const btnHistory = document.getElementById('btnDashboardHistory');
+
+    if (tabName === 'overview') {
+        overviewSec.style.display = 'flex';
+        historySec.classList.add('hidden');
+        btnOverview.style.background = 'var(--accent-yellow)';
+        btnOverview.style.borderColor = 'var(--border-dark)';
+        btnHistory.style.background = 'transparent';
+        btnHistory.style.borderColor = 'transparent';
+    } else {
+        overviewSec.style.display = 'none';
+        historySec.classList.remove('hidden');
+        btnHistory.style.background = 'var(--accent-yellow)';
+        btnHistory.style.borderColor = 'var(--border-dark)';
+        btnOverview.style.background = 'transparent';
+        btnOverview.style.borderColor = 'transparent';
+    }
+}
+// Profile Action Handlers
+function editProfile() {
+    const currentName = document.getElementById('profileDetailName').innerText;
+    const newName = prompt("Edit your full name:", currentName);
+    if (newName) {
+        document.getElementById('profileUserName').innerText = newName;
+        document.getElementById('profileDetailName').innerText = newName;
+    }
+}
+
+function resetPasswordFromProfile() {
+    alert("A password reset link has been sent to your registered email address.");
+}
+
+function deleteAccount() {
+    if (confirm("Are you sure you want to delete your account? This action cannot be undone.")) {
+        alert("Account deleted.");
+        location.reload();
+    }
+}
+
+function switchTheme(theme) {
+    const btns = document.querySelectorAll('.theme-btn');
+    btns.forEach(btn => btn.classList.remove('active'));
+
+    if (theme === 'dark') {
+        document.body.classList.add('dark-theme');
+        if (event && event.target) event.target.classList.add('active');
+    } else {
+        document.body.classList.remove('dark-theme');
+        if (event && event.target) event.target.classList.add('active');
+    }
+}
