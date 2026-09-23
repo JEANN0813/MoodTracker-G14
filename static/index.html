@@ -753,24 +753,7 @@
                 </div>
             </section>
 
-            <!-- ASSISTANT POPUP MODAL CARD -->
-            <div class="modal-overlay" id="assistantModal" style="display: none;">
-                <div class="modal-content" style="max-width: 450px; width: 90%; padding: 1.5rem; position: relative;">
-                    <button class="modal-close" onclick="toggleAssistantModal(false)">&times;</button>
-                    <div class="auth-tag" style="background: var(--card-mint); display: inline-block; padding: 2px 8px; border-radius: 6px; font-size: 0.75rem; font-weight: bold; border: 1px solid var(--border-dark); margin-bottom: 6px;">
-                        <i data-lucide="bot" style="width: 14px;"></i> Active Companion
-                    </div>
-                    <h2 class="card-title" style="font-size: 1.6rem; margin: 0 0 0.2rem 0;">Mood Assistant</h2>
-                    <p style="font-size: 0.85rem; color: var(--text-muted); font-weight: 600; margin-bottom: 1rem;">Share how you are feeling or ask for a grounding technique.</p>
-
-                    <div class="chat-history" id="chatHistory" style="height: 200px; overflow-y: auto; border: 2px solid var(--border-dark); border-radius: 10px; padding: 10px; margin-bottom: 1rem; background: #fafafa;">
-                        <div class="chat-bubble assistant" style="background: var(--card-lavender); padding: 8px 12px; border-radius: 8px; border: 1px solid var(--border-dark); max-width: 85%; font-size: 0.85rem;">
-                            Hi there! I'm your sanctuary assistant. How are you feeling right now?
-                        </div>
-                    </div>
-
-<<<<<<< HEAD
-    <!-- <!-- 3. ASSISTANT POPUP MODAL CARD -->
+    <!-- 3. ASSISTANT POPUP MODAL CARD -->
 <div class="modal-overlay hidden" id="assistantModal">
     <div class="modal-card">
 
@@ -838,13 +821,6 @@
 
         </div>
 
-=======
-                    <div style="display: flex; gap: 8px;">
-                        <input type="text" class="input-box" id="chatInput" placeholder="Type your message..." onkeypress="handleChatKey(event)" style="flex: 1; padding: 8px; border-radius: 8px; border: 2px solid var(--border-dark);">
-                        <button class="btn-primary" style="padding: 0.8rem 1.2rem;" onclick="sendChatMessage()">
-                            <i data-lucide="send" style="width: 16px;"></i>
-                        </button>
-                    </div>
                 </div>
             </div>
 
@@ -866,9 +842,8 @@
                     </button>
                 </div>
             </div>
-
         </main>
->>>>>>> origin/main
+
     </div>
 </div>
 
@@ -958,12 +933,6 @@
             if (element) {
                 element.classList.add('active');
             }
-        }
-
-        // Modal Helpers
-        function toggleAssistantModal(show) {
-            const modal = document.getElementById('assistantModal');
-            if (modal) modal.style.display = show ? 'flex' : 'none';
         }
 
         function toggleDayDetailModal(show) {

@@ -492,11 +492,18 @@ function calculateStats() {
     const totalElem = document.getElementById('stat-total');
     if (totalElem) totalElem.innerText = moodLogs.length;
 
-    let happy = 0, anxious = 0, neutral = 0;
-    moodLogs.forEach(l => {
-        if (l.emotion === 'Happy' || l.emotion === 'Calm') happy++;
-        else if (l.emotion === 'Anxious' || l.emotion === 'Sad') anxious++;
-        else neutral++;
+    let happy = 0;
+    let anxious = 0;
+    let neutral = 0;
+
+    moodLogs.forEach(function(l) {
+        if (l.emotion === 'Happy' || l.emotion === 'Calm') {
+            happy++;
+        } else if (l.emotion === 'Anxious' || l.emotion === 'Sad') {
+            anxious++;
+        } else {
+            neutral++;
+        }
     });
 
     const happyElem = document.getElementById('stat-happy');
@@ -513,23 +520,55 @@ function calculateStats() {
 
     if (moodLogs.length > 0) {
         const latest = moodLogs[0];
-        if (mostCommonElem) mostCommonElem.innerHTML = `<i data-lucide="${latest.iconName || 'smile'}" style="width: 18px;"></i> ${latest.emotion}`;
-        
-        if (happy >= anxious && happy >= neutral) {
-            if (overallElem) overallElem.innerHTML = `Positive <i data-lucide="smile" style="width: 22px;"></i>`;
-            if (descElem) descElem.innerText = "Your logs reflect high resilience and overall brightness.";
-        } else if (anxious > happy) {
-            if (overallElem) overallElem.innerHTML = `Needs Care <i data-lucide="frown" style="width: 22px;"></i>`;
-            if (descElem) descElem.innerText = "Higher anxiety/stress detected. Consider taking small breaks.";
+
+        if (mostCommonElem) {
+            mostCommonElem.innerHTML =
+                '<i data-lucide="' +
+                (latest.iconName || 'smile') +
+                '" style="width: 18px;"></i> ' +
+                latest.emotion;
+        }
+
+        // Determine overall mood
+        if (happy > anxious && happy > neutral) {
+            if (overallElem) {
+                overallElem.innerHTML =
+                    'Positive <i data-lucide="smile" style="width: 22px;"></i>';
+            }
+
+            if (descElem) {
+                descElem.innerText =
+                    'Your logs reflect more positive emotions overall.';
+            }
+
+        } else if (anxious > happy && anxious > neutral) {
+            if (overallElem) {
+                overallElem.innerHTML =
+                    'Needs Care <i data-lucide="frown" style="width: 22px;"></i>';
+            }
+
+            if (descElem) {
+                descElem.innerText =
+                    'Higher anxiety or stress appears in your recent logs. Consider taking small breaks.';
+            }
+
         } else {
-            if (overallElem) overallElem.innerHTML = `Balanced <i data-lucide="meh" style="width: 22px;"></i>`;
-            if (descElem) descElem.innerText = "Your state is steady and reflective.";
+            if (overallElem) {
+                overallElem.innerHTML =
+                    'Balanced <i data-lucide="meh" style="width: 22px;"></i>';
+            }
+
+            if (descElem) {
+                descElem.innerText =
+                    'Your emotions are relatively balanced across your recent logs.';
+            }
         }
     } else {
-        if (mostCommonElem) mostCommonElem.innerText = "None yet";
+        if (mostCommonElem) {
+            mostCommonElem.innerText = 'None yet';
+        }
     }
 }
-
 
 // 7. MODALS & UTILITIES
 function openDayDetailModal(dateStr, loggedEntry) {
@@ -588,14 +627,16 @@ function handleChatKey(e) {
     if (e.key === 'Enter') sendChatMessage();
 }
 
-function sendChatMessage() {
+async function sendChatMessage() {
     const input = document.getElementById('chatInput');
     const userMsg = input ? input.value.trim() : '';
+
     if (!userMsg) return;
 
     const chatHistory = document.getElementById('chatHistory');
     if (!chatHistory) return;
 
+    // Add user's message
     const userBubble = document.createElement('div');
     userBubble.className = 'chat-bubble user';
     userBubble.innerText = userMsg;
@@ -604,26 +645,48 @@ function sendChatMessage() {
     input.value = '';
     chatHistory.scrollTop = chatHistory.scrollHeight;
 
-    setTimeout(() => {
-        const lower = userMsg.toLowerCase();
-        let response = "";
+    try {
+        // Send message to Flask API
+        const response = await fetch('/api/chat', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                message: userMsg
+            })
+        });
 
-        if (['sad', 'down', 'depressed', 'unhappy'].some(w => lower.includes(w))) {
-            response = "I'm sorry you're feeling down. Remember that it's okay to take things slow today. Try writing down one small positive thing.";
-        } else if (['anxious', 'stressed', 'worried', 'panic'].some(w => lower.includes(w))) {
-            response = "Take a deep breath in for 4 seconds, hold for 4, and release for 4. You are completely safe right now.";
-        } else if (['happy', 'great', 'good', 'awesome'].some(w => lower.includes(w))) {
-            response = "That is wonderful to hear! Keep carrying that positive momentum through your day.";
+        const data = await response.json();
+
+        // Add assistant response
+        const botBubble = document.createElement('div');
+        botBubble.className = 'chat-bubble assistant';
+
+        if (response.ok && data.reply) {
+            botBubble.innerText = data.reply;
         } else {
-            response = "Thank you for sharing that with me. Every emotion you experience is valid and worth acknowledging.";
+            botBubble.innerText = data.error || 'Sorry, I could not generate a response.';
         }
+
+        chatHistory.appendChild(botBubble);
+        chatHistory.scrollTop = chatHistory.scrollHeight;
+
+    } catch (error) {
+        console.error('Chat API error:', error);
 
         const botBubble = document.createElement('div');
         botBubble.className = 'chat-bubble assistant';
-        botBubble.innerText = response;
+        botBubble.innerText = 'Sorry, I could not connect to the Mood Assistant right now.';
+
         chatHistory.appendChild(botBubble);
         chatHistory.scrollTop = chatHistory.scrollHeight;
-    }, 400);
+    }
+}
+
+// Your HTML Send button currently calls handleChatSend()
+function handleChatSend() {
+    sendChatMessage();
 }
 
 function showToastCard(message) {

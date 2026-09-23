@@ -82,7 +82,6 @@ function fetchStats() {
 
 }
 
-
 // ==========================================
 // INSIGHTS
 // ==========================================
@@ -102,38 +101,59 @@ function updateInsights(data) {
     const happy =
         emotionCounts.Happy || 0;
 
+    const calm =
+        emotionCounts.Calm || 0;
+
+    const neutral =
+        emotionCounts.Neutral || 0;
+
     const sad =
         emotionCounts.Sad || 0;
 
     const anxious =
         emotionCounts.Anxious || 0;
 
+    const total =
+        happy + calm + neutral + sad + anxious;
+
     let message =
         'Keep tracking your emotions to discover patterns.';
 
-    if (happy > sad && happy > anxious) {
-
+    if (total === 0) {
         message =
-            'You have recorded more happy emotions recently. Keep it up!';
-
+            'Keep tracking your emotions to discover patterns.';
     }
-    else if (anxious > happy && anxious >= sad) {
+    else {
+        const positive =
+            happy;
 
-        message =
-            'You have recorded several anxious emotions recently. Consider taking some time to relax.';
+        const balanced =
+            calm + neutral;
 
-    }
-    else if (sad > happy && sad >= anxious) {
+        const negative =
+            sad + anxious;
 
-        message =
-            'You have recorded several sad emotions recently. Consider doing something that helps you feel better.';
+        if (positive > balanced && positive > negative) {
 
+            message =
+                'You have recorded more positive emotions recently. Keep it up!';
+
+        }
+        else if (negative > positive && negative > balanced) {
+
+            message =
+                'You have recorded several difficult emotions recently. Consider taking some time to relax or do something that helps you feel better.';
+
+        }
+        else {
+
+            message =
+                'Your recent emotions appear fairly balanced. Keep tracking your mood to discover patterns.';
+        }
     }
 
     insightsContainer.textContent = message;
-
 }
-
 
 // ==========================================
 // DAILY EMOTION LIMIT

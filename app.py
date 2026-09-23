@@ -6,6 +6,7 @@ from werkzeug.security import generate_password_hash, check_password_hash
 from flask_mail import Mail, Message
 from sqlalchemy import func
 from openai import OpenAI
+from google import genai
 import secrets
 import os
 import random
@@ -17,6 +18,10 @@ from alarm import alarm_bp
 
 client = OpenAI(
     api_key=os.environ.get("OPENAI_API_KEY")
+)
+
+gemini_client = genai.Client(
+    api_key=os.environ.get("GEMINI_API_KEY")
 )
 
 app = Flask(__name__, static_folder='static', static_url_path='')
@@ -362,22 +367,21 @@ def chat():
 
     try:
 
-        response = client.responses.create(
-            model="gpt-5.6-luna",
+        response = gemini_client.models.generate_content(
+            model="gemini-3.5-flash-lite",
 
-            instructions=(
+            contents=(
                 "You are the MoodTracker assistant. "
                 "You help users reflect on their emotions "
                 "in a friendly and supportive way. "
                 "Keep responses short and simple. "
-                "Do not diagnose mental health conditions."
-            ),
-
-            input=message
+                "Do not diagnose mental health conditions.\n\n"
+                f"User: {message}"
+            )
         )
 
         return jsonify({
-            'reply': response.output_text
+            'reply': response.text
         })
 
     except Exception as e:
