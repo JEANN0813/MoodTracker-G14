@@ -265,9 +265,20 @@ async function fetchLogsAndRefresh() {
     }
 }
 
+function generateMoodNote(emotion) {
+    const notes = {
+        Happy: "You're feeling positive today! Keep doing what makes you happy.",
+        Calm: "You seem calm today. Take some time to enjoy this peaceful moment.",
+        Neutral: "It's okay to have a neutral day. Take things at your own pace.",
+        Sad: "You seem to be having a difficult day. Consider taking a break or talking to someone you trust.",
+        Anxious: "You seem anxious today. Try taking a few slow breaths and giving yourself a moment to relax."
+    };
+
+    return notes[emotion] || "Take a moment to check in with yourself today.";
+}
+
 async function logMood() {
-    const noteElem = document.getElementById("moodNote");
-    const note = noteElem ? noteElem.value.trim() : "";
+    const note = generateMoodNote(selectedEmotion);
 
     if (!selectedEmotion) {
         showToastCard("Please select an emotion first!");
@@ -298,7 +309,6 @@ async function logMood() {
         const data = await response.json();
 
         if (response.ok && data.success) {
-            if (noteElem) noteElem.value = "";
             document.querySelectorAll('.mood-btn').forEach(b => b.classList.remove('selected'));
             selectedEmotion = null;
             selectedIcon = "";
