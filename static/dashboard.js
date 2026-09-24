@@ -8,6 +8,8 @@ let selectedIcon = "";
 let currentDate = new Date();
 let activeTargetDate = new Date().toISOString().split('T')[0];
 
+const DAILY_EMOTION_LIMIT = 5;
+
 let moodLogs = JSON.parse(localStorage.getItem('moodLogs')) || [
     { id: 1, log_date: new Date().toISOString().split('T')[0], emotion: "Happy", iconName: "smile", note: "Welcome to your fresh sanctuary dashboard!" }
 ];
@@ -253,6 +255,7 @@ async function fetchLogsAndRefresh() {
                 ...log,
                 iconName: EMOTION_ICON_MAP[log.emotion] || 'smile'
             }));
+            console.log("Mood logs:", moodLogs);
             refreshUI();
         } else if (response.status === 401) {
             logout();
@@ -268,6 +271,16 @@ async function logMood() {
 
     if (!selectedEmotion) {
         showToastCard("Please select an emotion first!");
+        return;
+    }
+
+    // Limit mood logging to 5 entries per day
+    const targetDateLogs = moodLogs.filter(
+        log => log.log_date === activeTargetDate
+    );
+
+    if (targetDateLogs.length >= DAILY_EMOTION_LIMIT) {
+        showToastCard("You can only log up to 5 moods per day.");
         return;
     }
 
