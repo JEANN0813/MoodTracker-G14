@@ -799,3 +799,118 @@ body {
         grid-template-columns: 1fr;
     }
 }
+
+.profile-card {
+  background: #ffffff;
+  border: 2px solid #000000;
+  box-shadow: 4px 4px 0px #000000;
+  border-radius: 12px;
+  padding: 24px;
+  margin-bottom: 24px;
+}
+
+.profile-details-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 16px;
+  margin-top: 16px;
+}
+
+.detail-item {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.detail-item .label {
+  font-weight: bold;
+  font-size: 0.85rem;
+  color: #555;
+}
+
+.detail-item.full-width {
+  grid-column: span 2;
+}
+
+.profile-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-top: 24px;
+  padding-top: 16px;
+  border-top: 1px solid #e0e0e0;
+}
+
+.btn {
+  padding: 8px 16px;
+  font-weight: bold;
+  border: 2px solid #000000;
+  border-radius: 8px;
+  cursor: pointer;
+  box-shadow: 2px 2px 0px #000000;
+  transition: all 0.1s ease;
+}
+
+.btn:hover {
+  transform: translate(-1px, -1px);
+  box-shadow: 3px 3px 0px #000000;
+}
+
+.btn-secondary {
+  background-color: #f0f0f0;
+}
+
+.btn-danger {
+  background-color: #ffb3b3;
+}
+
+/* Base badge style + floating animation */
+.floating-tag {
+  position: absolute;
+  padding: 6px 14px;
+  background-color: #ffffff;
+  border: 1.5px solid #1e1e1e;
+  border-radius: 20px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  box-shadow: 2px 2px 0px #1e1e1e;
+  white-space: nowrap;
+  z-index: 10;
+  /* Apply continuous floating animation */
+  animation: floatAnim 3s ease-in-out infinite alternate;
+}
+
+/* Tighter coordinates (moved inward closer to the text) */
+.tag-top-left {
+  top: 16%;
+  left: 20%;
+  animation-delay: 0s;
+}
+
+.tag-bottom-left {
+  top: 55%;
+  left: 18%;
+  animation-delay: 0.6s;
+}
+
+.tag-top-right {
+  top: 16%;
+  right: 20%;
+  animation-delay: 0.3s;
+}
+
+.tag-bottom-right {
+  top: 75%;
+  right: 22%;
+  animation-delay: 0.9s;
+}
+
+/* Floating Animation Keyframes */
+@keyframes floatAnim {
+  0% {
+    transform: translateY(0px);
+  }
+  100% {
+    transform: translateY(-8px);
+  }
+}
