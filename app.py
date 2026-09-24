@@ -5,6 +5,8 @@ from datetime import timedelta, datetime
 from werkzeug.security import generate_password_hash, check_password_hash
 from flask_mail import Mail, Message
 from sqlalchemy import func
+from openai import OpenAI
+from google import genai
 import secrets
 import os
 import random
@@ -14,6 +16,13 @@ from flask import Blueprint, request, jsonify
 from datetime import datetime, time
 from alarm import alarm_bp
 
+client = OpenAI(
+    api_key=os.environ.get("OPENAI_API_KEY")
+)
+
+gemini_client = genai.Client(
+    api_key=os.environ.get("GEMINI_API_KEY")
+)
 
 app = Flask(__name__, static_folder='static', static_url_path='')
 
@@ -343,6 +352,45 @@ def delete_emotion_log(log_id):
     db.session.delete(log)
     db.session.commit()
     return jsonify({'message': 'Log deleted successfully'}), 200
+
+@app.route('/api/chat', methods=['POST'])
+def chat():
+
+    data = request.get_json()
+
+    if not data or not data.get('message'):
+        return jsonify({
+            'error': 'Message is required.'
+        }), 400
+
+    message = data['message'].strip()
+
+    try:
+
+        response = gemini_client.models.generate_content(
+            model="gemini-3.5-flash-lite",
+
+            contents=(
+                "You are the MoodTracker assistant. "
+                "You help users reflect on their emotions "
+                "in a friendly and supportive way. "
+                "Keep responses short and simple. "
+                "Do not diagnose mental health conditions.\n\n"
+                f"User: {message}"
+            )
+        )
+
+        return jsonify({
+            'reply': response.text
+        })
+
+    except Exception as e:
+
+        print("Chat API error:", e)
+
+        return jsonify({
+            'error': 'Unable to generate a response.'
+        }), 500
 
 @app.route('/api/calendar/<int:year>/<int:month>', methods=['GET'])
 def get_calendar(year, month):

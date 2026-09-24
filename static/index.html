@@ -628,6 +628,161 @@
                 </div>
             </div>
 
+            <!-- STANDALONE CALENDAR VIEW -->
+            <div id="calendarView" style="display: none;">
+                <h1 class="main-heading">Calendar History</h1>
+                <p class="sub-heading">Complete record of your past reflection days.</p>
+                <div class="content-card">
+                    <p style="font-weight: 700; margin-bottom: 1rem;">Click any cell below to switch active logging focus to that day.</p>
+                    <div id="standaloneCalendarContainer"></div>
+                </div>
+            </div>
+
+            <!-- PROFILE SECTION -->
+            <section id="profileView" style="display: none;">
+                <!-- HEADER ROW -->
+                <div class="profile-header">
+                    <div class="profile-title-group">
+                        <h2 class="section-title">User Profile</h2>
+                        <p class="section-subtitle">Manage your account, customize your sanctuary, and track your logging journey.</p>
+                    </div>
+                </div>
+
+                <!-- MAIN STACK -->
+                <div class="profile-grid">
+                    
+                    <!-- CARD 1: USER INFO & AVATAR PICKER -->
+                    <div class="profile-card user-info-card">
+                        <div class="user-main-details">
+                            <div class="avatar-wrapper">
+                                <div class="current-avatar" id="currentAvatarDisplay">
+                                    <img id="currentAvatarImg" src="https://api.iconify.design/fluent-emoji:fox.svg" alt="Fox Avatar" />
+                                </div>
+                                <div class="avatar-badge">Active</div>
+                            </div>
+
+                            <div class="user-info-list">
+                                <div class="info-row">
+                                    <span class="info-label">Name</span>
+                                    <span class="info-value" id="profileUserName">--</span>
+                                </div>
+                                <div class="info-row">
+                                    <span class="info-label">Email</span>
+                                    <span class="info-value" id="profileUserEmail">--</span>
+                                </div>
+                            </div>
+
+                            <div class="avatar-picker-section">
+                                <label class="picker-label">CHOOSE AVATAR</label>
+                                <div class="avatar-options" style="display: flex; gap: 8px; margin-top: 6px;">
+                                    <button type="button" class="avatar-opt active" data-avatar="fox" onclick="selectAvatar('fox', 'https://api.iconify.design/fluent-emoji:fox.svg')">
+                                        <img src="https://api.iconify.design/fluent-emoji:fox.svg" alt="Fox" style="width: 30px;" />
+                                    </button>
+                                    <button type="button" class="avatar-opt" data-avatar="panda" onclick="selectAvatar('panda', 'https://api.iconify.design/fluent-emoji:panda.svg')">
+                                        <img src="https://api.iconify.design/fluent-emoji:panda.svg" alt="Panda" style="width: 30px;" />
+                                    </button>
+                                    <button type="button" class="avatar-opt" data-avatar="rabbit" onclick="selectAvatar('rabbit', 'https://api.iconify.design/fluent-emoji:rabbit-face.svg')">
+                                        <img src="https://api.iconify.design/fluent-emoji:rabbit-face.svg" alt="Rabbit" style="width: 30px;" />
+                                    </button>
+                                    <button type="button" class="avatar-opt" data-avatar="cat" onclick="selectAvatar('cat', 'https://api.iconify.design/fluent-emoji:cat-face.svg')">
+                                        <img src="https://api.iconify.design/fluent-emoji:cat-face.svg" alt="Cat" style="width: 30px;" />
+                                    </button>
+                                    <button type="button" class="avatar-opt" data-avatar="koala" onclick="selectAvatar('koala', 'https://api.iconify.design/fluent-emoji:koala.svg')">
+                                        <img src="https://api.iconify.design/fluent-emoji:koala.svg" alt="Koala" style="width: 30px;" />
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- CARD 2: THREE STATS IN A ROW -->
+                    <div class="profile-stats-container" style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem; margin: 1rem 0;">
+                        <div class="stat-card">
+                            <div class="stat-icon">📝</div>
+                            <div class="stat-content">
+                                <span class="stat-value" id="profileTotalLogs">0</span>
+                                <span class="stat-label">TOTAL ENTRIES</span>
+                            </div>
+                        </div>
+
+                        <div class="stat-card">
+                            <div class="stat-icon">🔥</div>
+                            <div class="stat-content">
+                                <span class="stat-value" id="profileStreak">0 Days</span>
+                                <span class="stat-label">LOGGING STREAK</span>
+                            </div>
+                        </div>
+
+                        <div class="stat-card">
+                            <div class="stat-icon">🌟</div>
+                            <div class="stat-content">
+                                <span class="stat-value" id="profileTopMood">None</span>
+                                <span class="stat-label">DOMINANT MOOD</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- CARD 3: HABIT PROGRESS -->
+                    <div class="profile-card progress-card">
+                        <h4 class="card-subtitle">Monthly Habit Progress</h4>
+                        <p class="progress-desc">Consistently logging helps identify emotional patterns.</p>
+                        
+                        <div class="progress-bar-container" style="background: #e5e7eb; border-radius: 10px; height: 16px; overflow: hidden; border: 1px solid var(--border-dark);">
+                            <div class="progress-bar-fill" id="profileProgressBar" style="width: 0%; background: var(--accent-yellow); height: 100%;"></div>
+                        </div>
+                        
+                        <div class="progress-labels" style="display: flex; justify-content: space-between; font-size: 0.8rem; margin-top: 4px; font-weight: bold;">
+                            <span id="progressPercentText">0% Complete</span>
+                            <span>Goal: 30 Days</span>
+                        </div>
+                    </div>
+
+                </div>
+            </section>
+
+    <!-- 3. ASSISTANT POPUP MODAL CARD -->
+<div class="modal-overlay hidden" id="assistantModal">
+    <div class="modal-card">
+
+        <button
+            class="modal-close-btn"
+            onclick="toggleAssistantModal(false)"
+        >
+            <i data-lucide="x" style="width: 18px;"></i>
+        </button>
+
+        <div class="auth-tag" style="background: var(--card-mint);">
+            <i data-lucide="bot" style="width: 14px;"></i>
+            Active Companion
+        </div>
+
+        <h2
+            class="card-title"
+            style="font-size: 1.6rem; margin-top: 0.2rem;"
+        >
+            Mood Assistant
+        </h2>
+
+        <p
+            style="
+                font-size: 0.85rem;
+                color: var(--text-muted);
+                font-weight: 600;
+            "
+        >
+            Share how you are feeling or ask for a grounding technique.
+        </p>
+
+        <!-- CHAT HISTORY -->
+        <div
+            class="chat-history"
+            id="chatHistory"
+        >
+            <div class="chat-bubble assistant">
+                Hi there! I'm your MoodTracker assistant.
+                How are you feeling right now?
+            </div>
+        </div>
             <!-- HISTORY VIEW CONTENT -->
 <!-- STANDALONE CALENDAR VIEW -->
 <div id="calendarView" style="display: none;">
@@ -670,12 +825,30 @@
                         </div>
                     </div>
 
-                    <div style="display: flex; gap: 8px;">
-                        <input type="text" class="input-box" id="chatInput" placeholder="Type your message..." onkeypress="handleChatKey(event)" style="flex: 1; padding: 8px; border-radius: 8px; border: 2px solid var(--border-dark);">
-                        <button class="btn-primary" style="padding: 0.8rem 1.2rem;" onclick="sendChatMessage()">
-                            <i data-lucide="send" style="width: 16px;"></i>
-                        </button>
-                    </div>
+        <!-- CHAT INPUT -->
+        <div style="display: flex; gap: 8px;">
+
+            <input
+                type="text"
+                class="input-box"
+                id="chatInput"
+                placeholder="Type your message..."
+                autocomplete="off"
+                onkeypress="handleChatKey(event)"
+            >
+
+            <button
+                type="button"
+                class="btn-primary"
+                id="chatSendButton"
+                style="padding: 0.8rem 1.2rem;"
+                onclick="handleChatSend()"
+            >
+                <i data-lucide="send" style="width: 16px;"></i>
+            </button>
+
+        </div>
+
                 </div>
             </div>
 
@@ -697,141 +870,9 @@
                     </button>
                 </div>
             </div>
-<!-- PROFILE SECTION -->
-
-<div id="profileView" style="display: none; width: 100%;">
-
-    <h1 class="main-heading" style="margin-top: 0;">User Profile</h1>
-    <p class="sub-heading" style="margin-bottom: 1.25rem;">Manage your account, customize your sanctuary, and track your logging journey.</p>
-
-    <!-- Profile Details Card -->
-    <div class="content-card" style="margin-bottom: 1.5rem; padding: 2rem;">
-        
-        <!-- Avatar Header Area -->
-        <div style="display: flex; align-items: center; gap: 1.5rem; padding-bottom: 1.5rem; border-bottom: 2px solid var(--border-dark); margin-bottom: 1.5rem;">
-            <div id="currentAvatarDisplay" style="width: 72px; height: 72px; border-radius: 50%; background: var(--accent-yellow); border: 2px solid var(--border-dark); display: flex; align-items: center; justify-content: center; font-size: 2.2rem; box-shadow: 2px 2px 0px var(--border-dark); flex-shrink: 0;">
-                🦊
-            </div>
-            <div>
-                <label style="display: block; font-size: 0.75rem; font-weight: 800; letter-spacing: 1px; color: var(--text-muted); margin-bottom: 0.5rem;">CHOOSE AVATAR</label>
-                <div style="display: flex; gap: 8px; flex-wrap: wrap;">
-                    <button type="button" class="mood-btn avatar-opt" data-avatar="🦊" onclick="selectAvatar('🦊')" style="padding: 6px 12px; font-size: 1.2rem; background: var(--accent-yellow);">🦊</button>
-                    <button type="button" class="mood-btn avatar-opt" data-avatar="🐼" onclick="selectAvatar('🐼')" style="padding: 6px 12px; font-size: 1.2rem;">🐼</button>
-                    <button type="button" class="mood-btn avatar-opt" data-avatar="🐰" onclick="selectAvatar('🐰')" style="padding: 6px 12px; font-size: 1.2rem;">🐰</button>
-                    <button type="button" class="mood-btn avatar-opt" data-avatar="🐱" onclick="selectAvatar('🐱')" style="padding: 6px 12px; font-size: 1.2rem;">🐱</button>
-                    <button type="button" class="mood-btn avatar-opt" data-avatar="🐨" onclick="selectAvatar('🐨')" style="padding: 6px 12px; font-size: 1.2rem;">🐨</button>
-                </div>
-            </div>
-        </div>
-
-        <!-- Dynamic User Data Grid -->
-        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; margin-bottom: 1.5rem;">
-            <div>
-                <span style="display: block; font-size: 0.75rem; font-weight: 800; color: var(--text-muted); letter-spacing: 0.5px;">NAME</span>
-                <span id="display-name" style="font-size: 1.1rem; font-weight: 700;">Aya</span>
-            </div>
-            <div>
-                <span style="display: block; font-size: 0.75rem; font-weight: 800; color: var(--text-muted); letter-spacing: 0.5px;">EMAIL</span>
-                <span id="display-email" style="font-size: 1.1rem; font-weight: 700;">aya@example.com</span>
-            </div>
-            <div>
-                <span style="display: block; font-size: 0.75rem; font-weight: 800; color: var(--text-muted); letter-spacing: 0.5px;">BIRTHDAY</span>
-                <span id="display-birthday" style="font-size: 1.1rem; font-weight: 700;">2000-01-01</span>
-            </div>
-            <div>
-                <span style="display: block; font-size: 0.75rem; font-weight: 800; color: var(--text-muted); letter-spacing: 0.5px;">GENDER</span>
-                <span id="display-gender" style="font-size: 1.1rem; font-weight: 700;">Female</span>
-            </div>
-            <div style="grid-column: 1 / -1;">
-                <span style="display: block; font-size: 0.75rem; font-weight: 800; color: var(--text-muted); letter-spacing: 0.5px; margin-bottom: 6px;">ACHIEVEMENTS / TITLE</span>
-                <span style="display: inline-block; padding: 6px 14px; background: var(--card-mint); border: 2px solid var(--border-dark); border-radius: 8px; font-weight: 800; font-size: 0.9rem; box-shadow: 2px 2px 0px var(--border-dark);">Bronze Tracker 🏆</span>
-            </div>
-        </div>
-
-        <!-- Interactive Action Row -->
-        <div style="display: flex; justify-content: space-between; align-items: center; padding-top: 1.5rem; border-top: 2px solid var(--border-dark); flex-wrap: wrap; gap: 10px;">
-            <div style="display: flex; gap: 10px; flex-wrap: wrap;">
-                <button type="button" class="btn-secondary" onclick="openModal('editProfileModal')">Edit Profile</button>
-                <button type="button" class="btn-secondary" onclick="openModal('resetPasswordModal')">Reset Password</button>
-                <button type="button" class="btn-secondary" onclick="toggleTheme()">Switch Theme</button>
-            </div>
-            <button type="button" class="btn-primary" style="background-color: #fca5a5; color: #7f1d1d;" onclick="openModal('deleteAccountModal')">Delete Account</button>
-        </div>
-    </div>
-</div>
-
-<!-- MODALS CONTAINER -->
-
-<!-- Edit Profile Modal -->
-<div id="editProfileModal" class="custom-modal" style="display:none; position: fixed; inset: 0; background: rgba(0,0,0,0.4); z-index: 1000; justify-content: center; align-items: center;">
-    <div style="background: #fff; padding: 2rem; border-radius: 12px; border: 2px solid var(--border-dark); box-shadow: 4px 4px 0px var(--border-dark); width: 90%; max-width: 450px;">
-        <h3 style="margin-top: 0;">Edit Profile Info</h3>
-        <form id="editProfileForm" onsubmit="handleProfileUpdate(event)">
-            <div style="margin-bottom: 1rem;">
-                <label style="display: block; font-size: 0.8rem; font-weight: 700; margin-bottom: 4px;">Name</label>
-                <input type="text" id="input-name" style="width: 100%; padding: 8px; border: 2px solid var(--border-dark); border-radius: 6px;" required>
-            </div>
-            <div style="margin-bottom: 1rem;">
-                <label style="display: block; font-size: 0.8rem; font-weight: 700; margin-bottom: 4px;">Email</label>
-                <input type="email" id="input-email" style="width: 100%; padding: 8px; border: 2px solid var(--border-dark); border-radius: 6px;" required>
-            </div>
-            <div style="margin-bottom: 1rem;">
-                <label style="display: block; font-size: 0.8rem; font-weight: 700; margin-bottom: 4px;">Birthday</label>
-                <input type="date" id="input-birthday" style="width: 100%; padding: 8px; border: 2px solid var(--border-dark); border-radius: 6px;" required>
-            </div>
-            <div style="margin-bottom: 1.5rem;">
-                <label style="display: block; font-size: 0.8rem; font-weight: 700; margin-bottom: 4px;">Gender</label>
-                <select id="input-gender" style="width: 100%; padding: 8px; border: 2px solid var(--border-dark); border-radius: 6px;">
-                    <option value="Female">Female</option>
-                    <option value="Male">Male</option>
-                    <option value="Non-binary">Non-binary</option>
-                    <option value="Prefer not to say">Prefer not to say</option>
-                </select>
-            </div>
-            <div style="display: flex; justify-content: flex-end; gap: 8px;">
-                <button type="button" class="btn-secondary" onclick="closeModal('editProfileModal')">Cancel</button>
-                <button type="submit" class="btn-primary">Save Changes</button>
-            </div>
-        </form>
-    </div>
-</div>
-
-<!-- Reset Password Modal -->
-<div id="resetPasswordModal" class="custom-modal" style="display:none; position: fixed; inset: 0; background: rgba(0,0,0,0.4); z-index: 1000; justify-content: center; align-items: center;">
-    <div style="background: #fff; padding: 2rem; border-radius: 12px; border: 2px solid var(--border-dark); box-shadow: 4px 4px 0px var(--border-dark); width: 90%; max-width: 400px;">
-        <h3 style="margin-top: 0;">Reset Password</h3>
-        <form onsubmit="handlePasswordReset(event)">
-            <div style="margin-bottom: 1rem;">
-                <label style="display: block; font-size: 0.8rem; font-weight: 700; margin-bottom: 4px;">Current Password</label>
-                <input type="password" required style="width: 100%; padding: 8px; border: 2px solid var(--border-dark); border-radius: 6px;">
-            </div>
-            <div style="margin-bottom: 1.5rem;">
-                <label style="display: block; font-size: 0.8rem; font-weight: 700; margin-bottom: 4px;">New Password</label>
-                <input type="password" required style="width: 100%; padding: 8px; border: 2px solid var(--border-dark); border-radius: 6px;">
-            </div>
-            <div style="display: flex; justify-content: flex-end; gap: 8px;">
-                <button type="button" class="btn-secondary" onclick="closeModal('resetPasswordModal')">Cancel</button>
-                <button type="submit" class="btn-primary">Update Password</button>
-            </div>
-        </form>
-    </div>
-</div>
-
-<!-- Delete Account Confirmation Modal -->
-<div id="deleteAccountModal" class="custom-modal" style="display:none; position: fixed; inset: 0; background: rgba(0,0,0,0.4); z-index: 1000; justify-content: center; align-items: center;">
-    <div style="background: #fff; padding: 2rem; border-radius: 12px; border: 2px solid var(--border-dark); box-shadow: 4px 4px 0px var(--border-dark); width: 90%; max-width: 400px;">
-        <h3 style="margin-top: 0; color: #7f1d1d;">Delete Account</h3>
-        <p style="font-size: 0.9rem; color: var(--text-muted);">Are you sure you want to delete your profile? This action cannot be undone.</p>
-        <div style="display: flex; justify-content: flex-end; gap: 8px; margin-top: 1.5rem;">
-            <button type="button" class="btn-secondary" onclick="closeModal('deleteAccountModal')">Cancel</button>
-            <button type="button" class="btn-primary" style="background-color: #fca5a5; color: #7f1d1d;" onclick="handleAccountDeletion()">Confirm Delete</button>
-        </div>
-    </div>
-</div>
 
         </main>
     </div>
- 
 
     <!-- ==========================================================================
          4. JAVASCRIPT LOGIC
@@ -919,12 +960,6 @@
             if (element) {
                 element.classList.add('active');
             }
-        }
-
-        // Modal Helpers
-        function toggleAssistantModal(show) {
-            const modal = document.getElementById('assistantModal');
-            if (modal) modal.style.display = show ? 'flex' : 'none';
         }
 
         function toggleDayDetailModal(show) {
