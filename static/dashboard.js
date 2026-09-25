@@ -8,7 +8,7 @@ let selectedIcon = "";
 let currentDate = new Date();
 let activeTargetDate = new Date().toISOString().split('T')[0];
 
-const DAILY_EMOTION_LIMIT = 5;
+const DAILY_EMOTION_LIMIT = 999;
 
 let moodLogs = JSON.parse(localStorage.getItem('moodLogs')) || [
     { id: 1, log_date: new Date().toISOString().split('T')[0], emotion: "Happy", iconName: "smile", note: "Welcome to your fresh sanctuary dashboard!" }
@@ -54,6 +54,15 @@ function switchAuthTab(tab) {
     if (step1) step1.classList.remove('hidden');
     if (step2) step2.classList.add('hidden');
 }
+
+    const regHints = document.getElementById('regPasswordHints');
+    const resetHints = document.getElementById('resetPasswordHints');
+    [regHints, resetHints].forEach(box => {
+    if (box) {
+        box.querySelectorAll('.hint').forEach(h => h.classList.remove('valid', 'invalid'));
+      }
+     });
+
     if (window.lucide) lucide.createIcons();
 }
 
@@ -96,6 +105,12 @@ async function handleRegisterSubmit(event) {
     const username = nameInput ? nameInput.value.trim() : '';
     const email = emailInput ? emailInput.value.trim() : '';
     const password = passwordInput ? passwordInput.value.trim() : '';
+
+    const pwErr = validatePassword(password);
+    if (pwErr) {
+    showToastCard('❌ ' + pwErr);
+    return;
+    }
 
     try {
         const response = await fetch('/api/register', {
@@ -158,6 +173,12 @@ async function handlePasswordResetConfirm(event) {
         return;
     }
 
+    const pwErr = validatePassword(newPassword);
+    if (pwErr) {
+      showToastCard('❌ ' + pwErr);
+      return;
+    }
+
     try {
         const response = await fetch('/api/reset-password', {
             method: 'POST',
@@ -178,6 +199,49 @@ async function handlePasswordResetConfirm(event) {
     } catch (err) {
         showToastCard('❌ Server error. Please try again later.');
     }
+}
+
+function validatePassword(password) {
+    if (password.length < 8) return "Password must be at least 8 characters long.";
+    if (!/[A-Z]/.test(password)) return "Password must contain at least one uppercase letter.";
+    if (!/[a-z]/.test(password)) return "Password must contain at least one lowercase letter.";
+    if (!/[0-9]/.test(password)) return "Password must contain at least one number.";
+    if (!/[!@#$%^&*(),.?":{}|<>]/.test(password)) return "Password must contain at least one special character.";
+    return null;
+}
+
+function checkPasswordStrength(inputId, hintsId) {
+    const input = document.getElementById(inputId);
+    const hintsBox = document.getElementById(hintsId);
+    if (!input || !hintsBox) return;
+
+    const value = input.value;
+
+   
+    const rules = {
+        length: value.length >= 8,
+        upper: /[A-Z]/.test(value),
+        lower: /[a-z]/.test(value),
+        number: /[0-9]/.test(value),
+        special: /[!@#$%^&*(),.?":{}|<>]/.test(value)
+    };
+
+   
+    hintsBox.querySelectorAll('.hint').forEach(hint => {
+        const rule = hint.dataset.rule;
+        hint.classList.remove('valid', 'invalid');
+
+        if (!value) {
+           
+            return;
+        }
+
+        if (rules[rule]) {
+            hint.classList.add('valid');
+        } else {
+            hint.classList.add('invalid');
+        }
+    });
 }
 
 function enterSanctuary() {
@@ -297,15 +361,6 @@ async function logMood() {
         return;
     }
 
-    // Limit mood logging to 5 entries per day
-    const targetDateLogs = moodLogs.filter(
-        log => log.log_date === activeTargetDate
-    );
-
-    if (targetDateLogs.length >= DAILY_EMOTION_LIMIT) {
-        showToastCard("You can only log up to 5 moods per day.");
-        return;
-    }
 
     try {
         const response = await fetch('/api/logs', {
@@ -370,7 +425,7 @@ function generateCalendar() {
         "January", "February", "March", "April", "May", "June",
         "July", "August", "September", "October", "November", "December"
     ];
-    
+
     const monthYearElem = document.getElementById("monthYear");
     if (monthYearElem) {
         monthYearElem.innerText = `${monthNames[month]} ${year}`;
@@ -387,16 +442,18 @@ function generateCalendar() {
         calendarGrid.appendChild(emptyCell);
     }
 
+    
+    const EMOTION_PRIORITY = ['Happy', 'Calm', 'Neutral', 'Sad', 'Anxious'];
+
     for (let day = 1; day <= daysInMonth; day++) {
         const dayCell = document.createElement("div");
         dayCell.className = "day-cell";
-        
+
         const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
         dayCell.setAttribute("data-date", dateStr);
 
         if (dateStr === activeTargetDate) dayCell.classList.add("selected-day");
 
-       
         const dayLogs = moodLogs.filter(l => l.log_date === dateStr);
 
         if (dayLogs.length > 0) {
@@ -406,32 +463,35 @@ function generateCalendar() {
                 emotionCounts[l.emotion] = (emotionCounts[l.emotion] || 0) + 1;
             });
 
-            
-            const dominantEmotion = Object.keys(emotionCounts).reduce((a, b) => 
-                emotionCounts[a] > emotionCounts[b] ? a : (emotionCounts[a] === emotionCounts[b] ? a : b)
-            );
+           
+            const dominantEmotion = Object.keys(emotionCounts).sort((a, b) => {
+                if (emotionCounts[b] !== emotionCounts[a]) {
+                    return emotionCounts[b] - emotionCounts[a];   
+                }
+                return EMOTION_PRIORITY.indexOf(a) - EMOTION_PRIORITY.indexOf(b);   
+            })[0];
 
             const iconName = EMOTION_ICON_MAP[dominantEmotion] || 'smile';
             const totalCount = dayLogs.length;
 
             let cellContent = `<span>${day}</span><span class="day-mood-icon"><i data-lucide="${iconName}" style="width: 14px;"></i></span>`;
-            
+
             
             if (totalCount > 1) {
                 cellContent += `<span class="multi-entry-badge" style="position: absolute; top: 2px; right: 2px; background: #ff6b6b; color: white; font-size: 0.65rem; padding: 1px 5px; border-radius: 8px; font-weight: 800;">${totalCount}</span>`;
             }
-            
+
             dayCell.style.position = 'relative';
             dayCell.innerHTML = cellContent;
         } else {
             dayCell.innerHTML = `<span>${day}</span>`;
         }
-        
-    
+
         dayCell.onclick = () => openDayDetailModal(dateStr, dayLogs);
         calendarGrid.appendChild(dayCell);
     }
 }
+
 function renderStandaloneCalendar() {
     const container = document.getElementById('standaloneCalendarContainer');
     if (!container) return;
@@ -486,7 +546,12 @@ function refreshUI() {
     renderTable();
     calculateStats();
     generateCalendar();
-    renderHistoryTable();      
+
+    
+    if (typeof renderHistoryView === 'function') {
+        renderHistoryView();
+    }
+
     if (window.lucide) lucide.createIcons();
 }
 
@@ -1268,6 +1333,14 @@ function switchTheme(theme) {
 function openAuthModal(tab) {
     const authScr = document.getElementById('authScreen');
     if (authScr) authScr.classList.remove('hidden');
+
+    ['regPasswordHints', 'resetPasswordHints'].forEach(id => {
+        const box = document.getElementById(id);
+        if (box) {
+            box.querySelectorAll('.hint').forEach(h => h.classList.remove('valid', 'invalid'));
+        }
+    });
+
     switchAuthTab(tab);
 }
 
@@ -1410,7 +1483,7 @@ function renderHistoryView() {
     }
 }
 
-// ============ LIST 模式 ============
+// ============ LIST  ============
 function renderHistoryList(arr) {
     const tbody = document.getElementById('history-list-body');
     if (!tbody) {
@@ -1443,7 +1516,7 @@ function renderHistoryList(arr) {
     if (window.lucide) lucide.createIcons();
 }
 
-// ============ CARDS 模式 ============
+// ============ CARDS  ============
 function renderHistoryCards(arr) {
     const container = document.getElementById('history-cards-body');
     if (!container) {
@@ -1456,7 +1529,7 @@ function renderHistoryCards(arr) {
         return;
     }
 
-    // 按日期分组
+    
     const byDate = {};
     arr.forEach(l => {
         if (!byDate[l.log_date]) byDate[l.log_date] = [];
