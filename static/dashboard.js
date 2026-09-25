@@ -8,6 +8,8 @@ let selectedIcon = "";
 let currentDate = new Date();
 let activeTargetDate = new Date().toISOString().split('T')[0];
 
+const DAILY_EMOTION_LIMIT = 5;
+
 let moodLogs = JSON.parse(localStorage.getItem('moodLogs')) || [
     { id: 1, log_date: new Date().toISOString().split('T')[0], emotion: "Happy", iconName: "smile", note: "Welcome to your fresh sanctuary dashboard!" }
 ];
@@ -179,20 +181,28 @@ async function handlePasswordResetConfirm(event) {
 }
 
 function enterSanctuary() {
+    document.getElementById('logoutFab')?.classList.remove('hidden');
     const userDisp = document.getElementById('userDisplayName');
     const profileText = document.getElementById('profileUserText');
     const authScr = document.getElementById('authScreen');
+    const landingScr = document.getElementById('landingScreen'); 
     const appLay = document.getElementById('appLayout');
 
     if (userDisp) userDisp.innerText = activeUser;
     if (profileText) profileText.innerText = `Active User: ${activeUser}`;
+    
+    
+    if (landingScr) landingScr.classList.add('hidden'); 
     if (authScr) authScr.classList.add('hidden');
+    
+    
     if (appLay) appLay.classList.remove('hidden');
 
     fetchLogsAndRefresh();
 }
 
 async function logout() {
+    
     try {
         await fetch('/api/logout', { method: 'POST' });
     } catch (e) {
@@ -213,8 +223,7 @@ async function logout() {
 // 3. UI NAVIGATION & SELECTION
 
 function switchView(viewId, element) {
-    
-    const views = ['dashboardView', 'calendarView', 'profileView', 'alarmView'];
+    const views = ['dashboardView', 'historyView', 'profileView'];   // ⬅️ 只有这 3 个
     views.forEach(id => {
         const el = document.getElementById(id);
         if (el) el.classList.add('hidden');
@@ -225,11 +234,16 @@ function switchView(viewId, element) {
     if (target) target.classList.remove('hidden');
     if (element) element.classList.add('active');
 
-    if (viewId === 'calendarView') {
-        renderStandaloneCalendar();
+    
+    if (viewId === 'historyView') {
+        setHistoryStyle(historyStyle);
     }
-    if (viewId === 'alarmView' && window.alarmManager) {
-        window.alarmManager.loadAlarms();
+
+    
+    if (viewId === 'profileView') {
+        if (typeof initProfilePage === 'function') {
+            try { initProfilePage(); } catch (e) { console.warn(e); }
+        }
     }
 
     if (window.lucide) lucide.createIcons();
@@ -253,6 +267,7 @@ async function fetchLogsAndRefresh() {
                 ...log,
                 iconName: EMOTION_ICON_MAP[log.emotion] || 'smile'
             }));
+            console.log("Mood logs:", moodLogs);
             refreshUI();
         } else if (response.status === 401) {
             logout();
@@ -262,12 +277,33 @@ async function fetchLogsAndRefresh() {
     }
 }
 
+function generateMoodNote(emotion) {
+    const notes = {
+        Happy: "You're feeling positive today! Keep doing what makes you happy.",
+        Calm: "You seem calm today. Take some time to enjoy this peaceful moment.",
+        Neutral: "It's okay to have a neutral day. Take things at your own pace.",
+        Sad: "You seem to be having a difficult day. Consider taking a break or talking to someone you trust.",
+        Anxious: "You seem anxious today. Try taking a few slow breaths and giving yourself a moment to relax."
+    };
+
+    return notes[emotion] || "Take a moment to check in with yourself today.";
+}
+
 async function logMood() {
-    const noteElem = document.getElementById("moodNote");
-    const note = noteElem ? noteElem.value.trim() : "";
+    const note = generateMoodNote(selectedEmotion);
 
     if (!selectedEmotion) {
         showToastCard("Please select an emotion first!");
+        return;
+    }
+
+    // Limit mood logging to 5 entries per day
+    const targetDateLogs = moodLogs.filter(
+        log => log.log_date === activeTargetDate
+    );
+
+    if (targetDateLogs.length >= DAILY_EMOTION_LIMIT) {
+        showToastCard("You can only log up to 5 moods per day.");
         return;
     }
 
@@ -285,7 +321,6 @@ async function logMood() {
         const data = await response.json();
 
         if (response.ok && data.success) {
-            if (noteElem) noteElem.value = "";
             document.querySelectorAll('.mood-btn').forEach(b => b.classList.remove('selected'));
             selectedEmotion = null;
             selectedIcon = "";
@@ -447,10 +482,41 @@ function refreshUI() {
 
     if (loggingDateDisp) loggingDateDisp.innerText = activeTargetDate;
     if (selectedTargetLbl) selectedTargetLbl.innerText = activeTargetDate;
-    
+
     renderTable();
     calculateStats();
     generateCalendar();
+    renderHistoryTable();      
+    if (window.lucide) lucide.createIcons();
+}
+
+
+function renderHistoryTable() {
+    const tbody = document.getElementById('history-table-body');
+    if (!tbody) return;
+
+    if (!Array.isArray(moodLogs) || moodLogs.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="4" style="text-align:center;color:var(--text-muted);padding:1.5rem 0;">No logs yet. Go to Dashboard to log your first mood!</td></tr>`;
+        return;
+    }
+
+    tbody.innerHTML = moodLogs.map(log => `
+        <tr>
+            <td>${log.log_date}</td>
+            <td>
+                <span class="badge-emotion" style="background:${getEmotionBg(log.emotion)}">
+                    <i data-lucide="${log.iconName || 'smile'}" style="width:14px;"></i> ${log.emotion}
+                </span>
+            </td>
+            <td style="color:var(--text-muted);">${log.note || '—'}</td>
+            <td>
+                <button class="btn-delete" onclick="deleteLog(${log.id})">
+                    <i data-lucide="trash-2" style="width:14px;"></i>
+                </button>
+            </td>
+        </tr>
+    `).join('');
+
     if (window.lucide) lucide.createIcons();
 }
 
@@ -492,11 +558,18 @@ function calculateStats() {
     const totalElem = document.getElementById('stat-total');
     if (totalElem) totalElem.innerText = moodLogs.length;
 
-    let happy = 0, anxious = 0, neutral = 0;
-    moodLogs.forEach(l => {
-        if (l.emotion === 'Happy' || l.emotion === 'Calm') happy++;
-        else if (l.emotion === 'Anxious' || l.emotion === 'Sad') anxious++;
-        else neutral++;
+    let happy = 0;
+    let anxious = 0;
+    let neutral = 0;
+
+    moodLogs.forEach(function(l) {
+        if (l.emotion === 'Happy' || l.emotion === 'Calm') {
+            happy++;
+        } else if (l.emotion === 'Anxious' || l.emotion === 'Sad') {
+            anxious++;
+        } else {
+            neutral++;
+        }
     });
 
     const happyElem = document.getElementById('stat-happy');
@@ -513,23 +586,55 @@ function calculateStats() {
 
     if (moodLogs.length > 0) {
         const latest = moodLogs[0];
-        if (mostCommonElem) mostCommonElem.innerHTML = `<i data-lucide="${latest.iconName || 'smile'}" style="width: 18px;"></i> ${latest.emotion}`;
-        
-        if (happy >= anxious && happy >= neutral) {
-            if (overallElem) overallElem.innerHTML = `Positive <i data-lucide="smile" style="width: 22px;"></i>`;
-            if (descElem) descElem.innerText = "Your logs reflect high resilience and overall brightness.";
-        } else if (anxious > happy) {
-            if (overallElem) overallElem.innerHTML = `Needs Care <i data-lucide="frown" style="width: 22px;"></i>`;
-            if (descElem) descElem.innerText = "Higher anxiety/stress detected. Consider taking small breaks.";
+
+        if (mostCommonElem) {
+            mostCommonElem.innerHTML =
+                '<i data-lucide="' +
+                (latest.iconName || 'smile') +
+                '" style="width: 18px;"></i> ' +
+                latest.emotion;
+        }
+
+        // Determine overall mood
+        if (happy > anxious && happy > neutral) {
+            if (overallElem) {
+                overallElem.innerHTML =
+                    'Positive <i data-lucide="smile" style="width: 22px;"></i>';
+            }
+
+            if (descElem) {
+                descElem.innerText =
+                    'Your logs reflect more positive emotions overall.';
+            }
+
+        } else if (anxious > happy && anxious > neutral) {
+            if (overallElem) {
+                overallElem.innerHTML =
+                    'Needs Care <i data-lucide="frown" style="width: 22px;"></i>';
+            }
+
+            if (descElem) {
+                descElem.innerText =
+                    'Higher anxiety or stress appears in your recent logs. Consider taking small breaks.';
+            }
+
         } else {
-            if (overallElem) overallElem.innerHTML = `Balanced <i data-lucide="meh" style="width: 22px;"></i>`;
-            if (descElem) descElem.innerText = "Your state is steady and reflective.";
+            if (overallElem) {
+                overallElem.innerHTML =
+                    'Balanced <i data-lucide="meh" style="width: 22px;"></i>';
+            }
+
+            if (descElem) {
+                descElem.innerText =
+                    'Your emotions are relatively balanced across your recent logs.';
+            }
         }
     } else {
-        if (mostCommonElem) mostCommonElem.innerText = "None yet";
+        if (mostCommonElem) {
+            mostCommonElem.innerText = 'None yet';
+        }
     }
 }
-
 
 // 7. MODALS & UTILITIES
 function openDayDetailModal(dateStr, loggedEntry) {
@@ -588,14 +693,16 @@ function handleChatKey(e) {
     if (e.key === 'Enter') sendChatMessage();
 }
 
-function sendChatMessage() {
+async function sendChatMessage() {
     const input = document.getElementById('chatInput');
     const userMsg = input ? input.value.trim() : '';
+
     if (!userMsg) return;
 
     const chatHistory = document.getElementById('chatHistory');
     if (!chatHistory) return;
 
+    // Add user's message
     const userBubble = document.createElement('div');
     userBubble.className = 'chat-bubble user';
     userBubble.innerText = userMsg;
@@ -604,26 +711,48 @@ function sendChatMessage() {
     input.value = '';
     chatHistory.scrollTop = chatHistory.scrollHeight;
 
-    setTimeout(() => {
-        const lower = userMsg.toLowerCase();
-        let response = "";
+    try {
+        // Send message to Flask API
+        const response = await fetch('/api/chat', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                message: userMsg
+            })
+        });
 
-        if (['sad', 'down', 'depressed', 'unhappy'].some(w => lower.includes(w))) {
-            response = "I'm sorry you're feeling down. Remember that it's okay to take things slow today. Try writing down one small positive thing.";
-        } else if (['anxious', 'stressed', 'worried', 'panic'].some(w => lower.includes(w))) {
-            response = "Take a deep breath in for 4 seconds, hold for 4, and release for 4. You are completely safe right now.";
-        } else if (['happy', 'great', 'good', 'awesome'].some(w => lower.includes(w))) {
-            response = "That is wonderful to hear! Keep carrying that positive momentum through your day.";
+        const data = await response.json();
+
+        // Add assistant response
+        const botBubble = document.createElement('div');
+        botBubble.className = 'chat-bubble assistant';
+
+        if (response.ok && data.reply) {
+            botBubble.innerText = data.reply;
         } else {
-            response = "Thank you for sharing that with me. Every emotion you experience is valid and worth acknowledging.";
+            botBubble.innerText = data.error || 'Sorry, I could not generate a response.';
         }
+
+        chatHistory.appendChild(botBubble);
+        chatHistory.scrollTop = chatHistory.scrollHeight;
+
+    } catch (error) {
+        console.error('Chat API error:', error);
 
         const botBubble = document.createElement('div');
         botBubble.className = 'chat-bubble assistant';
-        botBubble.innerText = response;
+        botBubble.innerText = 'Sorry, I could not connect to the Mood Assistant right now.';
+
         chatHistory.appendChild(botBubble);
         chatHistory.scrollTop = chatHistory.scrollHeight;
-    }, 400);
+    }
+}
+
+// Your HTML Send button currently calls handleChatSend()
+function handleChatSend() {
+    sendChatMessage();
 }
 
 function showToastCard(message) {
@@ -638,25 +767,108 @@ function showToastCard(message) {
 
 // 8. INITIALIZATION
 document.addEventListener('DOMContentLoaded', async function () {
+    
     const splash = document.getElementById("welcomeSplash");
     if (splash) {
         setTimeout(() => { splash.classList.add("hidden-splash"); }, 1500);
     }
 
+    
+    const landingScr = document.getElementById('landingScreen');
+    const appLay = document.getElementById('appLayout');
+    const authScr = document.getElementById('authScreen');
+
+    if (landingScr) landingScr.classList.remove('hidden');   
+    if (appLay) appLay.classList.add('hidden');
+    if (authScr) authScr.classList.add('hidden');
+
+    
     try {
         const response = await fetch('/api/user', { method: 'GET' });
+
         if (response.ok) {
             const user = await response.json();
             activeUser = user.username;
             activeUserId = user.id;
-            enterSanctuary();
-        } else {
-            switchAuthTab('login');
+            enterSanctuary();   
         }
+        
     } catch (err) {
-        switchAuthTab('login');
+        console.warn('Session check failed:', err);
+       
     }
+
+    if (window.lucide) lucide.createIcons();
 });
+
+
+// ALARM 
+
+let _alarmAudio = null;
+let _isAlarmRinging = false;
+
+function triggerAlarm(alarm) {
+    _isAlarmRinging = true;
+
+    
+    if (!_alarmAudio) {
+        _alarmAudio = new Audio('https://actions.google.com/sounds/v1/alarms/beep_short.ogg');
+        _alarmAudio.loop = true;
+    }
+    _alarmAudio.play().catch(() => {});
+
+    
+    const modal = document.getElementById('alarmModal');
+    const title = document.getElementById('modalTitle');
+    const timeEl = document.getElementById('modalTime');
+
+    if (title) title.textContent = `⏰ ${alarm.label || 'Alarm'}`;
+    if (timeEl) timeEl.textContent = `Scheduled time: ${alarm.time}`;
+    if (modal) modal.classList.remove('hidden');
+
+    if (window.lucide) lucide.createIcons();
+
+    
+    if (Notification && Notification.permission === 'granted') {
+        new Notification(`⏰ ${alarm.label || 'Alarm'}`, {
+            body: `It's ${alarm.time}`
+        });
+    }
+}
+
+function stopAlarm() {
+    _isAlarmRinging = false;
+
+    if (_alarmAudio) {
+        _alarmAudio.pause();
+        _alarmAudio.currentTime = 0;
+    }
+
+    const modal = document.getElementById('alarmModal');
+    if (modal) modal.classList.add('hidden');
+}
+
+
+document.addEventListener('DOMContentLoaded', function () {
+    const stopBtn = document.getElementById('stopAlarmBtn');
+    if (stopBtn) stopBtn.addEventListener('click', stopAlarm);
+
+    
+    setInterval(function () {
+        if (_isAlarmRinging) return;   
+
+        const now = new Date();
+        const currentTime = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
+
+        const alarms = JSON.parse(localStorage.getItem('alarms') || '[]');
+        alarms.forEach(alarm => {
+            if (alarm.time === currentTime && alarm.enabled !== false) {
+                triggerAlarm(alarm);
+            }
+        });
+    }, 10000);
+});
+
 
 // ==========================================================================
 // PROFILE VIEW LOGIC (Aya)
@@ -665,26 +877,72 @@ document.addEventListener('DOMContentLoaded', async function () {
 /**
  * Initializes and populates the Profile Page UI components and dynamic stats.
  */
-function initProfilePage() {
-  loadUserProfileDetails();
-  calculateAndRenderStats();
-  loadSavedAvatar();
+async function initProfilePage() {
+    await loadUserProfileDetails();
+    calculateAndRenderStats();
+    loadSavedAvatar();
 }
 
 /**
  * Loads user details from localStorage or active session state.
  */
-function loadUserProfileDetails() {
-  const activeUser = localStorage.getItem('activeUser') || 'Aya';
-  const userEmail = localStorage.getItem('userEmail') || `${activeUser.toLowerCase()}@example.com`;
+async function loadUserProfileDetails() {
+    try {
+        const response = await fetch('/api/user', {
+            method: 'GET',
+            credentials: 'include',
+            headers: { 'Accept': 'application/json' }
+        });
 
-  const nameEl = document.getElementById('profileUserName');
-  const emailEl = document.getElementById('profileUserEmail');
+        if (!response.ok) {
+            console.warn('loadUserProfileDetails: HTTP', response.status);
+            return;
+        }
 
-  if (nameEl) nameEl.textContent = activeUser;
-  if (emailEl) emailEl.textContent = userEmail;
+        const user = await response.json();
+        console.log('✅ Profile user from backend:', user);
+
+        localStorage.setItem('currentUser', JSON.stringify(user));
+        localStorage.setItem('activeUser', user.username || 'User');
+        localStorage.setItem('userEmail', user.email || '');
+
+       
+        const nameEl = document.getElementById('profileUserName');
+        const emailEl = document.getElementById('profileUserEmail');
+        if (nameEl) nameEl.textContent = user.username || 'User';
+        if (emailEl) emailEl.textContent = user.email || '—';
+
+        // Active User
+        const activeUserEl = document.getElementById('profileUserText');
+        if (activeUserEl) activeUserEl.textContent = `Active User: ${user.username || 'User'}`;
+
+        
+        const birthdayEl = document.getElementById('profileBirthday');
+        if (birthdayEl) birthdayEl.textContent = user.birthday || '—';
+
+       
+        const genderEl = document.getElementById('profileGender');
+        if (genderEl) genderEl.textContent = user.gender || '—';
+
+        
+        const titleEl = document.getElementById('profileTitle');
+        if (titleEl) titleEl.textContent = user.title || 'Bronze Tracker 🏆';
+
+        
+        if (user.avatar) {
+            const avatarEl = document.getElementById('currentAvatarDisplay');
+            if (avatarEl) avatarEl.textContent = user.avatar;
+            localStorage.setItem('selectedAvatar', user.avatar);
+        }
+
+        // Dashboard 
+        const userDisp = document.getElementById('userDisplayName');
+        if (userDisp) userDisp.textContent = user.username || 'User';
+
+    } catch (err) {
+        console.error('loadUserProfileDetails error:', err);
+    }
 }
-
 /**
  * Computes mood statistics (Total Entries, Logging Streak, Dominant Mood, Progress)
  * from stored mood log entries and updates the profile UI.
@@ -723,36 +981,34 @@ function calculateAndRenderStats() {
  * Handles avatar selection click events and saves preferences locally.
  * @param {string} emoji - The selected avatar emoji icon
  */
-function selectAvatar(emoji) {
-  // Update the current display icon
+async function selectAvatar(emoji) {
   const currentAvatarEl = document.getElementById('currentAvatarDisplay');
   if (currentAvatarEl) {
     currentAvatarEl.textContent = emoji;
-    
-    // Add pop animation effect on click
     currentAvatarEl.style.transform = 'scale(1.2) rotate(10deg)';
-    setTimeout(() => {
-      currentAvatarEl.style.transform = '';
-    }, 200);
+    setTimeout(() => { currentAvatarEl.style.transform = ''; }, 200);
   }
 
-  // Update active state on option buttons
-  const buttons = document.querySelectorAll('.avatar-opt');
-  buttons.forEach(btn => {
-    if (btn.textContent.trim() === emoji) {
-      btn.classList.add('active');
-    } else {
-      btn.classList.remove('active');
-    }
+  document.querySelectorAll('.avatar-opt').forEach(btn => {
+    if (btn.textContent.trim() === emoji) btn.classList.add('active');
+    else btn.classList.remove('active');
   });
 
-  // Save selected avatar preference
   localStorage.setItem('selectedAvatar', emoji);
+
+  
+  try {
+    await fetch('/api/user', {
+      method: 'PUT',
+      credentials: 'include',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ avatar: emoji })
+    });
+  } catch (err) {
+    console.warn('Failed to save avatar:', err);
+  }
 }
 
-/**
- * Loads the saved avatar preference from localStorage on page load.
- */
 function loadSavedAvatar() {
   const savedAvatar = localStorage.getItem('selectedAvatar') || '🌸';
   selectAvatar(savedAvatar);
@@ -851,6 +1107,7 @@ function showView(viewName) {
 function handleLogout() {
   localStorage.removeItem('activeUser');
   localStorage.removeItem('userEmail');
+  localStorage.removeItem('userName');
   localStorage.removeItem('selectedAvatarName');
   localStorage.removeItem('selectedAvatarUrl');
   
@@ -858,32 +1115,7 @@ function handleLogout() {
   window.location.href = 'index.html';
 }
 
-// Avatar selection handler
-function selectAvatar(name, imgUrl) {
-  const currentAvatarImg = document.getElementById('currentAvatarImg');
-  if (currentAvatarImg) {
-    currentAvatarImg.src = imgUrl;
-  }
 
-  const buttons = document.querySelectorAll('.avatar-opt');
-  buttons.forEach(btn => {
-    if (btn.getAttribute('data-avatar') === name) {
-      btn.classList.add('active');
-    } else {
-      btn.classList.remove('active');
-    }
-  });
-
-  localStorage.setItem('selectedAvatarName', name);
-  localStorage.setItem('selectedAvatarUrl', imgUrl);
-}
-
-// Load saved avatar on page render
-function loadSavedAvatar() {
-  const savedName = localStorage.getItem('selectedAvatarName') || 'fox';
-  const savedUrl = localStorage.getItem('selectedAvatarUrl') || 'https://api.iconify.design/fluent-emoji:fox.svg';
-  selectAvatar(savedName, savedUrl);
-}
 
 // Auto-run when document loads
 // Load active user sign-in info into profile display
@@ -989,24 +1221,35 @@ function switchDashboardTab(tabName) {
     }
 }
 // Profile Action Handlers
-function editProfile() {
-    const currentName = document.getElementById('profileDetailName').innerText;
-    const newName = prompt("Edit your full name:", currentName);
-    if (newName) {
-        document.getElementById('profileUserName').innerText = newName;
-        document.getElementById('profileDetailName').innerText = newName;
-    }
-}
+
 
 function resetPasswordFromProfile() {
+  openAuthModal('reset');
+  switchAuthTab('reset');
+
     alert("A password reset link has been sent to your registered email address.");
 }
 
-function deleteAccount() {
-    if (confirm("Are you sure you want to delete your account? This action cannot be undone.")) {
-        alert("Account deleted.");
-        location.reload();
+async function deleteAccount() {
+  if (!confirm('Are you sure? This cannot be undone.')) return;
+
+  try {
+    const response = await fetch('/api/user', {
+      method: 'DELETE',
+      credentials: 'include'
+    });
+
+    if (response.ok) {
+      showToastCard('Account deleted');
+      localStorage.clear();
+      setTimeout(() => window.location.reload(), 1500);
+    } else {
+      const data = await response.json().catch(() => ({}));
+      showToastCard('❌ ' + (data.error || 'Failed to delete'));
     }
+  } catch (err) {
+    showToastCard('❌ Network error');
+  }
 }
 
 function switchTheme(theme) {
@@ -1021,3 +1264,286 @@ function switchTheme(theme) {
         if (event && event.target) event.target.classList.add('active');
     }
 }
+
+function openAuthModal(tab) {
+    const authScr = document.getElementById('authScreen');
+    if (authScr) authScr.classList.remove('hidden');
+    switchAuthTab(tab);
+}
+
+function closeAuthModal() {
+    const authScr = document.getElementById('authScreen');
+    if (authScr) authScr.classList.add('hidden');
+}
+
+// 
+// ==========================================================================
+// EDIT PROFILE MODAL
+// ==========================================================================
+
+function editProfile() {
+    // 1. 先用后端数据填充表单
+    fetch('/api/user', { credentials: 'include' })
+        .then(res => res.ok ? res.json() : Promise.reject(res))
+        .then(user => {
+            const nameEl = document.getElementById('editUsername');
+            const emailEl = document.getElementById('editEmail');
+            const bdayEl = document.getElementById('editBirthday');
+            const genderEl = document.getElementById('editGender');
+            const bioEl = document.getElementById('editBio');
+
+            if (nameEl) nameEl.value = user.username || '';
+            if (emailEl) emailEl.value = user.email || '';
+
+            // birthday 后端存的是 "01/01/2000" 格式，转成 "2000-01-01" 给 date input
+            if (bdayEl && user.birthday) {
+                const parts = user.birthday.split('/');
+                if (parts.length === 3) {
+                    bdayEl.value = `${parts[2]}-${parts[1].padStart(2,'0')}-${parts[0].padStart(2,'0')}`;
+                }
+            }
+
+            if (genderEl) genderEl.value = user.gender || '';
+            if (bioEl) bioEl.value = user.bio || '';
+
+            // 显示模态框
+            const modal = document.getElementById('editProfileModal');
+            if (modal) modal.classList.remove('hidden');
+            if (window.lucide) lucide.createIcons();
+        })
+        .catch(err => {
+            console.error('editProfile fetch error:', err);
+            showToastCard('❌ Could not load profile');
+        });
+}
+
+function closeEditProfileModal() {
+    const modal = document.getElementById('editProfileModal');
+    if (modal) modal.classList.add('hidden');
+}
+
+async function saveProfileChanges(event) {
+    event.preventDefault();
+
+    const username = document.getElementById('editUsername')?.value.trim();
+    const email = document.getElementById('editEmail')?.value.trim();
+    const birthdayRaw = document.getElementById('editBirthday')?.value;   // "2000-01-01"
+    const gender = document.getElementById('editGender')?.value;
+    const bio = document.getElementById('editBio')?.value.trim();
+
+    if (!username || !email) {
+        showToastCard('Username and email are required');
+        return;
+    }
+
+    
+    let birthday = '';
+    if (birthdayRaw) {
+        const [y, m, d] = birthdayRaw.split('-');
+        birthday = `${d}/${m}/${y}`;
+    }
+
+    const payload = { username, email, birthday, gender, bio };
+
+    try {
+        const response = await fetch('/api/user', {
+            method: 'PUT',
+            credentials: 'include',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+        });
+
+        const data = await response.json().catch(() => ({}));
+
+        if (response.ok) {
+            showToastCard('✅ Profile updated');
+            closeEditProfileModal();
+
+            
+            await loadUserProfileDetails();
+
+            
+            const userDisp = document.getElementById('userDisplayName');
+            if (userDisp) userDisp.textContent = username;
+
+        } else {
+            showToastCard('❌ ' + (data.error || 'Failed to save'));
+        }
+    } catch (err) {
+        console.error('saveProfileChanges error:', err);
+        showToastCard('❌ Network error');
+    }
+}
+// ==========================================================================
+// HISTORY VIEW — List / Cards 
+// ==========================================================================
+
+let historyStyle = 'list';   // 'list' | 'cards'
+
+function setHistoryStyle(style) {
+    historyStyle = style;
+    console.log('🔁 setHistoryStyle:', style, '| logs:', moodLogs.length);
+
+    // 切换按钮高亮
+    document.querySelectorAll('.history-style-btn').forEach(btn => {
+        btn.classList.toggle('active', btn.dataset.style === style);
+    });
+
+    // 切换容器显示
+    const listBox = document.getElementById('historyListContainer');
+    const cardsBox = document.getElementById('historyCardsContainer');
+
+    if (listBox) listBox.classList.toggle('hidden', style !== 'list');
+    if (cardsBox) cardsBox.classList.toggle('hidden', style !== 'cards');
+
+    // 渲染
+    renderHistoryView();
+}
+
+function renderHistoryView() {
+    if (!Array.isArray(moodLogs)) moodLogs = [];
+
+    if (historyStyle === 'list') {
+        renderHistoryList(moodLogs);
+    } else {
+        renderHistoryCards(moodLogs);
+    }
+}
+
+// ============ LIST 模式 ============
+function renderHistoryList(arr) {
+    const tbody = document.getElementById('history-list-body');
+    if (!tbody) {
+        console.warn('❌ #history-list-body 不存在');
+        return;
+    }
+
+    if (arr.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="4" style="text-align:center;color:var(--text-muted);padding:1.5rem 0;">No logs yet. Go to Dashboard to log your first mood!</td></tr>`;
+        return;
+    }
+
+    tbody.innerHTML = arr.map(log => `
+        <tr>
+            <td>${log.log_date}</td>
+            <td>
+                <span class="badge-emotion" style="background:${getEmotionBg(log.emotion)}">
+                    <i data-lucide="${log.iconName || 'smile'}" style="width:14px;"></i> ${log.emotion}
+                </span>
+            </td>
+            <td style="color:var(--text-muted);">${log.note || '—'}</td>
+            <td>
+                <button class="btn-delete" onclick="deleteLog(${log.id})">
+                    <i data-lucide="trash-2" style="width:14px;"></i>
+                </button>
+            </td>
+        </tr>
+    `).join('');
+
+    if (window.lucide) lucide.createIcons();
+}
+
+// ============ CARDS 模式 ============
+function renderHistoryCards(arr) {
+    const container = document.getElementById('history-cards-body');
+    if (!container) {
+        console.warn('❌ #history-cards-body 不存在');
+        return;
+    }
+
+    if (arr.length === 0) {
+        container.innerHTML = `<p style="color:var(--text-muted);font-weight:600;">No mood entries logged yet.</p>`;
+        return;
+    }
+
+    // 按日期分组
+    const byDate = {};
+    arr.forEach(l => {
+        if (!byDate[l.log_date]) byDate[l.log_date] = [];
+        byDate[l.log_date].push(l);
+    });
+
+    const dates = Object.keys(byDate).sort().reverse();
+
+    container.innerHTML = `
+        <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:1rem;">
+            ${dates.map(date => {
+                const entries = byDate[date];
+                const total = entries.length;
+
+                const counts = {};
+                entries.forEach(e => counts[e.emotion] = (counts[e.emotion] || 0) + 1);
+                const dominant = Object.keys(counts).reduce((a, b) =>
+                    counts[a] > counts[b] ? a : (counts[a] === counts[b] ? a : b));
+
+                const dominantIcon = EMOTION_ICON_MAP[dominant] || 'smile';
+                const dominantBg = getEmotionBg(dominant);
+
+                return `
+                    <div style="background:white;border:2px solid var(--border-dark);padding:1rem;border-radius:16px;box-shadow:2px 2px 0 var(--border-dark);position:relative;">
+                        <div style="font-size:0.75rem;font-weight:800;color:var(--text-muted);margin-bottom:0.4rem;">${date}</div>
+                        <div style="display:flex;align-items:center;gap:6px;font-weight:800;font-size:0.95rem;background:${dominantBg};padding:4px 10px;border-radius:10px;border:1.5px solid var(--border-dark);width:fit-content;">
+                            <i data-lucide="${dominantIcon}" style="width:14px;"></i> ${dominant}
+                        </div>
+                        ${entries[0].note ? `<div style="font-size:0.75rem;color:var(--text-dark);opacity:0.75;margin-top:0.6rem;">${entries[0].note}</div>` : ''}
+                        ${total > 1 ? `<span style="position:absolute;top:8px;right:8px;background:#ff6b6b;color:white;font-size:0.65rem;padding:2px 7px;border-radius:8px;font-weight:800;">${total}</span>` : ''}
+                    </div>
+                `;
+            }).join('')}
+        </div>
+    `;
+
+    if (window.lucide) lucide.createIcons();
+}
+
+
+function addAlarm(event) {
+    if (event) event.preventDefault();
+    const timeInput = document.getElementById('alarmTimeInput');
+    const labelInput = document.getElementById('alarmLabelInput');
+    if (!timeInput || !timeInput.value) return showToastCard('Please select a time');
+    const alarmData = {
+        id: Date.now(),
+        time: timeInput.value,
+        label: (labelInput?.value || '').trim() || 'Alarm',
+        enabled: true
+    };
+    const alarms = JSON.parse(localStorage.getItem('alarms') || '[]');
+    alarms.push(alarmData);
+    localStorage.setItem('alarms', JSON.stringify(alarms));
+    timeInput.value = '';
+    if (labelInput) labelInput.value = '';
+    renderAlarms();
+    showToastCard('⏰ Alarm added!');
+}
+
+function renderAlarms() {
+    const list = document.getElementById('alarmListContainer');
+    if (!list) return;
+    const alarms = JSON.parse(localStorage.getItem('alarms') || '[]');
+    if (alarms.length === 0) {
+        list.innerHTML = `<li><span>No alarms set. Use the form below to add one.</span></li>`;
+        return;
+    }
+    list.innerHTML = alarms.map(a => `
+        <li>
+            <div><strong>${a.time}</strong> — <span>${a.label}</span></div>
+            <button class="btn-delete" onclick="deleteAlarm(${a.id})" title="Delete">
+                <i data-lucide="trash-2" style="width:14px;"></i>
+            </button>
+        </li>
+    `).join('');
+    if (window.lucide) lucide.createIcons();
+}
+
+function deleteAlarm(id) {
+    let alarms = JSON.parse(localStorage.getItem('alarms') || '[]');
+    alarms = alarms.filter(a => a.id !== id);
+    localStorage.setItem('alarms', JSON.stringify(alarms));
+    renderAlarms();
+    showToastCard('Alarm removed.');
+}
+
+document.addEventListener('DOMContentLoaded', function () {
+    setTimeout(renderAlarms, 100);
+});

@@ -7,15 +7,10 @@ class Alarm(db.Model):
     __tablename__ = 'alarms'
 
     id = db.Column(db.Integer, primary_key=True)
-    user_id = db.Column(db.Integer, nullable=False) 
+    user_id = db.Column(db.Integer, nullable=False, default=1) 
     title = db.Column(db.String(100), default="Alarm")
-    
-  
     alarm_time = db.Column(db.Time, nullable=False) 
-    
-   
     repeat_days = db.Column(db.String(20), default="") 
-    
     is_enabled = db.Column(db.Boolean, default=True)
     created_at = db.Column(db.DateTime, default=datetime.now)
 

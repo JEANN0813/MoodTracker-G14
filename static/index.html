@@ -1,903 +1,623 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Mood Tracker App - Mindful Mood Tracking</title>
-    
-    <!-- Google Fonts -->
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,600;0,800;1,600&family=Plus+Jakarta+Sans:wght@500;600;700;800&family=DM+Serif+Display&display=swap" rel="stylesheet">
-     
-    <!-- External linked files -->
-    <link rel="stylesheet" href="style.css">
-    <script src="dashboard.js"></script>
-    <!-- Lucide Icons Library -->
-    <script src="https://unpkg.com/lucide@latest"></script>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Mood Tracker | Sanctuary Dashboard</title>
 
-    <!-- Embedded CSS to guarantee modal & button functionality -->
-    <style>
-        :root {
-            --canvas-bg: #fffdfa;
-            --border-dark: #1e1e1e;
-            --text-dark: #1e1e1e;
-            --text-muted: #555555;
-            --accent-yellow: #fef08a;
-            --card-mint: #bbf7d0;
-            --card-lavender: #e9d5ff;
-            --banner-pink: #fbcfe8;
-            --sidebar-bg: #f3f4f6;
-            --font-serif: 'Playfair Display', serif;
-        }
+<link rel="stylesheet" href="style.css">
+<script src="dashboard.js" defer></script>
 
-        * {
-            box-sizing: border-border;
-        }
 
-        body {
-            margin: 0;
-            font-family: 'Plus Jakarta Sans', sans-serif;
-            background-color: var(--canvas-bg);
-            color: var(--text-dark);
-        }
 
-        /* Modal Overlay Styling */
-        .modal-overlay {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100vw;
-            height: 100vh;
-            background-color: rgba(0, 0, 0, 0.6);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            z-index: 9999;
-        }
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=Plus+Jakarta+Sans:wght@500;600;700;800&display=swap" rel="stylesheet">
+<script src="https://unpkg.com/lucide@latest"></script>
 
-        .modal-content {
-            background-color: #ffffff;
-            border: 2px solid var(--border-dark);
-            border-radius: 16px;
-            box-shadow: 4px 4px 0px var(--border-dark);
-        }
+<style>
+/* ==== Landing Screen ==== */
+.landing-screen {
+    display: flex;
+    flex-direction: column;
+    overflow-y: auto;
+    width: 100vw;
+    min-height: 100vh;
+}
 
-        .modal-close {
-            position: absolute;
-            top: 1rem;
-            right: 1rem;
-            background: none;
-            border: none;
-            font-size: 1.5rem;
-            font-weight: 800;
-            cursor: pointer;
-        }
+/* ====  Log out  ==== */
+.sidebar-logout {
+    margin-top: auto;
+    background: #f88a8a;
+    border: 2px solid var(--border-dark);
+    border-radius: 14px;
+    padding: 10px 14px;
+    font-weight: 800;
+    font-size: 0.85rem;
+    cursor: pointer;
+    box-shadow: 3px 3px 0 var(--border-dark);
+    color: var(--text-dark);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    transition: transform 0.15s;
+    font-family: var(--font-sans);
+}
+.sidebar-logout:hover {
+    transform: translate(-2px, -2px);
+}
 
-        /* Buttons Base Styling */
-        .btn-primary {
-            background-color: #d97706;
-            color: #ffffff;
-            font-weight: 700;
-            padding: 10px 20px;
-            border-radius: 10px;
-            border: 2px solid var(--border-dark);
-            box-shadow: 2px 2px 0px var(--border-dark);
-            cursor: pointer;
-            transition: transform 0.1s;
-        }
+/* ==== Dashboard 布局锁定 2 列 ==== */
+#dashboardView .stats-row {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 1.2rem;
+    margin-bottom: 2rem;
+}
+#dashboardView .dashboard-grid {
+    display: grid;
+    grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr);
+    gap: 1.5rem;
+    align-items: start;
+}
+@media (max-width: 1100px) {
+    #dashboardView .stats-row { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    #dashboardView .dashboard-grid { grid-template-columns: 1fr; }
+}
 
-        .btn-secondary {
-            background-color: #ffffff;
-            color: var(--text-dark);
-            font-weight: 700;
-            padding: 10px 20px;
-            border-radius: 10px;
-            border: 2px solid var(--border-dark);
-            box-shadow: 2px 2px 0px var(--border-dark);
-            cursor: pointer;
-            transition: transform 0.1s;
-        }
+/* ==== Alarm 列表 ==== */
+.alarm-list {
+    list-style: none;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+.alarm-list li {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 0.85rem;
+    font-weight: 700;
+    padding: 8px 12px;
+    border: 1.5px solid var(--border-dark);
+    border-radius: 12px;
+    background: var(--canvas-bg);
+}
 
-        .btn-primary:active, .btn-secondary:active {
-            transform: translate(2px, 2px);
-            box-shadow: 0px 0px 0px var(--border-dark);
-        }
-
-        .content-card {
-            background: #ffffff;
-            border: 2px solid var(--border-dark);
-            border-radius: 16px;
-            padding: 1.5rem;
-            box-shadow: 3px 3px 0px var(--border-dark);
-            display: flex;
-            flex-direction: column;
-            margin-bottom: 1.5rem;
-        }
-
-        .mood-btn {
-            background: #ffffff;
-            border: 2px solid var(--border-dark);
-            border-radius: 12px;
-            padding: 12px;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            gap: 6px;
-            cursor: pointer;
-        }
-
-        .mood-btn.selected {
-            background: var(--accent-yellow);
-            box-shadow: 2px 2px 0px var(--border-dark);
-        }
-
-        /* Fixed Grid & Layout Structure */
-        .dashboard-wrapper {
-            display: grid;
-            grid-template-columns: 260px minmax(0, 1fr);
-            min-height: 100vh;
-            width: 100%;
-        }
-
-        .sidebar {
-            background: var(--sidebar-bg);
-            border-right: 2px solid var(--border-dark);
-            padding: 1.5rem;
-            display: flex;
-            flex-direction: column;
-            justify-content: space-between;
-            height: 100vh;
-            position: sticky;
-            top: 0;
-            box-sizing: border-box;
-        }
-
-        .main-content {
-            padding: 2rem;
-            overflow-y: auto;
-            width: 100%;
-            box-sizing: border-box;
-        }
-
-        .alert-banner {
-            background-color: var(--banner-pink);
-            border: 2px solid var(--border-dark);
-            border-radius: 12px;
-            padding: 1rem 1.25rem;
-            margin-bottom: 2rem;
-            display: block;
-            width: fit-content;
-            max-width: 100%;
-            box-shadow: 2px 2px 0px var(--border-dark);
-            font-weight: 600;
-        }
-
-        .brand-logo {
-            font-weight: 800;
-            text-transform: uppercase;
-            font-size: 1.1rem;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            margin-bottom: 2rem;
-        }
-
-        .nav-pill {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            padding: 12px 16px;
-            color: var(--text-dark);
-            text-decoration: none;
-            font-weight: 700;
-            border-radius: 12px;
-            margin-bottom: 0.5rem;
-            cursor: pointer;
-        }
-
-        .nav-pill.active {
-            background: var(--accent-yellow);
-            border: 2px solid var(--border-dark);
-            box-shadow: 2px 2px 0px var(--border-dark);
-        }
-
-        .main-heading {
-            font-family: var(--font-serif);
-            font-size: 2.5rem;
-            margin: 0.5rem 0 0.2rem 0;
-            line-height: 1.2;
-        }
-
-        .sub-heading {
-            color: var(--text-muted);
-            font-weight: 600;
-            margin-top: 0;
-            margin-bottom: 2rem;
-        }
-
-        .stats-row {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-            gap: 1rem;
-            margin-bottom: 2rem;
-        }
-
-        .stat-card {
-            border: 2px solid var(--border-dark);
-            border-radius: 14px;
-            padding: 1rem 1.25rem;
-            box-shadow: 2px 2px 0px var(--border-dark);
-        }
-
-        .dashboard-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
-            gap: 1.5rem;
-        }
-    </style>
+/* ==== History / Chart 切换按钮 ==== */
+.history-style-btn,
+.chart-range-btn {
+    background: transparent;
+    border: none;
+    padding: 5px 12px;
+    border-radius: 999px;
+    font-size: 0.72rem;
+    font-weight: 800;
+    cursor: pointer;
+    color: var(--text-muted);
+    transition: all 0.15s;
+    font-family: var(--font-sans);
+}
+.history-style-btn.active,
+.chart-range-btn.active {
+    background: var(--accent-yellow);
+    color: var(--text-dark);
+    border: 1.5px solid var(--border-dark);
+    box-shadow: 1.5px 1.5px 0 var(--border-dark);
+}
+</style>
 </head>
 <body>
 
-    <!-- ==========================================================================
-         1. PRE-SIGN-IN LANDING PAGE (Public View)
-         ========================================================================== -->
-    <div id="landingScreen" style="display: flex; flex-direction: column; overflow-y: auto; width: 100vw; min-height: 100vh;">
-        
-        <!-- TOP PUBLIC HEADER -->
-        <header style="display: flex; width: 100%; max-width: 1100px; padding: 1.5rem 2rem; margin: 0 auto; justify-content: space-between; align-items: center; border-bottom: 2px solid var(--border-dark); box-sizing: border-box;">
-            <div style="display: flex; align-items: center; gap: 8px;">
-                <i data-lucide="sparkles" style="width: 26px; height: 26px;"></i>
-                <span style="font-weight: 800; text-transform: uppercase; letter-spacing: 1px; font-size: 1rem;">Mood Sanctuary</span>
-            </div>
-            <div style="display: flex; gap: 12px;">
-                <button type="button" class="btn-primary" onclick="openAuthModal('login')">Log In</button>
-                <button type="button" class="btn-secondary" onclick="openAuthModal('register')">Register</button>
-            </div>
-        </header>
-
-        <!-- MAIN LANDING CONTENT CONTAINER -->
-        <main style="width: 100%; max-width: 1100px; margin: 0 auto; padding: 2rem 1.5rem; display: flex; flex-direction: column; gap: 4rem; box-sizing: border-box;">
-
-            <!-- HERO SECTION -->
-            <section style="margin: 0 auto; display: flex; flex-direction: column; align-items: center; text-align: center; max-width: 900px; padding: 3rem 2rem; width: 100%; box-sizing: border-box;">
-                <div>
-                    <div style="display: inline-flex; align-items: center; gap: 6px; background: var(--canvas-bg); border: 2px solid var(--border-dark); padding: 6px 16px; border-radius: 20px; margin-bottom: 1.5rem; font-size: 0.8rem; font-weight: 800;">
-                        <i data-lucide="sparkles" style="width: 14px;"></i> Mindful Mental Health Tracking
-                    </div>
-
-                    <h1 style="font-family: var(--font-serif); font-size: 2.8rem; line-height: 1.15; margin-bottom: 1.2rem; font-weight: 800;">
-                        Understand Your Mind.<br>
-                        <span style="color: #d97706;">Track Your Daily Momentum.</span>
-                    </h1>
-
-                    <p style="max-width: 650px; margin: 0 auto 2rem auto; font-size: 1rem; color: var(--text-muted); font-weight: 600;">
-                        Mood Sanctuary helps you log daily emotional states, analyze mood trends over time, and gain personalized insights to cultivate mindful daily habits securely.
-                    </p>
-
-                    <div style="display: flex; justify-content: center; gap: 1rem; margin-bottom: 1rem;">
-                        <button type="button" class="btn-primary" style="padding: 12px 28px; font-size: 0.95rem;" onclick="openAuthModal('register')">Get Started Free</button>
-                        <button type="button" class="btn-secondary" style="padding: 12px 28px; font-size: 0.95rem;" onclick="openAuthModal('login')">Log In to Account</button>
-                    </div>
-                </div>
-            </section>
-
-            <!-- SECTION 1: THREE SIMPLE STEPS -->
-            <section style="text-align: center;">
-                <span style="font-size: 0.75rem; font-weight: 800; text-transform: uppercase; letter-spacing: 1.5px; color: var(--text-muted); display: block; margin-bottom: 0.5rem;">How It Works</span>
-                <h2 style="font-family: var(--font-serif); font-size: 2.2rem; margin-bottom: 0.8rem; font-weight: 800;">Three Simple Steps</h2>
-                <p style="max-width: 600px; margin: 0 auto 2.5rem auto; font-size: 0.95rem; color: var(--text-muted); font-weight: 600;">
-                    Getting started takes less than a minute. Log your mood, review your patterns, and take control of your well-being.
-                </p>
-
-                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 1.5rem;">
-                    <div class="content-card" style="text-align: center; padding: 2rem 1.5rem; align-items: center;">
-                        <div style="width: 42px; height: 42px; border-radius: 50%; background: var(--accent-yellow); border: 2px solid var(--border-dark); display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 1.1rem; margin-bottom: 1rem; box-shadow: 2px 2px 0px var(--border-dark);">1</div>
-                        <h3 style="font-family: var(--font-serif); font-size: 1.3rem; margin-bottom: 0.5rem;">Log Your Mood</h3>
-                        <p style="font-size: 0.85rem; color: var(--text-muted); font-weight: 600; line-height: 1.4;">Rate your mood on a scale of 1–5 and add optional quick notes. Each daily entry takes just a few seconds.</p>
-                    </div>
-
-                    <div class="content-card" style="text-align: center; padding: 2rem 1.5rem; align-items: center;">
-                        <div style="width: 42px; height: 42px; border-radius: 50%; background: var(--card-mint); border: 2px solid var(--border-dark); display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 1.1rem; margin-bottom: 1rem; box-shadow: 2px 2px 0px var(--border-dark);">2</div>
-                        <h3 style="font-family: var(--font-serif); font-size: 1.3rem; margin-bottom: 0.5rem;">Review Your Trends</h3>
-                        <p style="font-size: 0.85rem; color: var(--text-muted); font-weight: 600; line-height: 1.4;">Visualize your emotional patterns through interactive charts. Track streaks, milestones, and weekly averages.</p>
-                    </div>
-
-                    <div class="content-card" style="text-align: center; padding: 2rem 1.5rem; align-items: center;">
-                        <div style="width: 42px; height: 42px; border-radius: 50%; background: var(--banner-pink); border: 2px solid var(--border-dark); display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 1.1rem; margin-bottom: 1rem; box-shadow: 2px 2px 0px var(--border-dark);">3</div>
-                        <h3 style="font-family: var(--font-serif); font-size: 1.3rem; margin-bottom: 0.5rem;">Get AI Insights</h3>
-                        <p style="font-size: 0.85rem; color: var(--text-muted); font-weight: 600; line-height: 1.4;">Chat with our AI Mood Assistant for personalized reflection, weekly suggestions, and habit recommendations.</p>
-                    </div>
-                </div>
-            </section>
-
-            <!-- SECTION 2: -->
-            <section style="text-align: center;">
-                <span style="font-size: 0.75rem; font-weight: 800; text-transform: uppercase; letter-spacing: 1.5px; color: var(--text-muted); display: block; margin-bottom: 0.5rem;">Features & Value</span>
-                <h2 style="font-family: var(--font-serif); font-size: 2.2rem; margin-bottom: 0.8rem; font-weight: 800;">Your Personal Mood Intelligence Platform</h2>
-                <p style="max-width: 650px; margin: 0 auto 2.5rem auto; font-size: 0.95rem; color: var(--text-muted); font-weight: 600;">
-                    A mood tracking application that combines daily journaling with smart analytics to build healthier habits.
-                </p>
-
-                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 1.2rem; text-align: left;">
-                    <div class="content-card">
-                        <div style="width: 36px; height: 36px; border-radius: 10px; background: var(--sidebar-bg); border: 2px solid var(--border-dark); margin-bottom: 0.8rem; display: flex; align-items: center; justify-content: center;">
-                            <i data-lucide="bot" style="width: 18px;"></i>
-                        </div>
-                        <strong style="font-size: 1.05rem; margin-bottom: 0.4rem; color: var(--text-dark);">AI-Powered Insights</strong>
-                        <span style="font-weight: 600; font-size: 0.85rem; color: var(--text-muted); line-height: 1.4;">AI analyzes your mood entries weekly, surfacing hidden correlations and emotional patterns.</span>
-                    </div>
-
-                    <div class="content-card">
-                        <div style="width: 36px; height: 36px; border-radius: 10px; background: var(--card-mint); border: 2px solid var(--border-dark); margin-bottom: 0.8rem; display: flex; align-items: center; justify-content: center;">
-                            <i data-lucide="line-chart" style="width: 18px;"></i>
-                        </div>
-                        <strong style="font-size: 1.05rem; margin-bottom: 0.4rem; color: var(--text-dark);">Visual Analytics</strong>
-                        <span style="font-weight: 600; font-size: 0.85rem; color: var(--text-muted); line-height: 1.4;">Interactive line charts and calendar grids show daily, weekly, and monthly emotional trajectories.</span>
-                    </div>
-
-                    <div class="content-card">
-                        <div style="width: 36px; height: 36px; border-radius: 10px; background: var(--accent-yellow); border: 2px solid var(--border-dark); margin-bottom: 0.8rem; display: flex; align-items: center; justify-content: center;">
-                            <i data-lucide="shield-check" style="width: 18px;"></i>
-                        </div>
-                        <strong style="font-size: 1.05rem; margin-bottom: 0.4rem; color: var(--text-dark);">Privacy First</strong>
-                        <span style="font-weight: 600; font-size: 0.85rem; color: var(--text-muted); line-height: 1.4;">Your emotional logs stay private and encrypted. You remain in full control of your account data.</span>
-                    </div>
-
-                    <div class="content-card">
-                        <div style="width: 36px; height: 36px; border-radius: 10px; background: var(--banner-pink); border: 2px solid var(--border-dark); margin-bottom: 0.8rem; display: flex; align-items: center; justify-content: center;">
-                            <i data-lucide="bell" style="width: 18px;"></i>
-                        </div>
-                        <strong style="font-size: 1.05rem; margin-bottom: 0.4rem; color: var(--text-dark);">Custom Reminders</strong>
-                        <span style="font-weight: 600; font-size: 0.85rem; color: var(--text-muted); line-height: 1.4;">Set active alarm reminders to log daily entries and maintain your tracking streaks effortlessly.</span>
-                    </div>
-                </div>
-            </section>
-
-            <!-- SECTION 3: BOTTOM CTA BANNER -->
-            <section class="content-card" style="background: var(--sidebar-bg); text-align: center; padding: 3rem 2rem; border-radius: 28px; margin-bottom: 2rem;">
-                <h2 style="font-family: var(--font-serif); font-size: 2.2rem; margin-bottom: 0.8rem; font-weight: 800;">Ready to Understand Your Mind?</h2>
-                <p style="max-width: 550px; margin: 0 auto 1.8rem auto; font-size: 0.95rem; color: var(--text-muted); font-weight: 600;">
-                    Join Mood Sanctuary today and start your journey toward better emotional awareness and daily mindfulness.
-                </p>
-                <button type="button" class="btn-primary" style="padding: 12px 32px; font-size: 1rem; display: inline-flex; align-items: center; gap: 8px; margin: 0 auto;" onclick="openAuthModal('register')">
-                    Create Free Account <i data-lucide="arrow-right" style="width: 16px;"></i>
-                </button>
-            </section>
-        </main>
+<!-- WELCOME SPLASH -->
+<div id="welcomeSplash" class="welcome-splash">
+    <div class="splash-content">
+        <h1 class="splash-title">WELCOME TO MOOD TRACKER APP</h1>
     </div>
+</div>
 
+<!-- ============================================================
+     1. LANDING PAGE
+     ============================================================ -->
+<div id="landingScreen" class="landing-screen">
+    <header style="display:flex;width:100%;max-width:1100px;padding:1.5rem 2rem;margin:0 auto;justify-content:space-between;align-items:center;border-bottom:2px solid var(--border-dark);box-sizing:border-box;">
+        <div style="display:flex;align-items:center;gap:8px;">
+            <i data-lucide="sparkles" style="width:26px;height:26px;"></i>
+            <span style="font-weight:800;text-transform:uppercase;letter-spacing:1px;font-size:1rem;">Mood Sanctuary</span>
+        </div>
+        <div style="display:flex;gap:12px;">
+            <button type="button" class="btn-primary" onclick="openAuthModal('login')">Log In</button>
+            <button type="button" class="btn-secondary" onclick="openAuthModal('register')">Register</button>
+        </div>
+    </header>
 
-    <!-- ==========================================================================
-         2. AUTHENTICATION MODAL (Overlay for Log In, Register, & Reset Password)
-         ========================================================================== -->
-    <div id="authModal" class="modal-overlay" style="display: none;">
-        <div class="modal-content" style="max-width: 420px; width: 90%; padding: 2rem; position: relative; box-sizing: border-box;">
-            <button type="button" class="modal-close" onclick="closeAuthModal()">&times;</button>
-            
-            <!-- Login Form Container -->
-            <div id="loginFormContainer">
-                <h2 style="font-family: var(--font-serif); margin-bottom: 0.5rem; font-size: 1.8rem; font-weight: 800;">Welcome Back</h2>
-                <p style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 1.5rem; font-weight: 600;">Sign in to access your private mood journal.</p>
-                
-                <form id="loginForm" onsubmit="handleAuthSubmit(event)" style="display: flex; flex-direction: column; gap: 1rem;">
-                    <div>
-                        <label style="display: block; font-size: 0.8rem; font-weight: 800; margin-bottom: 0.3rem;">EMAIL ADDRESS</label>
-                        <input type="email" id="loginEmail" placeholder="name@example.com" required style="width: 100%; padding: 10px; border-radius: 10px; border: 2px solid var(--border-dark); box-sizing: border-box;">
-                    </div>
-                    <div>
-                        <label style="display: block; font-size: 0.8rem; font-weight: 800; margin-bottom: 0.3rem;">PASSWORD</label>
-                        <input type="password" id="loginPassword" placeholder="••••••••" required style="width: 100%; padding: 10px; border-radius: 10px; border: 2px solid var(--border-dark); box-sizing: border-box;">
-                        <div style="text-align: right; margin-top: 0.4rem;">
-                            <a href="#" onclick="switchAuthTab('reset')" style="font-size: 0.75rem; font-weight: 700; color: #d97706; text-decoration: underline;">Forgot Password?</a>
-                        </div>
-                    </div>
-                    <button type="submit" class="btn-primary" style="width: 100%; margin-top: 0.5rem; padding: 12px;">Sign In</button>
-                </form>
-
-                <p style="text-align: center; font-size: 0.85rem; font-weight: 600; margin-top: 1.5rem;">
-                    Don't have an account? <a href="#" onclick="switchAuthTab('register')" style="color: #d97706; text-decoration: underline;">Register</a>
-                </p>
+    <main style="width:100%;max-width:1100px;margin:0 auto;padding:2rem 1.5rem;display:flex;flex-direction:column;gap:4rem;box-sizing:border-box;">
+        <section style="margin:0 auto;display:flex;flex-direction:column;align-items:center;text-align:center;max-width:900px;padding:3rem 2rem;width:100%;box-sizing:border-box;">
+            <div style="display:inline-flex;align-items:center;gap:6px;background:var(--canvas-bg);border:2px solid var(--border-dark);padding:6px 16px;border-radius:20px;margin-bottom:1.5rem;font-size:0.8rem;font-weight:800;">
+                <i data-lucide="stars" style="width:14px;"></i> Mindful Mental Health Tracking App
             </div>
-
-            <!-- Register Form Container -->
-            <div id="registerFormContainer" style="display: none;">
-                <h2 style="font-family: var(--font-serif); margin-bottom: 0.5rem; font-size: 1.8rem; font-weight: 800;">Create Account</h2>
-                <p style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 1.5rem; font-weight: 600;">Start tracking your emotional well-being today.</p>
-                
-                <form id="registerForm" onsubmit="handleAuthSubmit(event)" style="display: flex; flex-direction: column; gap: 1rem;">
-                    <div>
-                        <label style="display: block; font-size: 0.8rem; font-weight: 800; margin-bottom: 0.3rem;">FULL NAME</label>
-                        <input type="text" id="registerName" placeholder="Alex Morgan" required style="width: 100%; padding: 10px; border-radius: 10px; border: 2px solid var(--border-dark); box-sizing: border-box;">
-                    </div>
-                    <div>
-                        <label style="display: block; font-size: 0.8rem; font-weight: 800; margin-bottom: 0.3rem;">EMAIL ADDRESS</label>
-                        <input type="email" id="registerEmail" placeholder="name@example.com" required style="width: 100%; padding: 10px; border-radius: 10px; border: 2px solid var(--border-dark); box-sizing: border-box;">
-                    </div>
-                    <div>
-                        <label style="display: block; font-size: 0.8rem; font-weight: 800; margin-bottom: 0.3rem;">PASSWORD</label>
-                        <input type="password" id="registerPassword" placeholder="••••••••" required style="width: 100%; padding: 10px; border-radius: 10px; border: 2px solid var(--border-dark); box-sizing: border-box;">
-                    </div>
-                    <button type="submit" class="btn-primary" style="width: 100%; margin-top: 0.5rem; padding: 12px;">Create Account</button>
-                </form>
-
-                <p style="text-align: center; font-size: 0.85rem; font-weight: 600; margin-top: 1.5rem;">
-                    Already have an account? <a href="#" onclick="switchAuthTab('login')" style="color: #d97706; text-decoration: underline;">Log In</a>
-                </p>
+            <h1 style="font-family:var(--font-serif);font-size:2.8rem;line-height:1.15;margin-bottom:1.2rem;font-weight:800;">
+                Understand Your Mind.<br>
+                <span style="color:#d97706;">Track Your Daily Rhythm</span>
+            </h1>
+            <p style="max-width:650px;margin:0 auto 2rem auto;font-size:1rem;color:var(--text-muted);font-weight:600;">
+                Mood Sanctuary helps you log daily emotional states, analyze mood trends over time, and gain personalized insights to cultivate mindful daily habits securely.
+            </p>
+            <div style="display:flex;justify-content:center;gap:1rem;margin-bottom:1rem;">
+                <button type="button" class="btn-primary" style="padding:12px 28px;font-size:0.95rem;" onclick="openAuthModal('register')">Get Started Free</button>
+                <button type="button" class="btn-secondary" style="padding:12px 28px;font-size:0.95rem;" onclick="openAuthModal('login')">Log In to Account</button>
             </div>
+        </section>
+    </main>
+</div>
 
-            <!-- Reset Password Form Container -->
-            <div id="resetFormContainer" style="display: none;">
-                <h2 style="font-family: var(--font-serif); margin-bottom: 0.5rem; font-size: 1.8rem; font-weight: 800;">Reset Password</h2>
-                <p style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 1.5rem; font-weight: 600;">Enter your registered email address to receive password reset instructions.</p>
-                
-                <form id="resetForm" onsubmit="handleAuthSubmit(event)" style="display: flex; flex-direction: column; gap: 1rem;">
-                    <div>
-                        <label style="display: block; font-size: 0.8rem; font-weight: 800; margin-bottom: 0.3rem;">EMAIL ADDRESS</label>
-                        <input type="email" id="resetEmail" placeholder="name@example.com" required style="width: 100%; padding: 10px; border-radius: 10px; border: 2px solid var(--border-dark); box-sizing: border-box;">
+<!-- ============================================================
+     2. AUTH MODAL
+     ============================================================ -->
+<div class="auth-container hidden" id="authScreen">
+    <div class="auth-card">
+        <div class="auth-tag">
+            <i data-lucide="shield-check" style="width:14px;"></i> Secure App Portal
+        </div>
+        <div class="auth-tabs" id="authTabsHeader">
+            <button class="auth-tab-btn active" onclick="switchAuthTab('login')">Log In</button>
+            <button class="auth-tab-btn" onclick="switchAuthTab('register')">Register</button>
+            <button class="auth-tab-btn" onclick="switchAuthTab('reset')">Reset Password</button>
+        </div>
+
+        <div id="authViewLogin">
+            <h1 class="auth-title">Log In.</h1>
+            <p class="auth-subtitle">Enter your email and password.</p>
+            <form onsubmit="handleAuthSubmit(event)">
+                <div class="form-group">
+                    <label for="loginEmail">Email Address</label>
+                    <input type="email" class="input-box" id="loginEmail" placeholder="you@example.com" required>
+                </div>
+                <div class="form-group">
+                    <label for="loginPassword">Password</label>
+                    <input type="password" class="input-box" id="loginPassword" placeholder="••••••••" required>
+                </div>
+                <button type="submit" class="btn-primary" style="width:100%;">
+                    Log In <i data-lucide="log-in" style="width:18px;"></i>
+                </button>
+            </form>
+        </div>
+
+        <div id="authViewRegister" class="hidden">
+            <h1 class="auth-title">Register.</h1>
+            <p class="auth-subtitle">Create your Mood Sanctuary account.</p>
+            <form onsubmit="handleRegisterSubmit(event)">
+                <div class="form-group">
+                    <label for="regFullName">Full Name</label>
+                    <input type="text" class="input-box" id="regFullName" placeholder="e.g. Mara Smith" required>
+                </div>
+                <div class="form-group">
+                    <label for="regEmail">Email Address</label>
+                    <input type="email" class="input-box" id="regEmail" placeholder="you@example.com" required>
+                </div>
+                <div class="form-group">
+                    <label for="regPassword">Password</label>
+                    <input type="password" class="input-box" id="regPassword" placeholder="••••••••" required>
+                </div>
+                <button type="submit" class="btn-primary" style="width:100%;">
+                    Complete Registration <i data-lucide="user-plus" style="width:18px;"></i>
+                </button>
+            </form>
+        </div>
+
+        <div id="authViewReset" class="hidden">
+            <h1 class="auth-title">Reset Password.</h1>
+            <p class="auth-subtitle">Follow the steps below.</p>
+            <div id="resetStep1">
+                <form onsubmit="handleResetSubmit(event)">
+                    <div class="form-group">
+                        <label for="resetEmail">Email Address</label>
+                        <input type="email" class="input-box" id="resetEmail" placeholder="you@example.com" required>
                     </div>
-                    <button type="submit" class="btn-primary" style="width: 100%; margin-top: 0.5rem; padding: 12px;">Send Reset Link</button>
+                    <button type="submit" class="btn-primary" style="width:100%;">
+                        Send Verification Code <i data-lucide="mail" style="width:18px;"></i>
+                    </button>
                 </form>
-
-                <p style="text-align: center; font-size: 0.85rem; font-weight: 600; margin-top: 1.5rem;">
-                    Remembered your password? <a href="#" onclick="switchAuthTab('login')" style="color: #d97706; text-decoration: underline;">Back to Log In</a>
-                </p>
+            </div>
+            <div id="resetStep2" class="hidden">
+                <form onsubmit="handlePasswordResetConfirm(event)">
+                    <div class="form-group">
+                        <label for="resetCode">Verification Code</label>
+                        <input type="text" class="input-box" id="resetCode" placeholder="Enter 6-digit code" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="resetNewPassword">New Password</label>
+                        <input type="password" class="input-box" id="resetNewPassword" placeholder="••••••••" required>
+                    </div>
+                    <button type="submit" class="btn-primary" style="width:100%;">
+                        Confirm New Password <i data-lucide="check-circle" style="width:18px;"></i>
+                    </button>
+                </form>
             </div>
         </div>
     </div>
+</div>
 
+<!-- ============================================================
+     3. MAIN APP
+     ============================================================ -->
+<div class="app-layout hidden" id="appLayout">
 
-    <!-- ==========================================================================
-         3. MAIN APP DASHBOARD (Protected View - Appears after Login)
-         ========================================================================== -->
-    <div id="mainDashboard" style="display: none;" class="dashboard-wrapper">
-            
-        <aside class="sidebar">
-            <!-- TOP NAV LINKS -->
-            <div>
-                <div class="brand-logo">
-                    <i data-lucide="sparkles" style="width: 22px;"></i> Mood Tracker
+    <aside class="sidebar">
+        <div class="brand-logo">
+            <i data-lucide="sparkles" style="width:22px;"></i> Mood Tracker
+        </div>
+        <a class="nav-pill active" id="navDashboard" onclick="switchView('dashboardView', this)"><span>Dashboard</span></a>
+        <a class="nav-pill" id="navHistory" onclick="switchView('historyView', this)"><span>History</span></a>
+        <a class="nav-pill" id="navProfile" onclick="switchView('profileView', this)"><span>Profile</span></a>
+        <button class="sidebar-logout" onclick="logout()">
+            <i data-lucide="log-out" style="width:16px;"></i> Log out
+        </button>
+    </aside>
+
+    <main class="main-content">
+
+        <div class="alert-banner">
+            <span>Sanctuary online. Selected target logging date: <strong id="selectedTargetDateLabel">Today</strong></span>
+            <button class="btn-primary" style="padding:0.35rem 1rem;font-size:0.8rem;" onclick="logout()">Lock Portal</button>
+        </div>
+
+        <!-- ============ DASHBOARD VIEW ============ -->
+        <div id="dashboardView">
+            <div class="date-label" id="currentDateLabel"></div>
+            <h1 class="main-heading">Good day, <span id="userDisplayName">User</span></h1>
+            <p class="sub-heading">How are you feeling today?</p>
+
+            <div class="stats-row">
+                <div class="stat-card" style="background:var(--sidebar-bg);">
+                    <div class="stat-label">Total (30 Days)</div>
+                    <div class="stat-number" id="stat-total">0</div>
+                    <div class="stat-sub"><i data-lucide="edit-3" style="width:14px;"></i> Entries</div>
                 </div>
-                <a class="nav-pill active" id="navDashboard" onclick="switchView('dashboardView', this)">
-                    <span>Dashboard</span>
-                </a>
-                <a class="nav-pill" id="navCalendar" onclick="switchView('calendarView', this)">
-                    <span>Calendar</span>
-                </a>
-                <a class="nav-pill" id="navProfile" onclick="switchView('profileView', this)">
-                    <span>Profile</span>
-                </a>
-                <a class="nav-pill" id="navAlarm" onclick="switchView('alarmView', this)">
-                    <span>Alarm</span>
-                </a>
-            </div>
-
-            <!-- BOTTOM LOGOUT BUTTON -->
-            <div style="padding-top: 1rem; border-top: 2px solid var(--border-dark);">
-                <button type="button" class="nav-pill" onclick="logout()" style="width: 100%; border: none; background: transparent; cursor: pointer; color: #dc2626; display: flex; align-items: center; gap: 8px; font-weight: 700;">
-                    <i data-lucide="log-out" style="width: 18px;"></i>
-                    <span>Log Out</span>
-                </button>
-            </div>
-        </aside>
-
-        <main class="main-content">
-
-            <!-- Banner -->
-            <div class="alert-banner">
-                <span id="bannerText">Sanctuary online. Selected target logging date: <strong id="selectedTargetDateLabel">Today</strong></span>
-            </div>
-
-            <!-- DASHBOARD VIEW -->
-            <div id="dashboardView">
-                <div class="date-label" id="currentDateLabel">WEDNESDAY, SEP 23</div>
-                <h1 class="main-heading">Good day, <span id="userDisplayName">User</span></h1>
-                <p class="sub-heading">How are you feeling today?</p>
-
-                <!-- STATS ROW -->
-                <div class="stats-row">
-                    <div class="stat-card" style="background: var(--sidebar-bg);">
-                        <div class="stat-label">Total Logs (30 Days)</div>
-                        <div class="stat-number" id="stat-total">0</div>
-                        <div class="stat-sub"><i data-lucide="edit-3" style="width: 14px;"></i> Recorded entries</div>
-                    </div>
-                    <div class="stat-card" style="background: var(--banner-pink);">
-                        <div class="stat-label">Anxious / Low Days</div>
-                        <div class="stat-number" id="stat-anxious">0</div>
-                        <div class="stat-sub" style="color: #c0392b;"><i data-lucide="alert-triangle" style="width: 14px;"></i> Tracked instances</div>
-                    </div>
-                    <div class="stat-card" style="background: var(--card-mint);">
-                        <div class="stat-label">Positive / Happy Days</div>
-                        <div class="stat-number" id="stat-happy">0</div>
-                        <div class="stat-sub" style="color: #27ae60;"><i data-lucide="check-circle-2" style="width: 14px;"></i> Mood boosts</div>
-                    </div>
-                    <div class="stat-card" style="background: #f1f2f6;">
-                        <div class="stat-label">Neutral Days</div>
-                        <div class="stat-number" id="stat-neutral">0</div>
-                        <div class="stat-sub" style="color: #7f8c8d;"><i data-lucide="minus-circle" style="width: 14px;"></i> Balanced feelings</div>
-                    </div>
+                <div class="stat-card" style="background:#ffe0b2;">
+                    <div class="stat-label">Low Day</div>
+                    <div class="stat-number" id="stat-anxious">0</div>
+                    <div class="stat-sub" style="color:#c0392b;"><i data-lucide="alert-triangle" style="width:14px;"></i> Tracked</div>
                 </div>
+                <div class="stat-card" style="background:var(--card-mint);">
+                    <div class="stat-label">Happy Day</div>
+                    <div class="stat-number" id="stat-happy">0</div>
+                    <div class="stat-sub" style="color:#27ae60;"><i data-lucide="check-circle-2" style="width:14px;"></i> Mood boosts</div>
+                </div>
+                <div class="stat-card" style="background:#f1f2f6;">
+                    <div class="stat-label">Neutral Day</div>
+                    <div class="stat-number" id="stat-neutral">0</div>
+                    <div class="stat-sub" style="color:#7f8c8d;"><i data-lucide="minus-circle" style="width:14px;"></i> Balanced</div>
+                </div>
+            </div>
 
-                <!-- MAIN DASHBOARD GRID -->
-                <div class="dashboard-grid">
+            <div class="dashboard-grid">
 
-                    <!-- LEFT COLUMN: LOGGING & TABLE -->
-                    <div>
-                        <!-- Mood Logging Card -->
-                        <div class="content-card">
-                            <div style="display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 0.5rem; margin-bottom: 1rem;">
-                                <div>
-                                    <h2 class="card-title" style="margin: 0;">Log Your Mood</h2>
-                                    <p style="color: var(--text-muted); font-size: 0.85rem; font-weight: 600; margin: 4px 0 0 0;">Logging for date: <strong id="loggingDateDisplay" style="color: var(--text-dark);">Today</strong></p>
-                                </div>
-                                <button class="btn-primary" style="padding: 0.4rem 0.8rem; font-size: 0.75rem; background: var(--canvas-bg); color: var(--text-dark);" onclick="resetLoggingDateToToday()">Reset to Today</button>
-                            </div>
-
-                            <div class="moods-selector" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(70px, 1fr)); gap: 10px; margin-bottom: 1rem;">
-                                <div class="mood-btn" onclick="selectEmotion(this, 'Happy', 'smile')">
-                                    <div class="mood-icon-wrapper"><i data-lucide="smile" style="width: 20px;"></i></div>
-                                    <span class="mood-label">Happy</span>
-                                </div>
-                                <div class="mood-btn" onclick="selectEmotion(this, 'Calm', 'sun')">
-                                    <div class="mood-icon-wrapper"><i data-lucide="sun" style="width: 20px;"></i></div>
-                                    <span class="mood-label">Calm</span>
-                                </div>
-                                <div class="mood-btn" onclick="selectEmotion(this, 'Neutral', 'meh')">
-                                    <div class="mood-icon-wrapper"><i data-lucide="meh" style="width: 20px;"></i></div>
-                                    <span class="mood-label">Neutral</span>
-                                </div>
-                                <div class="mood-btn" onclick="selectEmotion(this, 'Sad', 'frown')">
-                                    <div class="mood-icon-wrapper"><i data-lucide="frown" style="width: 20px;"></i></div>
-                                    <span class="mood-label">Sad</span>
-                                </div>
-                                <div class="mood-btn" onclick="selectEmotion(this, 'Anxious', 'alert-circle')">
-                                    <div class="mood-icon-wrapper"><i data-lucide="alert-circle" style="width: 20px;"></i></div>
-                                    <span class="mood-label">Anxious</span>
-                                </div>
-                            </div>
-
-                            <div class="note-area" style="display: flex; flex-direction: column; gap: 10px;">
-                                <textarea id="moodNote" placeholder="Add a note about your day (optional)..." style="width: 100%; min-height: 80px; border-radius: 10px; border: 2px solid var(--border-dark); padding: 10px; font-family: inherit; box-sizing: border-box;"></textarea>
-                                <button class="btn-primary" style="width: 100%;" onclick="logMood()">Stamp Mood Entry</button>
-                            </div>
-                        </div>
-
-                        <!-- Recent Logs Table -->
-                        <div class="content-card">
-                            <h2 class="card-title">Recent Emotion Logs</h2>
-                            <div style="overflow-x: auto;">
-                                <table class="logs-table" style="width: 100%; border-collapse: collapse;">
-                                    <thead>
-                                        <tr style="border-bottom: 2px solid var(--border-dark); text-align: left;">
-                                            <th style="padding: 8px;">Date</th>
-                                            <th style="padding: 8px;">Emotion</th>
-                                            <th style="padding: 8px;">Note</th>
-                                            <th style="padding: 8px;">Action</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody id="logs-table-body">
-                                        <tr><td colspan="4" style="text-align: center; color: var(--text-muted); padding: 12px;">No logs yet. Select an emotion above to log!</td></tr>
-                                    </tbody>
-                                </table>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- RIGHT COLUMN: CALENDAR & INSIGHTS -->
-                    <div>
-                        <!-- Interactive Calendar Widget -->
-                        <div class="content-card">
-                            <div class="calendar-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
-                                <button class="cal-nav-btn" onclick="previousMonth()">&lsaquo;</button>
-                                <h2 class="card-title" id="monthYear" style="font-size: 1.4rem; margin: 0;"></h2>
-                                <button class="cal-nav-btn" onclick="nextMonth()">&rsaquo;</button>
-                            </div>
-
-                            <p style="font-size: 0.75rem; color: var(--text-muted); font-weight: 700; margin-bottom: 0.8rem;">
-                                Click any day cell to select or view mood on that date.
+                <!-- Log Your Mood -->
+                <div class="content-card" style="margin:0;">
+                    <div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:0.5rem;">
+                        <div>
+                            <h2 class="card-title">Log Your Mood</h2>
+                            <p style="color:var(--text-muted);font-size:0.85rem;font-weight:600;">
+                                Logging for: <strong id="loggingDateDisplay" style="color:var(--text-dark);">Today</strong>
                             </p>
-
-                            <div class="calendar-grid" style="display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; text-align: center; font-weight: bold;">
-                                <div class="day-name">Sun</div>
-                                <div class="day-name">Mon</div>
-                                <div class="day-name">Tue</div>
-                                <div class="day-name">Wed</div>
-                                <div class="day-name">Thu</div>
-                                <div class="day-name">Fri</div>
-                                <div class="day-name">Sat</div>
-                            </div>
-
-                            <div id="calendarDays" class="calendar-grid" style="display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; margin-top: 6px;"></div>
                         </div>
-
-                        <!-- Mood Insights Card -->
-                        <div class="content-card">
-                            <h2 class="card-title">Mood Insights</h2>
-
-                            <div class="insight-box" style="margin-bottom: 1rem;">
-                                <div class="insight-title" style="font-size: 0.8rem; color: var(--text-muted); font-weight: 700;">Overall Mood</div>
-                                <div class="insight-value" id="insight-overall" style="font-size: 1.2rem; font-weight: 800; display: flex; align-items: center; gap: 6px;">Balanced <i data-lucide="smile" style="width: 22px;"></i></div>
-                                <div class="insight-text" id="insight-desc" style="font-size: 0.85rem;">Your mood has been steady and reflective recently.</div>
-                            </div>
-
-                            <div class="insight-box" style="margin-bottom: 1rem;">
-                                <div class="insight-title" style="font-size: 0.8rem; color: var(--text-muted); font-weight: 700;">Most Common Emotion</div>
-                                <div class="insight-text" id="insight-most-common" style="font-size: 1.1rem; font-weight: 800; margin-top: 0.2rem; display: flex; align-items: center; gap: 6px;">
-                                    <i data-lucide="smile" style="width: 18px;"></i> Happy
-                                </div>
-                            </div>
-
-                            <div class="insight-box" style="margin-bottom: 1rem;">
-                                <div class="insight-title" style="font-size: 0.8rem; color: var(--text-muted); font-weight: 700;">Mood Trend</div>
-                                <div class="insight-text" id="insight-trend" style="margin-top: 0.2rem;">Your mood is relatively stable.</div>
-                            </div>
-
-                            <button class="btn-primary" style="width: 100%; background: var(--accent-yellow); color: var(--text-dark);" onclick="toggleAssistantModal(true)">
-                                <i data-lucide="bot" style="width: 16px;"></i> Talk to Mood Assistant
-                            </button>
+                        <button class="btn-primary" style="padding:0.4rem 0.8rem;font-size:0.75rem;background:var(--canvas-bg);" onclick="resetLoggingDateToToday()">Reset to Today</button>
+                    </div>
+                    <div class="moods-selector">
+                        <div class="mood-btn" onclick="selectEmotion(this, 'Happy', 'smile')">
+                            <div class="mood-icon-wrapper"><i data-lucide="smile" style="width:20px;"></i></div>
+                            <span class="mood-label">Happy</span>
+                        </div>
+                        <div class="mood-btn" onclick="selectEmotion(this, 'Calm', 'sun')">
+                            <div class="mood-icon-wrapper"><i data-lucide="sun" style="width:20px;"></i></div>
+                            <span class="mood-label">Calm</span>
+                        </div>
+                        <div class="mood-btn" onclick="selectEmotion(this, 'Neutral', 'meh')">
+                            <div class="mood-icon-wrapper"><i data-lucide="meh" style="width:20px;"></i></div>
+                            <span class="mood-label">Neutral</span>
+                        </div>
+                        <div class="mood-btn" onclick="selectEmotion(this, 'Sad', 'frown')">
+                            <div class="mood-icon-wrapper"><i data-lucide="frown" style="width:20px;"></i></div>
+                            <span class="mood-label">Sad</span>
+                        </div>
+                        <div class="mood-btn" onclick="selectEmotion(this, 'Anxious', 'alert-circle')">
+                            <div class="mood-icon-wrapper"><i data-lucide="alert-circle" style="width:20px;"></i></div>
+                            <span class="mood-label">Anxious</span>
                         </div>
                     </div>
-
-                </div>
-            </div>
-
-            <!-- STANDALONE CALENDAR VIEW -->
-            <div id="calendarView" style="display: none;">
-                <h1 class="main-heading">Calendar History</h1>
-                <p class="sub-heading">Complete record of your past reflection days.</p>
-                <div class="content-card">
-                    <p style="font-weight: 700; margin-bottom: 1rem;">Click any cell below to switch active logging focus to that day.</p>
-                    <div id="standaloneCalendarContainer"></div>
-                </div>
-            </div>
-
-            <!-- PROFILE SECTION -->
-            <section id="profileView" style="display: none;">
-                <!-- HEADER ROW -->
-                <div class="profile-header">
-                    <div class="profile-title-group">
-                        <h2 class="section-title">User Profile</h2>
-                        <p class="section-subtitle">Manage your account, customize your sanctuary, and track your logging journey.</p>
+                    <div class="note-area">
+                        <textarea id="moodNote" placeholder="Add a note about your day (optional)..."></textarea>
+                        <button class="btn-primary" style="width:100%;" onclick="logMood()">Stamp Mood Entry</button>
                     </div>
                 </div>
 
-                <!-- MAIN STACK -->
-                <div class="profile-grid">
-                    
-                    <!-- CARD 1: USER INFO & AVATAR PICKER -->
-                    <div class="profile-card user-info-card">
-                        <div class="user-main-details">
-                            <div class="avatar-wrapper">
-                                <div class="current-avatar" id="currentAvatarDisplay">
-                                    <img id="currentAvatarImg" src="https://api.iconify.design/fluent-emoji:fox.svg" alt="Fox Avatar" />
-                                </div>
-                                <div class="avatar-badge">Active</div>
-                            </div>
-
-                            <div class="user-info-list">
-                                <div class="info-row">
-                                    <span class="info-label">Name</span>
-                                    <span class="info-value" id="profileUserName">--</span>
-                                </div>
-                                <div class="info-row">
-                                    <span class="info-label">Email</span>
-                                    <span class="info-value" id="profileUserEmail">--</span>
-                                </div>
-                            </div>
-
-                            <div class="avatar-picker-section">
-                                <label class="picker-label">CHOOSE AVATAR</label>
-                                <div class="avatar-options" style="display: flex; gap: 8px; margin-top: 6px;">
-                                    <button type="button" class="avatar-opt active" data-avatar="fox" onclick="selectAvatar('fox', 'https://api.iconify.design/fluent-emoji:fox.svg')">
-                                        <img src="https://api.iconify.design/fluent-emoji:fox.svg" alt="Fox" style="width: 30px;" />
-                                    </button>
-                                    <button type="button" class="avatar-opt" data-avatar="panda" onclick="selectAvatar('panda', 'https://api.iconify.design/fluent-emoji:panda.svg')">
-                                        <img src="https://api.iconify.design/fluent-emoji:panda.svg" alt="Panda" style="width: 30px;" />
-                                    </button>
-                                    <button type="button" class="avatar-opt" data-avatar="rabbit" onclick="selectAvatar('rabbit', 'https://api.iconify.design/fluent-emoji:rabbit-face.svg')">
-                                        <img src="https://api.iconify.design/fluent-emoji:rabbit-face.svg" alt="Rabbit" style="width: 30px;" />
-                                    </button>
-                                    <button type="button" class="avatar-opt" data-avatar="cat" onclick="selectAvatar('cat', 'https://api.iconify.design/fluent-emoji:cat-face.svg')">
-                                        <img src="https://api.iconify.design/fluent-emoji:cat-face.svg" alt="Cat" style="width: 30px;" />
-                                    </button>
-                                    <button type="button" class="avatar-opt" data-avatar="koala" onclick="selectAvatar('koala', 'https://api.iconify.design/fluent-emoji:koala.svg')">
-                                        <img src="https://api.iconify.design/fluent-emoji:koala.svg" alt="Koala" style="width: 30px;" />
-                                    </button>
-                                </div>
-                            </div>
-                        </div>
+                <!-- Calendar -->
+                <div class="content-card" style="margin:0;">
+                    <div class="calendar-header">
+                        <button class="cal-nav-btn" onclick="previousMonth()">‹</button>
+                        <h2 class="card-title" id="monthYear" style="font-size:1.4rem;margin:0;"></h2>
+                        <button class="cal-nav-btn" onclick="nextMonth()">›</button>
                     </div>
-
-                    <!-- CARD 2: THREE STATS IN A ROW -->
-                    <div class="profile-stats-container" style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem; margin: 1rem 0;">
-                        <div class="stat-card">
-                            <div class="stat-icon">📝</div>
-                            <div class="stat-content">
-                                <span class="stat-value" id="profileTotalLogs">0</span>
-                                <span class="stat-label">TOTAL ENTRIES</span>
-                            </div>
-                        </div>
-
-                        <div class="stat-card">
-                            <div class="stat-icon">🔥</div>
-                            <div class="stat-content">
-                                <span class="stat-value" id="profileStreak">0 Days</span>
-                                <span class="stat-label">LOGGING STREAK</span>
-                            </div>
-                        </div>
-
-                        <div class="stat-card">
-                            <div class="stat-icon">🌟</div>
-                            <div class="stat-content">
-                                <span class="stat-value" id="profileTopMood">None</span>
-                                <span class="stat-label">DOMINANT MOOD</span>
-                            </div>
-                        </div>
+                    <p style="font-size:0.75rem;color:var(--text-muted);font-weight:700;margin-bottom:0.8rem;">Click any day to view or set target.</p>
+                    <div class="calendar-grid">
+                        <div class="day-name">Sun</div><div class="day-name">Mon</div><div class="day-name">Tue</div>
+                        <div class="day-name">Wed</div><div class="day-name">Thu</div><div class="day-name">Fri</div>
+                        <div class="day-name">Sat</div>
                     </div>
-
-                    <!-- CARD 3: HABIT PROGRESS -->
-                    <div class="profile-card progress-card">
-                        <h4 class="card-subtitle">Monthly Habit Progress</h4>
-                        <p class="progress-desc">Consistently logging helps identify emotional patterns.</p>
-                        
-                        <div class="progress-bar-container" style="background: #e5e7eb; border-radius: 10px; height: 16px; overflow: hidden; border: 1px solid var(--border-dark);">
-                            <div class="progress-bar-fill" id="profileProgressBar" style="width: 0%; background: var(--accent-yellow); height: 100%;"></div>
-                        </div>
-                        
-                        <div class="progress-labels" style="display: flex; justify-content: space-between; font-size: 0.8rem; margin-top: 4px; font-weight: bold;">
-                            <span id="progressPercentText">0% Complete</span>
-                            <span>Goal: 30 Days</span>
-                        </div>
-                    </div>
-
+                    <div id="calendarDays" class="calendar-grid" style="margin-top:6px;"></div>
                 </div>
-            </section>
 
-            <!-- ASSISTANT POPUP MODAL CARD -->
-            <div class="modal-overlay" id="assistantModal" style="display: none;">
-                <div class="modal-content" style="max-width: 450px; width: 90%; padding: 1.5rem; position: relative;">
-                    <button class="modal-close" onclick="toggleAssistantModal(false)">&times;</button>
-                    <div class="auth-tag" style="background: var(--card-mint); display: inline-block; padding: 2px 8px; border-radius: 6px; font-size: 0.75rem; font-weight: bold; border: 1px solid var(--border-dark); margin-bottom: 6px;">
-                        <i data-lucide="bot" style="width: 14px;"></i> Active Companion
-                    </div>
-                    <h2 class="card-title" style="font-size: 1.6rem; margin: 0 0 0.2rem 0;">Mood Assistant</h2>
-                    <p style="font-size: 0.85rem; color: var(--text-muted); font-weight: 600; margin-bottom: 1rem;">Share how you are feeling or ask for a grounding technique.</p>
-
-                    <div class="chat-history" id="chatHistory" style="height: 200px; overflow-y: auto; border: 2px solid var(--border-dark); border-radius: 10px; padding: 10px; margin-bottom: 1rem; background: #fafafa;">
-                        <div class="chat-bubble assistant" style="background: var(--card-lavender); padding: 8px 12px; border-radius: 8px; border: 1px solid var(--border-dark); max-width: 85%; font-size: 0.85rem;">
-                            Hi there! I'm your sanctuary assistant. How are you feeling right now?
+                <!-- Mood Count -->
+                <div class="content-card" style="margin:0;">
+                    <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:0.5rem;">
+                        <h2 class="card-title" style="margin:0;">Mood Count</h2>
+                        <div style="display:flex;gap:4px;">
+                            <button class="chart-range-btn" data-range="day" onclick="setChartRange('day')">Day</button>
+                            <button class="chart-range-btn" data-range="weekly" onclick="setChartRange('weekly')">Weekly</button>
+                            <button class="chart-range-btn active" data-range="monthly" onclick="setChartRange('monthly')">Monthly</button>
                         </div>
                     </div>
-
-                    <div style="display: flex; gap: 8px;">
-                        <input type="text" class="input-box" id="chatInput" placeholder="Type your message..." onkeypress="handleChatKey(event)" style="flex: 1; padding: 8px; border-radius: 8px; border: 2px solid var(--border-dark);">
-                        <button class="btn-primary" style="padding: 0.8rem 1.2rem;" onclick="sendChatMessage()">
-                            <i data-lucide="send" style="width: 16px;"></i>
-                        </button>
-                    </div>
+                    <div id="moodCountBar" style="width:100%;height:26px;display:flex;border:2px solid var(--border-dark);border-radius:999px;overflow:hidden;background:#fff;margin-top:1rem;"></div>
+                    <div id="moodCountLegend" style="margin-top:0.6rem;"></div>
                 </div>
-            </div>
 
-            <!-- CALENDAR ENTRY POPUP MODAL -->
-            <div class="modal-overlay" id="dayDetailModal" style="display: none;">
-                <div class="modal-content" style="max-width: 400px; width: 90%; padding: 1.5rem; position: relative;">
-                    <button class="modal-close" onclick="toggleDayDetailModal(false)">&times;</button>
-                    <div class="auth-tag" style="display: inline-block; padding: 2px 8px; border-radius: 6px; font-size: 0.75rem; font-weight: bold; border: 1px solid var(--border-dark); margin-bottom: 6px;">
-                        <i data-lucide="calendar" style="width: 14px;"></i> Date Inspection
+                <!-- Mood Insights -->
+                <div class="content-card" style="margin:0;">
+                    <h2 class="card-title">Mood Insights</h2>
+                    <div class="insight-box">
+                        <div class="insight-title">Overall Mood</div>
+                        <div class="insight-value" id="insight-overall">Balanced <i data-lucide="smile" style="width:22px;"></i></div>
+                        <div class="insight-text" id="insight-desc">Your mood has been steady recently.</div>
                     </div>
-                    <h2 class="card-title" id="dayModalDateTitle" style="font-size: 1.6rem; margin: 0;"></h2>
-                    
-                    <div id="dayModalContent" style="margin: 1.2rem 0;">
-                        <!-- Dynamically populated -->
+                    <div class="insight-box">
+                        <div class="insight-title">Most Common Emotion</div>
+                        <div class="insight-text" id="insight-most-common" style="font-size:1.1rem;font-weight:800;margin-top:0.2rem;display:flex;align-items:center;gap:6px;">
+                            <i data-lucide="smile" style="width:18px;"></i> Happy
+                        </div>
                     </div>
-
-                    <button class="btn-primary" style="width: 100%;" id="dayModalActionBtn">
-                        Set as Active Target Date
+                    <button class="btn-primary" style="width:100%;background:var(--accent-yellow);" onclick="toggleAssistantModal(true)">
+                        <i data-lucide="bot" style="width:16px;"></i> Talk to Mood Assistant
                     </button>
                 </div>
+
+                <!-- Mood Chart -->
+                <div class="content-card" style="margin:0;">
+                    <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:0.5rem;">
+                        <h2 class="card-title" style="margin:0;">Mood Chart</h2>
+                        <div style="display:flex;gap:4px;">
+                            <button class="chart-range-btn" data-range="day" onclick="setChartRange('day')">Day</button>
+                            <button class="chart-range-btn" data-range="weekly" onclick="setChartRange('weekly')">Weekly</button>
+                            <button class="chart-range-btn active" data-range="monthly" onclick="setChartRange('monthly')">Monthly</button>
+                        </div>
+                    </div>
+                    <div style="margin-top:1rem;">
+                        <svg id="moodChartSvg" viewBox="0 0 600 220" preserveAspectRatio="xMidYMid meet" style="width:100%;height:auto;display:block;background:var(--canvas-bg);border:2px solid var(--border-dark);border-radius:16px;"></svg>
+                    </div>
+                </div>
+
+                <!-- Alarm Card -->
+                <div class="content-card" style="margin:0;">
+                    <h2 class="card-title">Alarm</h2>
+                    <p style="font-size:0.8rem;color:var(--text-muted);font-weight:600;margin-bottom:1rem;">Set up and control your active reminders.</p>
+
+                    <h3 style="font-size:0.95rem;font-weight:800;margin-bottom:0.5rem;">Active Alarms</h3>
+                    <ul class="alarm-list" id="alarmListContainer">
+                        <li><span>No alarms set. Use the form below to add one.</span></li>
+                    </ul>
+
+                    <form id="alarmForm" style="margin-top:1.25rem;" onsubmit="addAlarm(event)">
+                        <div style="display:flex;flex-direction:column;gap:8px;">
+                            <input type="time" id="alarmTimeInput" required class="input-box" style="background:var(--canvas-bg);">
+                            <input type="text" id="alarmLabelInput" placeholder="Label (optional)" class="input-box" style="background:var(--canvas-bg);">
+                            <button type="submit" class="btn-primary" style="width:100%;padding:8px 14px;font-size:0.85rem;">
+                                <i data-lucide="plus-circle" style="width:16px;"></i> Add Alarm
+                            </button>
+                        </div>
+                    </form>
+                </div>
+
+            </div><!-- END dashboard-grid -->
+
+            
+        </div><!-- END dashboardView -->
+
+        <!-- ============ HISTORY VIEW ============ -->
+        <div id="historyView" class="hidden">
+            <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:0.5rem;">
+                <div>
+                    <h1 class="main-heading">History</h1>
+                    <p class="sub-heading">Complete record of your mood entries.</p>
+                </div>
+                <div style="display:flex;gap:4px;">
+                    <button class="history-style-btn active" data-style="list" onclick="setHistoryStyle('list')">List</button>
+                    <button class="history-style-btn" data-style="cards" onclick="setHistoryStyle('cards')">Cards</button>
+                </div>
             </div>
 
-        </main>
+            <div class="content-card" id="historyListContainer">
+                <h2 class="card-title" style="margin-bottom:1rem;">Recent Emotion Logs</h2>
+                <div style="overflow-x:auto;">
+                    <table class="logs-table">
+                        <thead>
+                            <tr><th>Date</th><th>Emotion</th><th>Note</th><th>Action</th></tr>
+                        </thead>
+                        <tbody id="history-list-body">
+                            <tr><td colspan="4" style="text-align:center;color:var(--text-muted);">No logs yet.</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div class="content-card hidden" id="historyCardsContainer">
+                <h2 class="card-title" style="margin-bottom:1rem;">Calendar Logs Overview</h2>
+                <div id="history-cards-body"></div>
+            </div>
+        </div><!-- END historyView -->
+
+        <!-- ============ PROFILE VIEW ============ -->
+        <div id="profileView" class="hidden">
+            <h1 class="main-heading" style="margin-top:0;">User Profile</h1>
+            <p class="sub-heading" style="margin-bottom:1.25rem;">Manage your account, customize your sanctuary, and track your logging journey.</p>
+
+            <div class="content-card" style="margin-bottom:1.5rem;padding:2rem;">
+                <div style="display:flex;align-items:center;gap:1.5rem;padding-bottom:1.5rem;border-bottom:2px solid var(--border-dark);margin-bottom:1.5rem;flex-wrap:wrap;">
+                    <div id="currentAvatarDisplay" style="width:72px;height:72px;border-radius:50%;background:var(--accent-yellow);border:2px solid var(--border-dark);display:flex;align-items:center;justify-content:center;font-size:2.2rem;box-shadow:2px 2px 0px var(--border-dark);flex-shrink:0;">🦊</div>
+                    <div>
+                        <label style="display:block;font-size:0.75rem;font-weight:800;letter-spacing:1px;color:var(--text-muted);margin-bottom:0.5rem;">CHOOSE AVATAR</label>
+                        <div style="display:flex;gap:8px;flex-wrap:wrap;">
+                            <button type="button" class="avatar-opt mood-btn" style="padding:6px 12px;font-size:1.2rem;background:var(--accent-yellow);" onclick="selectAvatar('🦊')">🦊</button>
+                            <button type="button" class="avatar-opt mood-btn" style="padding:6px 12px;font-size:1.2rem;" onclick="selectAvatar('🐼')">🐼</button>
+                            <button type="button" class="avatar-opt mood-btn" style="padding:6px 12px;font-size:1.2rem;" onclick="selectAvatar('🐰')">🐰</button>
+                            <button type="button" class="avatar-opt mood-btn" style="padding:6px 12px;font-size:1.2rem;" onclick="selectAvatar('🐱')">🐱</button>
+                            <button type="button" class="avatar-opt mood-btn" style="padding:6px 12px;font-size:1.2rem;" onclick="selectAvatar('🐨')">🐨</button>
+                        </div>
+                    </div>
+                </div>
+                
+                <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;margin-bottom:1.5rem;">
+                    <div>
+                        <span style="display:block;font-size:0.75rem;font-weight:800;color:var(--text-muted);letter-spacing:0.5px;">NAME</span>
+                        <span id="profileUserName" style="font-size:1.1rem;font-weight:700;">Aya</span>
+                    </div>
+                    <div>
+                        <span style="display:block;font-size:0.75rem;font-weight:800;color:var(--text-muted);letter-spacing:0.5px;">EMAIL</span>
+                        <span id="profileUserEmail" style="font-size:1.1rem;font-weight:700;">aya@example.com</span>
+                    </div>
+                    <div>
+                        <span style="display:block;font-size:0.75rem;font-weight:800;color:var(--text-muted);letter-spacing:0.5px;">BIRTHDAY</span>
+                        <span id="profileBirthday" style="font-size:1.1rem;font-weight:700;">—</span>
+                    </div>
+
+                    <div>
+                        <span style="display:block;font-size:0.75rem;font-weight:800;color:var(--text-muted);letter-spacing:0.5px;">GENDER</span>
+                        <span id="profileGender" style="font-size:1.1rem;font-weight:700;">—</span>
+                    </div>
+               
+                    <div style="grid-column:1 / -1;">
+                         <span style="display:block;font-size:0.75rem;font-weight:800;color:var(--text-muted);letter-spacing:0.5px;">ACHIEVEMENTS / TITLE</span>
+                        <span id="profileTitle" style="font-size:1.1rem;font-weight:700;">Bronze Tracker 🏆</span>
+                     </div> 
+                </div>
+                
+    
+                <div style="display:flex;justify-content:space-between;align-items:center;padding-top:1.5rem;border-top:2px solid var(--border-dark);flex-wrap:wrap;gap:10px;">
+                    <div style="display:flex;gap:10px;flex-wrap:wrap;">
+                        <button type="button" class="btn-secondary" onclick="editProfile()">Edit Profile</button>
+                        <button type="button" class="btn-secondary" onclick="resetPasswordFromProfile()">Reset Password</button>
+                        <button type="button" class="btn-secondary" onclick="switchTheme('dark', event)">Switch Theme</button>
+                    </div>
+                    <button type="button" class="btn-primary" style="background-color:#fca5a5;color:#7f1d1d;" onclick="deleteAccount()">Delete Account</button>
+                </div>
+            </div>
+
+            <div class="content-card" style="padding:1.75rem 2rem;">
+                <h2 class="card-title" style="margin-bottom:0.3rem;">Monthly Habit Progress</h2>
+                <p style="font-size:0.85rem;color:var(--text-muted);font-weight:600;margin-bottom:1.25rem;">Consistently logging helps identify emotional patterns.</p>
+                <div style="width:100%;height:16px;background:var(--sidebar-bg);border:2px solid var(--border-dark);border-radius:10px;overflow:hidden;margin-bottom:0.6rem;">
+                    <div id="profileProgressBar" style="width:0%;height:100%;background:var(--card-mint);transition:width 0.6s;"></div>
+                </div>
+                <div style="display:flex;justify-content:space-between;font-size:0.8rem;font-weight:800;color:var(--text-muted);">
+                    <span id="progressPercentText">0% Complete</span>
+                    <span>Goal: 30 Days</span>
+                </div>
+                <div style="display:none;">
+                    <span id="profileTotalLogs">0</span>
+                    <span id="profileStreak">0</span>
+                    <span id="profileTopMood">None</span>
+                </div>
+            </div>
+        </div><!-- END profileView -->
+
+    </main>
+</div>
+
+<!-- ============================================================
+     ALARM RINGING MODAL
+     ============================================================ -->
+<div id="alarmModal" class="modal-overlay hidden">
+    <div class="modal-card" style="text-align:center;max-width:420px;">
+        <div class="auth-tag" style="background:var(--banner-pink);margin-bottom:1rem;">
+            <i data-lucide="bell-ring" style="width:14px;"></i> Alarm Alert
+        </div>
+
+        <h2 id="modalTitle" class="card-title" style="font-size:1.8rem;margin-bottom:0.5rem;">
+            ⏰ Alarm Ringing!
+        </h2>
+
+        <p id="modalTime" style="font-size:1.1rem;font-weight:700;color:var(--text-muted);margin:1rem 0;">
+            Scheduled time
+        </p>
+
+        <button id="stopAlarmBtn" class="btn-primary" style="width:100%;background:#f88a8a;">
+            <i data-lucide="x-circle" style="width:18px;"></i> Dismiss
+        </button>
     </div>
+</div>
 
-    <!-- ==========================================================================
-         4. JAVASCRIPT LOGIC
-         ========================================================================== -->
-    <script>
-        // Initialize Lucide Icons safely
-        document.addEventListener('DOMContentLoaded', () => {
-            if (typeof lucide !== 'undefined' && lucide.createIcons) {
-                lucide.createIcons();
-            }
-        });
+<!-- ============================================================
+     EDIT PROFILE MODAL
+     ============================================================ -->
+<div id="editProfileModal" class="modal-overlay hidden">
+    <div class="modal-card" style="max-width:460px;">
+        <button class="modal-close-btn" onclick="closeEditProfileModal()">
+            <i data-lucide="x" style="width:18px;"></i>
+        </button>
 
-        // Open Auth Modal
-        function openAuthModal(tab) {
-            const modal = document.getElementById('authModal');
-            if (modal) {
-                modal.style.display = 'flex';
-                switchAuthTab(tab);
-            }
-        }
+        <div class="auth-tag">
+            <i data-lucide="user-pen" style="width:14px;"></i> Edit Profile
+        </div>
 
-        // Close Auth Modal
-        function closeAuthModal() {
-            const modal = document.getElementById('authModal');
-            if (modal) {
-                modal.style.display = 'none';
-            }
-        }
+        <h2 class="card-title" style="font-size:1.6rem;margin-top:0.2rem;margin-bottom:1rem;">
+            Update Your Info
+        </h2>
 
-        // Switch Auth Tabs (Log In / Register / Reset)
-        function switchAuthTab(tab) {
-            const loginContainer = document.getElementById('loginFormContainer');
-            const registerContainer = document.getElementById('registerFormContainer');
-            const resetContainer = document.getElementById('resetFormContainer');
-            
-            if (loginContainer) loginContainer.style.display = 'none';
-            if (registerContainer) registerContainer.style.display = 'none';
-            if (resetContainer) resetContainer.style.display = 'none';
-            
-            if (tab === 'login' && loginContainer) {
-                loginContainer.style.display = 'block';
-            } else if (tab === 'register' && registerContainer) {
-                registerContainer.style.display = 'block';
-            } else if (tab === 'reset' && resetContainer) {
-                resetContainer.style.display = 'block';
-            }
-        }
+        <form onsubmit="saveProfileChanges(event)">
+            <div class="form-group">
+                <label for="editUsername">Username</label>
+                <input type="text" class="input-box" id="editUsername" required>
+            </div>
 
-        // Handle Form Submission (Simulate Log In / Registration)
-        function handleAuthSubmit(event) {
-            event.preventDefault();
-            
-            closeAuthModal();
-            const landing = document.getElementById('landingScreen');
-            const dashboard = document.getElementById('mainDashboard');
+            <div class="form-group">
+                <label for="editEmail">Email</label>
+                <input type="email" class="input-box" id="editEmail" required>
+            </div>
 
-            if (landing) landing.style.display = 'none';
-            if (dashboard) dashboard.style.display = 'grid';
-            
-            if (typeof lucide !== 'undefined' && lucide.createIcons) {
-                lucide.createIcons();
-            }
-        }
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;">
+                <div class="form-group">
+                    <label for="editBirthday">Birthday</label>
+                    <input type="date" class="input-box" id="editBirthday">
+                </div>
+                <div class="form-group">
+                    <label for="editGender">Gender</label>
+                    <select class="input-box" id="editGender" style="cursor:pointer;">
+                        <option value="">— Select —</option>
+                        <option value="Female">Female</option>
+                        <option value="Male">Male</option>
+                        <option value="Non-binary">Non-binary</option>
+                        <option value="Prefer not to say">Prefer not to say</option>
+                    </select>
+                </div>
+            </div>
 
-        // Logout back to pre-login page
-        function logout() {
-            const landing = document.getElementById('landingScreen');
-            const dashboard = document.getElementById('mainDashboard');
+            <div class="form-group">
+                <label for="editBio">Bio (optional)</label>
+                <textarea class="input-box" id="editBio" rows="3"
+                          placeholder="A short description about yourself..."
+                          style="resize:none;font-family:var(--font-sans);"></textarea>
+            </div>
 
-            if (dashboard) dashboard.style.display = 'none';
-            if (landing) landing.style.display = 'flex';
-        }
+            <div style="display:flex;gap:10px;margin-top:1rem;">
+                <button type="button" class="btn-secondary" style="flex:1;" onclick="closeEditProfileModal()">
+                    Cancel
+                </button>
+                <button type="submit" class="btn-primary" style="flex:1;">
+                    <i data-lucide="check" style="width:16px;"></i> Save Changes
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
 
-        // View switching logic
-        function switchView(viewId, element) {
-            const views = ['dashboardView', 'calendarView', 'profileView'];
-            views.forEach(v => {
-                const el = document.getElementById(v);
-                if (el) el.style.display = (v === viewId) ? 'block' : 'none';
-            });
-
-            document.querySelectorAll('.sidebar .nav-pill').forEach(pill => {
-                pill.classList.remove('active');
-            });
-            if (element) {
-                element.classList.add('active');
-            }
-        }
-
-        // Modal Helpers
-        function toggleAssistantModal(show) {
-            const modal = document.getElementById('assistantModal');
-            if (modal) modal.style.display = show ? 'flex' : 'none';
-        }
-
-        function toggleDayDetailModal(show) {
-            const modal = document.getElementById('dayDetailModal');
-            if (modal) modal.style.display = show ? 'flex' : 'none';
-        }
-    </script>
 </body>
 </html>

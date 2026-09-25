@@ -13,10 +13,18 @@ from datetime import datetime
 from flask import Blueprint, request, jsonify
 from datetime import datetime, time
 from alarm import alarm_bp
+import apscheduler
+from apscheduler.schedulers.background import BackgroundScheduler
+import re
 
 
-app = Flask(__name__, static_folder='static', static_url_path='')
+BASE_DIR = os.path.abspath(os.path.dirname(__file__))
 
+app = Flask(
+    __name__,
+    static_folder=os.path.join(BASE_DIR, 'static'),
+    static_url_path=''
+)
 
 # Email configuration
 app.config['MAIL_SERVER'] = 'smtp.gmail.com'
@@ -53,6 +61,12 @@ class User(db.Model):
     
     reset_token = db.Column(db.String(100), nullable=True)
     reset_token_expiration = db.Column(db.DateTime, nullable=True)
+
+    birthday = db.Column(db.String(20), nullable=True)    
+    gender = db.Column(db.String(20), nullable=True)       
+    avatar = db.Column(db.String(10), nullable=True)       
+    title = db.Column(db.String(50), nullable=True)       
+    bio = db.Column(db.String(300), nullable=True) 
     
     emotion_logs = db.relationship('EmotionLog', backref='user', lazy=True, cascade='all, delete-orphan')
 
@@ -100,12 +114,13 @@ def get_current_user():
 @app.route('/', defaults={'path': ''})
 @app.route('/<path:path>')
 def serve_static(path):
+    static_dir = os.path.join(BASE_DIR, 'static')
     if path == '':
-        return send_from_directory('static', 'index.html')
-    file_path = os.path.join('static', path)
-    if os.path.exists(file_path):
-        return send_from_directory('static', path)
-    return jsonify({'error': 'Not found'}), 404
+        return send_from_directory(static_dir, 'index.html')
+    file_path = os.path.join(static_dir, path)
+    if os.path.isfile(file_path):
+        return send_from_directory(static_dir, path)
+    return jsonify({'error': 'Not found', 'looked_for': file_path}), 404
 
 @app.route('/api/status')
 def status():
@@ -127,6 +142,7 @@ def register():
     if User.query.filter_by(email=email).first():
         return jsonify({"error": "Email already registered"}), 400
     
+
     user = User(
         username=username, 
         email=email, 
@@ -187,6 +203,11 @@ def get_user():
         'id': user.id,
         'username': user.username,
         'email': user.email,
+        'birthday': user.birthday or '01/01/2000',
+        'gender': user.gender or 'Female',
+        'avatar': user.avatar or '🦊',
+        'title': user.title or 'Bronze Tracker',
+        'bio': user.bio or '',
         'created_at': user.created_at.isoformat() if user.created_at else None
     }), 200
 
@@ -266,6 +287,9 @@ def reset_password():
     del verification_codes[email]
     
     return jsonify({'success': True, 'message': 'Password reset successfully!'}), 200
+
+
+
 # Logs Routes
 @app.route('/api/logs', methods=['POST'])
 def add_emotion_log():
@@ -614,30 +638,63 @@ def delete_alarm(alarm_id):
     return jsonify({'message': 'Alarm deleted'}), 200  
 
 @alarm_bp.route('/api/alarms/check', methods=['GET'])
-def check_due_alarms():
+def check_alarms():
+    """API Endpoint: Checked periodically by frontend when page is open."""
+    user_id = request.args.get('user_id', 1)
     now = datetime.now()
-    current_time = now.time().replace(second=0, microsecond=0)
-    current_weekday = str(now.weekday() + 1) 
+    current_hour = now.hour
+    current_minute = now.minute
+    current_weekday = str(now.isoweekday())
 
-    active_alarms = Alarm.query.filter_by(user_id=1, is_enabled=True).all()
-    triggered = []
+    enabled_alarms = Alarm.query.filter_by(user_id=user_id, is_enabled=True).all()
+    triggered_alarms = []
 
-    for alarm in active_alarms:
-        
-        if alarm.alarm_time.hour == current_time.hour and alarm.alarm_time.minute == current_time.minute:
-
+    for alarm in enabled_alarms:
+        if alarm.alarm_time.hour == current_hour and alarm.alarm_time.minute == current_minute:
             repeat_list = alarm.repeat_days.split(',') if alarm.repeat_days else []
+            
             if not repeat_list or current_weekday in repeat_list:
-                triggered.append(alarm.to_dict())
+                triggered_alarms.append(alarm.to_dict())
                 
-                
+                # If it's a one-time alarm, disable it
                 if not repeat_list:
                     alarm.is_enabled = False
 
     db.session.commit()
-    return jsonify({'triggered': len(triggered) > 0, 'alarms': triggered})
+    return jsonify({
+        'triggered': len(triggered_alarms) > 0,
+        'alarms': triggered_alarms
+    }), 200
 
-app.register_blueprint(alarm_bp)
+
+def check_and_push_alarms():
+    """Background daemon process: runs every minute via APScheduler."""
+    with app.app_context():
+        now = datetime.now()
+        current_hour = now.hour
+        current_minute = now.minute
+        current_weekday = str(now.isoweekday())
+
+        enabled_alarms = Alarm.query.filter_by(is_enabled=True).all()
+
+        for alarm in enabled_alarms:
+            if alarm.alarm_time.hour == current_hour and alarm.alarm_time.minute == current_minute:
+                repeat_list = alarm.repeat_days.split(',') if alarm.repeat_days else []
+                
+                if not repeat_list or current_weekday in repeat_list:
+                    print(f"[Background Alert] Alarm triggered: {alarm.title} at {alarm.alarm_time}")
+                    
+                   
+                    
+                    if not repeat_list:
+                        alarm.is_enabled = False
+
+        db.session.commit()
+
+scheduler = BackgroundScheduler()
+scheduler.add_job(func=check_and_push_alarms, trigger="interval", seconds=30)
+scheduler.start()
+    
 
 if __name__ == '__main__':
     print()
