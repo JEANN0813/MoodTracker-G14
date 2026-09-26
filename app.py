@@ -5,6 +5,8 @@ from datetime import timedelta, datetime
 from werkzeug.security import generate_password_hash, check_password_hash
 from flask_mail import Mail, Message
 from sqlalchemy import func
+from openai import OpenAI
+from google import genai
 import secrets
 import os
 import random
@@ -17,6 +19,13 @@ import apscheduler
 from apscheduler.schedulers.background import BackgroundScheduler
 import re
 
+client = OpenAI(
+    api_key=os.environ.get("OPENAI_API_KEY")
+)
+
+gemini_client = genai.Client(
+    api_key=os.environ.get("GEMINI_API_KEY")
+)
 
 BASE_DIR = os.path.abspath(os.path.dirname(__file__))
 
@@ -367,6 +376,45 @@ def delete_emotion_log(log_id):
     db.session.delete(log)
     db.session.commit()
     return jsonify({'message': 'Log deleted successfully'}), 200
+
+@app.route('/api/chat', methods=['POST'])
+def chat():
+
+    data = request.get_json()
+
+    if not data or not data.get('message'):
+        return jsonify({
+            'error': 'Message is required.'
+        }), 400
+
+    message = data['message'].strip()
+
+    try:
+
+        response = gemini_client.models.generate_content(
+            model="gemini-3.5-flash-lite",
+
+            contents=(
+                "You are the MoodTracker assistant. "
+                "You help users reflect on their emotions "
+                "in a friendly and supportive way. "
+                "Keep responses short and simple. "
+                "Do not diagnose mental health conditions.\n\n"
+                f"User: {message}"
+            )
+        )
+
+        return jsonify({
+            'reply': response.text
+        })
+
+    except Exception as e:
+
+        print("Chat API error:", e)
+
+        return jsonify({
+            'error': 'Unable to generate a response.'
+        }), 500
 
 @app.route('/api/calendar/<int:year>/<int:month>', methods=['GET'])
 def get_calendar(year, month):
@@ -725,3 +773,7 @@ if __name__ == '__main__':
     print()
     
     app.run(debug=True, host='0.0.0.0', port=5000)
+
+@app.route('/api/logs')
+def get_logs():
+    return jsonify({"message": "Connected to app.py!"})
