@@ -273,13 +273,25 @@ async function logout() {
         console.error('Logout error', e);
     }
 
-    const authScr = document.getElementById('authScreen');
+    localStorage.removeItem('currentUser');
+    localStorage.removeItem('activeUser');
+    localStorage.removeItem('userEmail');
+    sessionStorage.clear();
+
+    
     const appLay = document.getElementById('appLayout');
+    const authScr = document.getElementById('authScreen');
+    const landingScr = document.getElementById('landingScreen');
 
     if (appLay) appLay.classList.add('hidden');
-    if (authScr) authScr.classList.remove('hidden');
+    if (authScr) authScr.classList.add('hidden');
+
+   
+    if (landingScr) {
+        landingScr.classList.remove('hidden');
+    }
+
     
-    switchAuthTab('login');
     showToastCard('Portal locked successfully.');
 }
 
@@ -1315,25 +1327,45 @@ function resetPasswordFromProfile() {
 }
 
 async function deleteAccount() {
-  if (!confirm('Are you sure? This cannot be undone.')) return;
-
-  try {
-    const response = await fetch('/api/user', {
-      method: 'DELETE',
-      credentials: 'include'
-    });
-
-    if (response.ok) {
-      showToastCard('Account deleted');
-      localStorage.clear();
-      setTimeout(() => window.location.reload(), 1500);
-    } else {
-      const data = await response.json().catch(() => ({}));
-      showToastCard('❌ ' + (data.error || 'Failed to delete'));
+  const modal = document.getElementById('deleteConfirmModal');
+    if (modal) {
+        modal.classList.remove('hidden');
+        if (window.lucide) lucide.createIcons();
     }
-  } catch (err) {
-    showToastCard('❌ Network error');
-  }
+}
+
+function closeDeleteConfirm() {
+    const modal = document.getElementById('deleteConfirmModal');
+    if (modal) {
+        modal.classList.add('hidden');
+    }
+}
+
+async function confirmDeleteAccount() {
+    closeDeleteConfirm();
+
+    try {
+        const response = await fetch('/api/user', {
+            method: 'DELETE',
+            credentials: 'include'
+        });
+
+        if (response.ok) {
+            showToastCard('✅ Account deleted successfully');
+            localStorage.clear();
+            sessionStorage.clear();
+            
+            // Redirect to landing page
+            setTimeout(() => {
+                window.location.href = '/index.html';
+            }, 1500);
+        } else {
+            const data = await response.json().catch(() => ({}));
+            showToastCard('❌ ' + (data.error || 'Failed to delete account'));
+        }
+    } catch (err) {
+        showToastCard('❌ Network error');
+    }
 }
 
 function switchTheme(theme) {
