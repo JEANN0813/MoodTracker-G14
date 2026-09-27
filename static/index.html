@@ -823,6 +823,39 @@
     </div>
 </div>
 
+<!-- ============================================================
+     LOGOUT CONFIRMATION MODAL
+     ============================================================ -->
+<div class="modal-overlay hidden" id="logoutConfirmModal">
+    <div class="modal-card" style="max-width: 420px;">
+        <!-- X Close Button -->
+        <button class="modal-close-btn" onclick="closeLogoutConfirm()">
+            <i data-lucide="x" style="width: 18px;"></i>
+        </button>
+
+        <div class="auth-tag" style="background: var(--accent-yellow);">
+            <i data-lucide="log-out" style="width: 14px;"></i> Confirm Logout
+        </div>
+
+        <h2 class="card-title" style="font-size: 1.6rem; margin-top: 0.2rem;">
+            Are you sure?
+        </h2>
+
+        <p style="font-size: 0.9rem; color: var(--text-muted); font-weight: 600; margin: 1rem 0;">
+            You will be returned to the landing page and will need to log in again to access your dashboard.
+        </p>
+
+        <div style="display: flex; gap: 10px; margin-top: 1.5rem;">
+            
+            <button class="btn-primary"
+                    style="flex: 1; background: #f88a8a;"
+                    onclick="confirmLogout()">
+                <i data-lucide="log-out" style="width: 16px;"></i> Yes, Logout
+            </button>
+        </div>
+    </div>
+</div>
+
 
 </body>
 </html>

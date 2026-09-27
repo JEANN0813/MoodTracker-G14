@@ -265,20 +265,41 @@ function enterSanctuary() {
     fetchLogsAndRefresh();
 }
 
-async function logout() {
-    
+function logout() {
+    // Show confirmation modal instead of logging out immediately
+    const modal = document.getElementById('logoutConfirmModal');
+    if (modal) {
+        modal.classList.remove('hidden');
+        if (window.lucide) lucide.createIcons();
+    }
+}
+
+function closeLogoutConfirm() {
+    // Close the confirmation modal 
+    const modal = document.getElementById('logoutConfirmModal');
+    if (modal) {
+        modal.classList.add('hidden');
+    }
+}
+
+async function confirmLogout() {
+    // Close modal first
+    closeLogoutConfirm();
+
+    // 1. Call logout API
     try {
         await fetch('/api/logout', { method: 'POST' });
     } catch (e) {
         console.error('Logout error', e);
     }
 
+    // 2. Clear local state
     localStorage.removeItem('currentUser');
     localStorage.removeItem('activeUser');
     localStorage.removeItem('userEmail');
     sessionStorage.clear();
 
-    
+    // 3. Hide app layout & auth screen
     const appLay = document.getElementById('appLayout');
     const authScr = document.getElementById('authScreen');
     const landingScr = document.getElementById('landingScreen');
@@ -286,15 +307,14 @@ async function logout() {
     if (appLay) appLay.classList.add('hidden');
     if (authScr) authScr.classList.add('hidden');
 
-   
+    // 4. Show Landing page
     if (landingScr) {
         landingScr.classList.remove('hidden');
     }
 
-    
-    showToastCard('Portal locked successfully.');
+    // 5. Show toast message
+    showToastCard('👋 Logged out successfully');
 }
-
 
 // 3. UI NAVIGATION & SELECTION
 
