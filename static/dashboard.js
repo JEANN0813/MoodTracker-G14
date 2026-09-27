@@ -1519,55 +1519,92 @@ async function saveProfileChanges(event) {
     }
 }
 // ==========================================================================
-// HISTORY VIEW — List / Cards 
+// HISTORY VIEW — List / Cards with Pagination
 // ==========================================================================
 
 let historyStyle = 'list';   // 'list' | 'cards'
+let listPage = 1;            // Current page for list view (5 per page)
+let cardsPage = 1;           // Current day index for cards view
+const ITEMS_PER_PAGE = 5;    // 5 records per page in list view
+
+// ============================================================
+// SWITCH BETWEEN LIST AND CARDS
+// ============================================================
 
 function setHistoryStyle(style) {
     historyStyle = style;
-    console.log('🔁 setHistoryStyle:', style, '| logs:', moodLogs.length);
+    listPage = 1;      // Reset pagination
+    cardsPage = 1;
 
-    // 切换按钮高亮
+    // Highlight active button
     document.querySelectorAll('.history-style-btn').forEach(btn => {
         btn.classList.toggle('active', btn.dataset.style === style);
     });
 
-    // 切换容器显示
+    // Show/hide containers
     const listBox = document.getElementById('historyListContainer');
     const cardsBox = document.getElementById('historyCardsContainer');
 
     if (listBox) listBox.classList.toggle('hidden', style !== 'list');
     if (cardsBox) cardsBox.classList.toggle('hidden', style !== 'cards');
 
-    // 渲染
     renderHistoryView();
 }
+
+// ============================================================
+// MAIN RENDER
+// ============================================================
 
 function renderHistoryView() {
     if (!Array.isArray(moodLogs)) moodLogs = [];
 
     if (historyStyle === 'list') {
-        renderHistoryList(moodLogs);
+        renderHistoryList();
     } else {
-        renderHistoryCards(moodLogs);
+        renderHistoryCards();
     }
 }
 
-// ============ LIST  ============
-function renderHistoryList(arr) {
+// ============================================================
+// LIST VIEW — 5 records per page
+// ============================================================
+
+function renderHistoryList() {
     const tbody = document.getElementById('history-list-body');
-    if (!tbody) {
-        console.warn('❌ #history-list-body 不存在');
-        return;
+    if (!tbody) return;
+
+    const totalPages = Math.max(1, Math.ceil(moodLogs.length / ITEMS_PER_PAGE));
+    
+    // Clamp page number
+    if (listPage > totalPages) listPage = totalPages;
+    if (listPage < 1) listPage = 1;
+
+    // Update page indicator
+    const indicator = document.getElementById('listPageIndicator');
+    if (indicator) {
+        indicator.textContent = `Page ${listPage} / ${totalPages}`;
     }
 
-    if (arr.length === 0) {
+    // Disable/enable buttons
+    const paginationBox = document.getElementById('listPagination');
+    if (paginationBox) {
+        const prevBtn = paginationBox.querySelector('button:first-child');
+        const nextBtn = paginationBox.querySelector('button:last-child');
+        if (prevBtn) prevBtn.disabled = listPage <= 1;
+        if (nextBtn) nextBtn.disabled = listPage >= totalPages;
+    }
+
+    if (moodLogs.length === 0) {
         tbody.innerHTML = `<tr><td colspan="4" style="text-align:center;color:var(--text-muted);padding:1.5rem 0;">No logs yet. Go to Dashboard to log your first mood!</td></tr>`;
         return;
     }
 
-    tbody.innerHTML = arr.map(log => `
+    // Get records for current page
+    const startIdx = (listPage - 1) * ITEMS_PER_PAGE;
+    const endIdx = startIdx + ITEMS_PER_PAGE;
+    const pageLogs = moodLogs.slice(startIdx, endIdx);
+
+    tbody.innerHTML = pageLogs.map(log => `
         <tr>
             <td>${log.log_date}</td>
             <td>
@@ -1587,59 +1624,124 @@ function renderHistoryList(arr) {
     if (window.lucide) lucide.createIcons();
 }
 
-// ============ CARDS  ============
-function renderHistoryCards(arr) {
+function prevListPage() {
+    if (listPage > 1) {
+        listPage--;
+        renderHistoryList();
+    }
+}
+
+function nextListPage() {
+    const totalPages = Math.max(1, Math.ceil(moodLogs.length / ITEMS_PER_PAGE));
+    if (listPage < totalPages) {
+        listPage++;
+        renderHistoryList();
+    }
+}
+
+// ============================================================
+// CARDS VIEW — 1 day per page (shows all moods of that day)
+// ============================================================
+
+function renderHistoryCards() {
     const container = document.getElementById('history-cards-body');
-    if (!container) {
-        console.warn('❌ #history-cards-body 不存在');
-        return;
-    }
+    if (!container) return;
 
-    if (arr.length === 0) {
-        container.innerHTML = `<p style="color:var(--text-muted);font-weight:600;">No mood entries logged yet.</p>`;
-        return;
-    }
-
-    
+    // Group logs by date
     const byDate = {};
-    arr.forEach(l => {
+    moodLogs.forEach(l => {
         if (!byDate[l.log_date]) byDate[l.log_date] = [];
         byDate[l.log_date].push(l);
     });
 
+    // Sort dates descending (newest first)
     const dates = Object.keys(byDate).sort().reverse();
+    const totalDays = dates.length;
 
+    // Update page indicator
+    const indicator = document.getElementById('cardsPageIndicator');
+    if (indicator) {
+        indicator.textContent = totalDays > 0 
+            ? `Page ${cardsPage} / ${totalDays}` 
+            : 'Page 0 / 0';
+    }
+
+    // Disable/enable buttons
+    const paginationBox = document.getElementById('cardsPagination');
+    if (paginationBox) {
+        const prevBtn = paginationBox.querySelector('button:first-child');
+        const nextBtn = paginationBox.querySelector('button:last-child');
+        if (prevBtn) prevBtn.disabled = cardsPage <= 1;
+        if (nextBtn) nextBtn.disabled = cardsPage >= totalDays;
+    }
+
+    if (totalDays === 0) {
+        container.innerHTML = `<p style="color:var(--text-muted);font-weight:600;text-align:center;padding:2rem;">No mood entries logged yet.</p>`;
+        return;
+    }
+
+    // Clamp page number
+    if (cardsPage > totalDays) cardsPage = totalDays;
+    if (cardsPage < 1) cardsPage = 1;
+
+    // Get current date and its entries
+    const currentDate = dates[cardsPage - 1];
+    const entries = byDate[currentDate];
+
+    // Render the single day
     container.innerHTML = `
-        <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:1rem;">
-            ${dates.map(date => {
-                const entries = byDate[date];
-                const total = entries.length;
+        <div class="day-group-card">
+            <div class="day-group-header">
+                <span> ${currentDate}</span>
+                <span style="font-size:0.75rem;color:var(--text-muted);">${entries.length} ${entries.length === 1 ? 'entry' : 'entries'}</span>
+            </div>
+            <div class="day-group-entries">
+                ${entries.map(entry => `
+                    <div class="day-entry-card">
+                        <!-- Time in top-right corner -->
+                        ${entry.created_at ? `
+                            <div class="entry-time">${new Date(entry.created_at).toLocaleTimeString('en-US', {hour: '2-digit', minute: '2-digit'})}</div>
+                        ` : ''}
 
-                const counts = {};
-                entries.forEach(e => counts[e.emotion] = (counts[e.emotion] || 0) + 1);
-                const dominant = Object.keys(counts).reduce((a, b) =>
-                    counts[a] > counts[b] ? a : (counts[a] === counts[b] ? a : b));
-
-                const dominantIcon = EMOTION_ICON_MAP[dominant] || 'smile';
-                const dominantBg = getEmotionBg(dominant);
-
-                return `
-                    <div style="background:white;border:2px solid var(--border-dark);padding:1rem;border-radius:16px;box-shadow:2px 2px 0 var(--border-dark);position:relative;">
-                        <div style="font-size:0.75rem;font-weight:800;color:var(--text-muted);margin-bottom:0.4rem;">${date}</div>
-                        <div style="display:flex;align-items:center;gap:6px;font-weight:800;font-size:0.95rem;background:${dominantBg};padding:4px 10px;border-radius:10px;border:1.5px solid var(--border-dark);width:fit-content;">
-                            <i data-lucide="${dominantIcon}" style="width:14px;"></i> ${dominant}
+                        <!-- Emotion -->
+                        <div class="entry-emotion">
+                            <i data-lucide="${entry.iconName || 'smile'}" style="width:18px;"></i>
+                            ${entry.emotion}
                         </div>
-                        ${entries[0].note ? `<div style="font-size:0.75rem;color:var(--text-dark);opacity:0.75;margin-top:0.6rem;">${entries[0].note}</div>` : ''}
-                        ${total > 1 ? `<span style="position:absolute;top:8px;right:8px;background:#ff6b6b;color:white;font-size:0.65rem;padding:2px 7px;border-radius:8px;font-weight:800;">${total}</span>` : ''}
+
+                        <!-- Note -->
+                        <div class="entry-note">${entry.note || 'No note'}</div>
+
+                        <!-- Delete button in bottom-right -->
+                        <div class="entry-footer">
+                            <button class="btn-delete" onclick="deleteLog(${entry.id})" title="Delete">
+                                <i data-lucide="trash-2" style="width:14px;"></i>
+                            </button>
+                        </div>
                     </div>
-                `;
-            }).join('')}
+                `).join('')}
+            </div>
         </div>
     `;
 
     if (window.lucide) lucide.createIcons();
 }
 
+function prevCardsPage() {
+    if (cardsPage > 1) {
+        cardsPage--;
+        renderHistoryCards();
+    }
+}
+
+function nextCardsPage() {
+    // Group by date to get total
+    const uniqueDates = [...new Set(moodLogs.map(l => l.log_date))];
+    if (cardsPage < uniqueDates.length) {
+        cardsPage++;
+        renderHistoryCards();
+    }
+}
 
 function addAlarm(event) {
     if (event) event.preventDefault();
