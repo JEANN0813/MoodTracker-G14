@@ -349,6 +349,7 @@
                         <div class="hint" data-rule="lower"><span class="dot">○</span> One lowercase letter (a-z)</div>
                         <div class="hint" data-rule="number"><span class="dot">○</span> One number (0-9)</div>
                         <div class="hint" data-rule="special"><span class="dot">○</span> One special character (!@#$...)</div>
+                        <br>
                     </div>
                 <button type="submit" class="btn-primary" style="width:100%;">
                     Complete Registration <i data-lucide="user-plus" style="width:18px;"></i>
@@ -386,6 +387,7 @@
                             <div class="hint" data-rule="lower"><span class="dot">○</span> One lowercase letter (a-z)</div>
                             <div class="hint" data-rule="number"><span class="dot">○</span> One number (0-9)</div>
                             <div class="hint" data-rule="special"><span class="dot">○</span> One special character (!@#$...)</div>
+                             <br>
                          </div>
                     </div>
     
@@ -506,6 +508,21 @@
                         <div class="day-name">Sat</div>
                     </div>
                     <div id="calendarDays" class="calendar-grid" style="margin-top:6px;"></div>
+                      <div class="modal-overlay hidden" id="dayDetailModal">
+                        <div class="modal-card"><button class="modal-close-btn" onclick="toggleDayDetailModal(false)">
+                            <i data-lucide="x" style="width: 18px;"></i>
+                        </button>
+                        <div class="auth-tag">
+                            <i data-lucide="calendar" style="width: 14px;"></i>
+                             Date Inspection
+                        </div>
+                            <h2 class="card-title" id="dayModalDateTitle" style="font-size: 1.6rem;"></h2>
+                            <div id="dayModalContent" style="margin: 1.2rem 0;"></div>
+                            <button class="btn-primary" style="width: 100%;" id="dayModalActionBtn">
+                                Set as Active Target Date
+                            </button>
+                        </div>
+                    </div>
                 </div>
 
                 <!-- Mood Count -->

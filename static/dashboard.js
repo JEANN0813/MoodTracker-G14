@@ -702,23 +702,41 @@ function calculateStats() {
 }
 
 // 7. MODALS & UTILITIES
-function openDayDetailModal(dateStr, loggedEntry) {
+
+function openDayDetailModal(dateStr, loggedEntries) {
     const dateTitle = document.getElementById('dayModalDateTitle');
     if (dateTitle) dateTitle.innerText = dateStr;
 
     const contentDiv = document.getElementById('dayModalContent');
     const actionBtn = document.getElementById('dayModalActionBtn');
 
+    
+    let entries = [];
+    if (Array.isArray(loggedEntries)) {
+        entries = loggedEntries;                 
+    } else if (loggedEntries) {
+        entries = [loggedEntries];               
+    }
+
+    
     if (contentDiv) {
-        if (loggedEntry) {
-            contentDiv.innerHTML = `
-                <div style="background: var(--sidebar-bg); border: 2px solid var(--border-dark); border-radius: 16px; padding: 1rem;">
+        if (entries.length > 0) {
+            
+            contentDiv.innerHTML = entries.map(entry => `
+                <div style="background: var(--sidebar-bg); border: 2px solid var(--border-dark); border-radius: 16px; padding: 1rem; margin-bottom: 0.8rem;">
                     <div style="display: flex; align-items: center; gap: 8px; font-weight: 800; font-size: 1.1rem; margin-bottom: 0.4rem;">
-                        <i data-lucide="${loggedEntry.iconName || 'smile'}" style="width: 20px;"></i> ${loggedEntry.emotion}
+                        <i data-lucide="${entry.iconName || 'smile'}" style="width: 20px;"></i> ${entry.emotion}
                     </div>
-                    <p style="font-size: 0.85rem; font-weight: 600; color: var(--text-dark);">"${loggedEntry.note}"</p>
+                    <p style="font-size: 0.85rem; font-weight: 600; color: var(--text-dark);">
+                        "${entry.note || 'No note'}"
+                    </p>
+                    ${entry.created_at ? `
+                        <p style="font-size: 0.7rem; color: var(--text-muted); margin-top: 0.4rem;">
+                            🕐 ${new Date(entry.created_at).toLocaleTimeString()}
+                        </p>
+                    ` : ''}
                 </div>
-            `;
+            `).join('');
         } else {
             contentDiv.innerHTML = `
                 <p style="font-size: 0.9rem; font-weight: 600; color: var(--text-muted);">
@@ -733,6 +751,7 @@ function openDayDetailModal(dateStr, loggedEntry) {
             activeTargetDate = dateStr;
             toggleDayDetailModal(false);
             refreshUI();
+            showToastCard(`Now logging for ${dateStr}`);
         };
     }
 
