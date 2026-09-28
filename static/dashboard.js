@@ -1,5 +1,3 @@
-
-
 // 1. STATE & GLOBAL VARIABLES
 let activeUser = "User";
 let activeUserId = null;
@@ -47,22 +45,22 @@ function switchAuthTab(tab) {
         if (tabHeader && tabHeader.children[1]) tabHeader.children[1].classList.add('active');
     } else if (tab === 'reset') {
         if (vReset) vReset.classList.remove('hidden');
-    if (tabHeader && tabHeader.children[2]) tabHeader.children[2].classList.add('active');
-    
-    // Reset to Step 1 when switching to Reset tab
-    const step1 = document.getElementById('resetStep1');
-    const step2 = document.getElementById('resetStep2');
-    if (step1) step1.classList.remove('hidden');
-    if (step2) step2.classList.add('hidden');
-}
+        if (tabHeader && tabHeader.children[2]) tabHeader.children[2].classList.add('active');
+
+        // Reset to Step 1 when switching to Reset tab
+        const step1 = document.getElementById('resetStep1');
+        const step2 = document.getElementById('resetStep2');
+        if (step1) step1.classList.remove('hidden');
+        if (step2) step2.classList.add('hidden');
+    }
 
     const regHints = document.getElementById('regPasswordHints');
     const resetHints = document.getElementById('resetPasswordHints');
     [regHints, resetHints].forEach(box => {
-    if (box) {
-        box.querySelectorAll('.hint').forEach(h => h.classList.remove('valid', 'invalid'));
-      }
-     });
+        if (box) {
+            box.querySelectorAll('.hint').forEach(h => h.classList.remove('valid', 'invalid'));
+        }
+    });
 
     if (window.lucide) lucide.createIcons();
 }
@@ -71,7 +69,7 @@ async function handleAuthSubmit(event) {
     event.preventDefault();
     const emailInput = document.getElementById('loginEmail');
     const passwordInput = document.getElementById('loginPassword');
-    
+
     const usernameOrEmail = emailInput ? emailInput.value.trim() : '';
     const password = passwordInput ? passwordInput.value.trim() : '';
 
@@ -109,8 +107,8 @@ async function handleRegisterSubmit(event) {
 
     const pwErr = validatePassword(password);
     if (pwErr) {
-    showToastCard('❌ ' + pwErr);
-    return;
+        showToastCard('❌ ' + pwErr);
+        return;
     }
 
     try {
@@ -150,7 +148,7 @@ async function handleResetSubmit(event) {
         });
 
         const data = await response.json();
-        
+
         if (response.ok) {
             showToastCard('✅ Verification code sent! Check your email.');
             document.getElementById('resetStep1').classList.add('hidden');
@@ -176,8 +174,8 @@ async function handlePasswordResetConfirm(event) {
 
     const pwErr = validatePassword(newPassword);
     if (pwErr) {
-      showToastCard('❌ ' + pwErr);
-      return;
+        showToastCard('❌ ' + pwErr);
+        return;
     }
 
     try {
@@ -188,7 +186,7 @@ async function handlePasswordResetConfirm(event) {
         });
 
         const data = await response.json();
-        
+
         if (response.ok) {
             showToastCard('✅ Password updated! Redirecting to login...');
             document.getElementById('resetStep1').classList.remove('hidden');
@@ -218,7 +216,7 @@ function checkPasswordStrength(inputId, hintsId) {
 
     const value = input.value;
 
-   
+
     const rules = {
         length: value.length >= 8,
         upper: /[A-Z]/.test(value),
@@ -227,13 +225,13 @@ function checkPasswordStrength(inputId, hintsId) {
         special: /[!@#$%^&*(),.?":{}|<>]/.test(value)
     };
 
-   
+
     hintsBox.querySelectorAll('.hint').forEach(hint => {
         const rule = hint.dataset.rule;
         hint.classList.remove('valid', 'invalid');
 
         if (!value) {
-           
+
             return;
         }
 
@@ -250,17 +248,17 @@ function enterSanctuary() {
     const userDisp = document.getElementById('userDisplayName');
     const profileText = document.getElementById('profileUserText');
     const authScr = document.getElementById('authScreen');
-    const landingScr = document.getElementById('landingScreen'); 
+    const landingScr = document.getElementById('landingScreen');
     const appLay = document.getElementById('appLayout');
 
     if (userDisp) userDisp.innerText = activeUser;
     if (profileText) profileText.innerText = `Active User: ${activeUser}`;
-    
-    
-    if (landingScr) landingScr.classList.add('hidden'); 
+
+
+    if (landingScr) landingScr.classList.add('hidden');
     if (authScr) authScr.classList.add('hidden');
-    
-    
+
+
     if (appLay) appLay.classList.remove('hidden');
 
     fetchLogsAndRefresh();
@@ -331,12 +329,12 @@ function switchView(viewId, element) {
     if (target) target.classList.remove('hidden');
     if (element) element.classList.add('active');
 
-    
+
     if (viewId === 'historyView') {
         setHistoryStyle(historyStyle);
     }
 
-    
+
     if (viewId === 'profileView') {
         if (typeof initProfilePage === 'function') {
             try { initProfilePage(); } catch (e) { console.warn(e); }
@@ -475,7 +473,7 @@ function generateCalendar() {
         calendarGrid.appendChild(emptyCell);
     }
 
-    
+
     const EMOTION_PRIORITY = ['Happy', 'Calm', 'Neutral', 'Sad', 'Anxious'];
 
     for (let day = 1; day <= daysInMonth; day++) {
@@ -490,18 +488,17 @@ function generateCalendar() {
         const dayLogs = moodLogs.filter(l => l.log_date === dateStr);
 
         if (dayLogs.length > 0) {
-            
+
             const emotionCounts = {};
             dayLogs.forEach(l => {
                 emotionCounts[l.emotion] = (emotionCounts[l.emotion] || 0) + 1;
             });
 
-           
             const dominantEmotion = Object.keys(emotionCounts).sort((a, b) => {
                 if (emotionCounts[b] !== emotionCounts[a]) {
-                    return emotionCounts[b] - emotionCounts[a];   
+                    return emotionCounts[b] - emotionCounts[a];
                 }
-                return EMOTION_PRIORITY.indexOf(a) - EMOTION_PRIORITY.indexOf(b);   
+                return EMOTION_PRIORITY.indexOf(a) - EMOTION_PRIORITY.indexOf(b);
             })[0];
 
             const iconName = EMOTION_ICON_MAP[dominantEmotion] || 'smile';
@@ -509,7 +506,7 @@ function generateCalendar() {
 
             let cellContent = `<span>${day}</span><span class="day-mood-icon"><i data-lucide="${iconName}" style="width: 14px;"></i></span>`;
 
-            
+
             if (totalCount > 1) {
                 cellContent += `<span class="multi-entry-badge" style="position: absolute; top: 2px; right: 2px; background: #ff6b6b; color: white; font-size: 0.65rem; padding: 1px 5px; border-radius: 8px; font-weight: 800;">${totalCount}</span>`;
             }
@@ -580,7 +577,7 @@ function refreshUI() {
     calculateStats();
     generateCalendar();
 
-    
+
     if (typeof renderHistoryView === 'function') {
         renderHistoryView();
     }
@@ -653,20 +650,26 @@ function getEmotionBg(emotion) {
 }
 
 function calculateStats() {
+
+    const todayLogs = moodLogs.filter(l => l.log_date === activeTargetDate);
+
     const totalElem = document.getElementById('stat-total');
-    if (totalElem) totalElem.innerText = moodLogs.length;
+    if (totalElem) totalElem.innerText = todayLogs.length;
 
     let happy = 0;
     let anxious = 0;
     let neutral = 0;
+    let sad = 0;
+    let calm = 0;
 
-    moodLogs.forEach(function(l) {
-        if (l.emotion === 'Happy' || l.emotion === 'Calm') {
-            happy++;
-        } else if (l.emotion === 'Anxious' || l.emotion === 'Sad') {
-            anxious++;
-        } else {
-            neutral++;
+    todayLogs.forEach(function (l) {
+        switch (l.emotion) {
+            case 'Happy': happy++; break;
+            case 'Calm': calm++; break;
+            case 'Neutral': neutral++; break;
+            case 'Anxious': anxious++; break;
+            case 'Sad': sad++; break;
+            default: neutral++; break;
         }
     });
 
@@ -674,64 +677,85 @@ function calculateStats() {
     const anxiousElem = document.getElementById('stat-anxious');
     const neutralElem = document.getElementById('stat-neutral');
 
-    if (happyElem) happyElem.innerText = happy;
-    if (anxiousElem) anxiousElem.innerText = anxious;
+    if (happyElem) happyElem.innerText = happy + calm;
+    if (anxiousElem) anxiousElem.innerText = anxious + sad;
     if (neutralElem) neutralElem.innerText = neutral;
 
+    // MOST COMMON EMOTION（基于当天）
+    const emotionCounts = {};
+    todayLogs.forEach(function (l) {
+        emotionCounts[l.emotion] = (emotionCounts[l.emotion] || 0) + 1;
+    });
+
+    let mostCommonEmotion = 'None';
+    let maxCount = 0;
+    for (const [emotion, count] of Object.entries(emotionCounts)) {
+        if (count > maxCount) {
+            maxCount = count;
+            mostCommonEmotion = emotion;
+        }
+    }
+
+    const EMOTION_ICON_MAP = {
+        'Happy': 'smile',
+        'Calm': 'sun',
+        'Neutral': 'meh',
+        'Sad': 'frown',
+        'Anxious': 'alert-circle'
+    };
+
     const mostCommonElem = document.getElementById('insight-most-common');
+    if (mostCommonElem) {
+        if (todayLogs.length === 0) {
+            mostCommonElem.innerHTML = 'None yet';
+        } else {
+            const icon = EMOTION_ICON_MAP[mostCommonEmotion] || 'smile';
+            mostCommonElem.innerHTML =
+                `<i data-lucide="${icon}" style="width: 18px;"></i> ${mostCommonEmotion}`;
+        }
+    }
+
+
+    // OVERALL MOOD（
     const overallElem = document.getElementById('insight-overall');
     const descElem = document.getElementById('insight-desc');
 
-    if (moodLogs.length > 0) {
-        const latest = moodLogs[0];
+    if (todayLogs.length > 0) {
+        const positiveCount = happy + calm;
+        const negativeCount = anxious + sad;
 
-        if (mostCommonElem) {
-            mostCommonElem.innerHTML =
-                '<i data-lucide="' +
-                (latest.iconName || 'smile') +
-                '" style="width: 18px;"></i> ' +
-                latest.emotion;
-        }
-
-        // Determine overall mood
-        if (happy > anxious && happy > neutral) {
+        if (positiveCount > negativeCount && positiveCount > neutral) {
             if (overallElem) {
-                overallElem.innerHTML =
-                    'Positive <i data-lucide="smile" style="width: 22px;"></i>';
+                overallElem.innerHTML = 'Positive <i data-lucide="smile" style="width: 22px;"></i>';
             }
-
             if (descElem) {
-                descElem.innerText =
-                    'Your logs reflect more positive emotions overall.';
+                descElem.innerText = 'Your logs reflect more positive emotions today.';
             }
-
-        } else if (anxious > happy && anxious > neutral) {
+        } else if (negativeCount > positiveCount && negativeCount > neutral) {
             if (overallElem) {
-                overallElem.innerHTML =
-                    'Needs Care <i data-lucide="frown" style="width: 22px;"></i>';
+                overallElem.innerHTML = 'Needs Care <i data-lucide="frown" style="width: 22px;"></i>';
             }
-
             if (descElem) {
-                descElem.innerText =
-                    'Higher anxiety or stress appears in your recent logs. Consider taking small breaks.';
+                descElem.innerText = 'Higher anxiety or stress appears in today\'s logs. Consider taking small breaks.';
             }
-
         } else {
             if (overallElem) {
-                overallElem.innerHTML =
-                    'Balanced <i data-lucide="meh" style="width: 22px;"></i>';
+                overallElem.innerHTML = 'Balanced <i data-lucide="meh" style="width: 22px;"></i>';
             }
-
             if (descElem) {
-                descElem.innerText =
-                    'Your emotions are relatively balanced across your recent logs.';
+                descElem.innerText = 'Your emotions are relatively balanced today.';
             }
         }
     } else {
-        if (mostCommonElem) {
-            mostCommonElem.innerText = 'None yet';
+        if (overallElem) {
+            overallElem.innerHTML = 'No data <i data-lucide="meh" style="width: 22px;"></i>';
+        }
+        if (descElem) {
+            descElem.innerText = 'No mood logged for this date yet.';
         }
     }
+
+    if (window.lucide) lucide.createIcons();
 }
 
 // 7. MODALS & UTILITIES
@@ -743,33 +767,67 @@ function openDayDetailModal(dateStr, loggedEntries) {
     const contentDiv = document.getElementById('dayModalContent');
     const actionBtn = document.getElementById('dayModalActionBtn');
 
-    
+   
     let entries = [];
     if (Array.isArray(loggedEntries)) {
-        entries = loggedEntries;                 
+        entries = loggedEntries;
     } else if (loggedEntries) {
-        entries = [loggedEntries];               
+        entries = [loggedEntries];
     }
 
-    
     if (contentDiv) {
         if (entries.length > 0) {
             
-            contentDiv.innerHTML = entries.map(entry => `
-                <div style="background: var(--sidebar-bg); border: 2px solid var(--border-dark); border-radius: 16px; padding: 1rem; margin-bottom: 0.8rem;">
-                    <div style="display: flex; align-items: center; gap: 8px; font-weight: 800; font-size: 1.1rem; margin-bottom: 0.4rem;">
-                        <i data-lucide="${entry.iconName || 'smile'}" style="width: 20px;"></i> ${entry.emotion}
+            const EMOTION_PRIORITY = ['Happy', 'Calm', 'Neutral', 'Sad', 'Anxious'];
+
+            const emotionCounts = {};
+            entries.forEach(l => {
+                emotionCounts[l.emotion] = (emotionCounts[l.emotion] || 0) + 1;
+            });
+
+            const dominantEmotion = Object.keys(emotionCounts).sort((a, b) => {
+                if (emotionCounts[b] !== emotionCounts[a]) {
+                    return emotionCounts[b] - emotionCounts[a];
+                }
+                return EMOTION_PRIORITY.indexOf(a) - EMOTION_PRIORITY.indexOf(b);
+            })[0];
+
+            
+            const dominantLog = entries.find(l => l.emotion === dominantEmotion) || entries[0];
+
+            const EMOTION_ICON_MAP = {
+                'Happy': 'smile',
+                'Calm': 'sun',
+                'Neutral': 'meh',
+                'Sad': 'frown',
+                'Anxious': 'alert-circle'
+            };
+
+            const iconName = EMOTION_ICON_MAP[dominantEmotion] || 'smile';
+            const totalCount = entries.length;
+            const dominantCount = emotionCounts[dominantEmotion];
+
+           
+            contentDiv.innerHTML = `
+                <div style="background: var(--sidebar-bg); border: 2px solid var(--border-dark); border-radius: 16px; padding: 1.2rem;">
+                    <div style="display: flex; align-items: center; gap: 8px; font-weight: 800; font-size: 1.3rem; margin-bottom: 0.6rem;">
+                        <i data-lucide="${iconName}" style="width: 24px;"></i> ${dominantEmotion}
                     </div>
-                    <p style="font-size: 0.85rem; font-weight: 600; color: var(--text-dark);">
-                        "${entry.note || 'No note'}"
+                    <p style="font-size: 0.85rem; font-weight: 600; color: var(--text-dark); margin-bottom: 0.6rem;">
+                        "${dominantLog.note || 'No note'}"
                     </p>
-                    ${entry.created_at ? `
-                        <p style="font-size: 0.7rem; color: var(--text-muted); margin-top: 0.4rem;">
-                            🕐 ${new Date(entry.created_at).toLocaleTimeString()}
+                    ${dominantLog.created_at ? `
+                        <p style="font-size: 0.7rem; color: var(--text-muted); margin-bottom: 0.4rem;">
+                            🕐 ${new Date(dominantLog.created_at).toLocaleTimeString('en-US', {hour: '2-digit', minute: '2-digit'})}
+                        </p>
+                    ` : ''}
+                    ${totalCount > 1 ? `
+                        <p style="font-size: 0.7rem; color: var(--text-muted); margin-top: 0.6rem; padding-top: 0.6rem; border-top: 1px solid var(--border-dark);">
+                            📊 This emotion appeared ${dominantCount} out of ${totalCount} entries this day.
                         </p>
                     ` : ''}
                 </div>
-            `).join('');
+            `;
         } else {
             contentDiv.innerHTML = `
                 <p style="font-size: 0.9rem; font-weight: 600; color: var(--text-muted);">
@@ -791,7 +849,6 @@ function openDayDetailModal(dateStr, loggedEntries) {
     toggleDayDetailModal(true);
     if (window.lucide) lucide.createIcons();
 }
-
 function toggleDayDetailModal(show) {
     const modal = document.getElementById('dayDetailModal');
     if (modal) {
@@ -884,22 +941,22 @@ function showToastCard(message) {
 
 // 8. INITIALIZATION
 document.addEventListener('DOMContentLoaded', async function () {
-    
+
     const splash = document.getElementById("welcomeSplash");
     if (splash) {
         setTimeout(() => { splash.classList.add("hidden-splash"); }, 1500);
     }
 
-    
+
     const landingScr = document.getElementById('landingScreen');
     const appLay = document.getElementById('appLayout');
     const authScr = document.getElementById('authScreen');
 
-    if (landingScr) landingScr.classList.remove('hidden');   
+    if (landingScr) landingScr.classList.remove('hidden');
     if (appLay) appLay.classList.add('hidden');
     if (authScr) authScr.classList.add('hidden');
 
-    
+
     try {
         const response = await fetch('/api/user', { method: 'GET' });
 
@@ -907,12 +964,12 @@ document.addEventListener('DOMContentLoaded', async function () {
             const user = await response.json();
             activeUser = user.username;
             activeUserId = user.id;
-            enterSanctuary();   
+            enterSanctuary();
         }
-        
+
     } catch (err) {
         console.warn('Session check failed:', err);
-       
+
     }
 
     if (window.lucide) lucide.createIcons();
@@ -923,7 +980,7 @@ document.addEventListener('DOMContentLoaded', async function () {
 
 let _alarmAudio = null;
 let _isAlarmRinging = false;
-let _lastDismissedAt = 0; 
+let _lastDismissedAt = 0;
 let _currentRingingAlarmId = null;
 
 function triggerAlarm(alarm) {
@@ -934,9 +991,9 @@ function triggerAlarm(alarm) {
         _alarmAudio = new Audio('https://actions.google.com/sounds/v1/alarms/beep_short.ogg');
         _alarmAudio.loop = true;
     }
-    _alarmAudio.play().catch(() => {});
+    _alarmAudio.play().catch(() => { });
 
-    
+
     const modal = document.getElementById('alarmModal');
     const title = document.getElementById('modalTitle');
     const timeEl = document.getElementById('modalTime');
@@ -947,7 +1004,7 @@ function triggerAlarm(alarm) {
 
     if (window.lucide) lucide.createIcons();
 
-    
+
     if (Notification && Notification.permission === 'granted') {
         new Notification(`⏰ ${alarm.label || 'Alarm'}`, {
             body: `It's ${alarm.time}`
@@ -976,28 +1033,28 @@ async function checkAlarms() {
 
 function stopAlarm() {
     _isAlarmRinging = false;
-    _lastDismissedAt = Date.now(); 
+    _lastDismissedAt = Date.now();
 
-   
+
     if (_currentRingingAlarmId) {
         let alarms = JSON.parse(localStorage.getItem('alarms') || '[]');
         alarms = alarms.map(a => {
             if (a.id === _currentRingingAlarmId) {
-                return { ...a, enabled: false }; 
+                return { ...a, enabled: false };
             }
             return a;
         });
         localStorage.setItem('alarms', JSON.stringify(alarms));
-        renderAlarms(); 
+        renderAlarms();
         _currentRingingAlarmId = null;
     }
 
     if (_alarmAudio) {
         _alarmAudio.pause();
         _alarmAudio.currentTime = 0;
-        _alarmAudio.loop = false;         
-        _alarmAudio.src = '';              
-        _alarmAudio = null; 
+        _alarmAudio.loop = false;
+        _alarmAudio.src = '';
+        _alarmAudio = null;
     }
 
     const modal = document.getElementById('alarmModal');
@@ -1011,7 +1068,7 @@ function startLocalAlarmScheduler() {
         const currentHHMM = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
         const currentSeconds = now.getSeconds();
 
-       
+
         if (currentSeconds >= 0 && currentSeconds < 5 && !_isAlarmRinging) {
             const alarms = JSON.parse(localStorage.getItem('alarms') || '[]');
             const matchedAlarm = alarms.find(a => a.enabled && a.time === currentHHMM);
@@ -1020,12 +1077,12 @@ function startLocalAlarmScheduler() {
                 triggerAlarm(matchedAlarm);
             }
         }
-    }, 3000); 
+    }, 3000);
 }
 
 document.addEventListener('DOMContentLoaded', function () {
     setTimeout(renderAlarms, 100);
-    startLocalAlarmScheduler(); 
+    startLocalAlarmScheduler();
 });
 
 
@@ -1065,7 +1122,7 @@ async function loadUserProfileDetails() {
         localStorage.setItem('activeUser', user.username || 'User');
         localStorage.setItem('userEmail', user.email || '');
 
-       
+
         const nameEl = document.getElementById('profileUserName');
         const emailEl = document.getElementById('profileUserEmail');
         if (nameEl) nameEl.textContent = user.username || 'User';
@@ -1075,19 +1132,19 @@ async function loadUserProfileDetails() {
         const activeUserEl = document.getElementById('profileUserText');
         if (activeUserEl) activeUserEl.textContent = `Active User: ${user.username || 'User'}`;
 
-        
+
         const birthdayEl = document.getElementById('profileBirthday');
         if (birthdayEl) birthdayEl.textContent = user.birthday || '—';
 
-       
+
         const genderEl = document.getElementById('profileGender');
         if (genderEl) genderEl.textContent = user.gender || '—';
 
-        
+
         const titleEl = document.getElementById('profileTitle');
         if (titleEl) titleEl.textContent = user.title || 'Bronze Tracker 🏆';
 
-        
+
         if (user.avatar) {
             const avatarEl = document.getElementById('currentAvatarDisplay');
             if (avatarEl) avatarEl.textContent = user.avatar;
@@ -1107,33 +1164,33 @@ async function loadUserProfileDetails() {
  * from stored mood log entries and updates the profile UI.
  */
 function calculateAndRenderStats() {
-  // Fetch logs from localStorage (or fallback to empty array)
-  const moodLogs = JSON.parse(localStorage.getItem('moodLogs') || '[]');
+    // Fetch logs from localStorage (or fallback to empty array)
+    const moodLogs = JSON.parse(localStorage.getItem('moodLogs') || '[]');
 
-  // 1. Total Entries
-  const totalLogs = moodLogs.length;
-  const totalLogsEl = document.getElementById('profileTotalLogs');
-  if (totalLogsEl) animateCounter(totalLogsEl, 0, totalLogs, 800);
+    // 1. Total Entries
+    const totalLogs = moodLogs.length;
+    const totalLogsEl = document.getElementById('profileTotalLogs');
+    if (totalLogsEl) animateCounter(totalLogsEl, 0, totalLogs, 800);
 
-  // 2. Active Logging Streak (Consecutive Days)
-  const streak = calculateStreak(moodLogs);
-  const streakEl = document.getElementById('profileStreak');
-  if (streakEl) streakEl.textContent = `${streak} ${streak === 1 ? 'Day' : 'Days'}`;
+    // 2. Active Logging Streak (Consecutive Days)
+    const streak = calculateStreak(moodLogs);
+    const streakEl = document.getElementById('profileStreak');
+    if (streakEl) streakEl.textContent = `${streak} ${streak === 1 ? 'Day' : 'Days'}`;
 
-  // 3. Dominant Mood Calculation
-  const topMood = calculateDominantMood(moodLogs);
-  const topMoodEl = document.getElementById('profileTopMood');
-  if (topMoodEl) topMoodEl.textContent = topMood;
+    // 3. Dominant Mood Calculation
+    const topMood = calculateDominantMood(moodLogs);
+    const topMoodEl = document.getElementById('profileTopMood');
+    if (topMoodEl) topMoodEl.textContent = topMood;
 
-  // 4. Monthly Progress Bar (Goal: 30 Days)
-  const targetDays = 30;
-  const completionPercent = Math.min(Math.round((totalLogs / targetDays) * 100), 100);
+    // 4. Monthly Progress Bar (Goal: 30 Days)
+    const targetDays = 30;
+    const completionPercent = Math.min(Math.round((totalLogs / targetDays) * 100), 100);
 
-  const progressBar = document.getElementById('profileProgressBar');
-  const percentText = document.getElementById('progressPercentText');
+    const progressBar = document.getElementById('profileProgressBar');
+    const percentText = document.getElementById('progressPercentText');
 
-  if (progressBar) progressBar.style.width = `${completionPercent}%`;
-  if (percentText) percentText.textContent = `${completionPercent}% Complete`;
+    if (progressBar) progressBar.style.width = `${completionPercent}%`;
+    if (percentText) percentText.textContent = `${completionPercent}% Complete`;
 }
 
 /**
@@ -1141,36 +1198,36 @@ function calculateAndRenderStats() {
  * @param {string} emoji - The selected avatar emoji icon
  */
 async function selectAvatar(emoji) {
-  const currentAvatarEl = document.getElementById('currentAvatarDisplay');
-  if (currentAvatarEl) {
-    currentAvatarEl.textContent = emoji;
-    currentAvatarEl.style.transform = 'scale(1.2) rotate(10deg)';
-    setTimeout(() => { currentAvatarEl.style.transform = ''; }, 200);
-  }
+    const currentAvatarEl = document.getElementById('currentAvatarDisplay');
+    if (currentAvatarEl) {
+        currentAvatarEl.textContent = emoji;
+        currentAvatarEl.style.transform = 'scale(1.2) rotate(10deg)';
+        setTimeout(() => { currentAvatarEl.style.transform = ''; }, 200);
+    }
 
-  document.querySelectorAll('.avatar-opt').forEach(btn => {
-    if (btn.textContent.trim() === emoji) btn.classList.add('active');
-    else btn.classList.remove('active');
-  });
-
-  localStorage.setItem('selectedAvatar', emoji);
-
-  
-  try {
-    await fetch('/api/user', {
-      method: 'PUT',
-      credentials: 'include',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ avatar: emoji })
+    document.querySelectorAll('.avatar-opt').forEach(btn => {
+        if (btn.textContent.trim() === emoji) btn.classList.add('active');
+        else btn.classList.remove('active');
     });
-  } catch (err) {
-    console.warn('Failed to save avatar:', err);
-  }
+
+    localStorage.setItem('selectedAvatar', emoji);
+
+
+    try {
+        await fetch('/api/user', {
+            method: 'PUT',
+            credentials: 'include',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ avatar: emoji })
+        });
+    } catch (err) {
+        console.warn('Failed to save avatar:', err);
+    }
 }
 
 function loadSavedAvatar() {
-  const savedAvatar = localStorage.getItem('selectedAvatar') || '🌸';
-  selectAvatar(savedAvatar);
+    const savedAvatar = localStorage.getItem('selectedAvatar') || '🌸';
+    selectAvatar(savedAvatar);
 }
 
 // ==========================================================================
@@ -1181,97 +1238,97 @@ function loadSavedAvatar() {
  * Calculates current consecutive daily logging streak.
  */
 function calculateStreak(logs) {
-  if (!logs || logs.length === 0) return 0;
+    if (!logs || logs.length === 0) return 0;
 
-  // Sort unique dates descending
-  const uniqueDates = [...new Set(logs.map(log => log.date))].sort().reverse();
-  const todayStr = new Date().toISOString().split('T')[0];
+    // Sort unique dates descending
+    const uniqueDates = [...new Set(logs.map(log => log.date))].sort().reverse();
+    const todayStr = new Date().toISOString().split('T')[0];
 
-  let streak = 0;
-  let checkDate = new Date();
+    let streak = 0;
+    let checkDate = new Date();
 
-  for (let i = 0; i < uniqueDates.length; i++) {
-    const logDate = uniqueDates[i];
-    const expectedStr = checkDate.toISOString().split('T')[0];
+    for (let i = 0; i < uniqueDates.length; i++) {
+        const logDate = uniqueDates[i];
+        const expectedStr = checkDate.toISOString().split('T')[0];
 
-    if (logDate === expectedStr) {
-      streak++;
-      checkDate.setDate(checkDate.getDate() - 1);
-    } else if (i === 0 && logDate !== todayStr) {
-      // If no log today, check if user logged yesterday to maintain streak
-      checkDate.setDate(checkDate.getDate() - 1);
-      const yesterdayStr = checkDate.toISOString().split('T')[0];
-      if (logDate === yesterdayStr) {
-        streak++;
-        checkDate.setDate(checkDate.getDate() - 1);
-      } else {
-        break;
-      }
-    } else {
-      break;
+        if (logDate === expectedStr) {
+            streak++;
+            checkDate.setDate(checkDate.getDate() - 1);
+        } else if (i === 0 && logDate !== todayStr) {
+            // If no log today, check if user logged yesterday to maintain streak
+            checkDate.setDate(checkDate.getDate() - 1);
+            const yesterdayStr = checkDate.toISOString().split('T')[0];
+            if (logDate === yesterdayStr) {
+                streak++;
+                checkDate.setDate(checkDate.getDate() - 1);
+            } else {
+                break;
+            }
+        } else {
+            break;
+        }
     }
-  }
-  return streak;
+    return streak;
 }
 
 /**
  * Determines the user's most frequently logged mood.
  */
 function calculateDominantMood(logs) {
-  if (!logs || logs.length === 0) return 'None';
+    if (!logs || logs.length === 0) return 'None';
 
-  const counts = {};
-  logs.forEach(log => {
-    const mood = log.mood || 'Neutral';
-    counts[mood] = (counts[mood] || 0) + 1;
-  });
+    const counts = {};
+    logs.forEach(log => {
+        const mood = log.mood || 'Neutral';
+        counts[mood] = (counts[mood] || 0) + 1;
+    });
 
-  let dominant = 'None';
-  let maxCount = 0;
+    let dominant = 'None';
+    let maxCount = 0;
 
-  for (const [mood, count] of Object.entries(counts)) {
-    if (count > maxCount) {
-      maxCount = count;
-      dominant = mood;
+    for (const [mood, count] of Object.entries(counts)) {
+        if (count > maxCount) {
+            maxCount = count;
+            dominant = mood;
+        }
     }
-  }
 
-  // Capitalize first letter
-  return dominant.charAt(0).toUpperCase() + dominant.slice(1);
+    // Capitalize first letter
+    return dominant.charAt(0).toUpperCase() + dominant.slice(1);
 }
 
 /**
  * Animated number counting helper.
  */
 function animateCounter(element, start, end, duration) {
-  let startTimestamp = null;
-  const step = (timestamp) => {
-    if (!startTimestamp) startTimestamp = timestamp;
-    const progress = Math.min((timestamp - startTimestamp) / duration, 1);
-    element.textContent = Math.floor(progress * (end - start) + start);
-    if (progress < 1) {
-      window.requestAnimationFrame(step);
-    }
-  };
-  window.requestAnimationFrame(step);
+    let startTimestamp = null;
+    const step = (timestamp) => {
+        if (!startTimestamp) startTimestamp = timestamp;
+        const progress = Math.min((timestamp - startTimestamp) / duration, 1);
+        element.textContent = Math.floor(progress * (end - start) + start);
+        if (progress < 1) {
+            window.requestAnimationFrame(step);
+        }
+    };
+    window.requestAnimationFrame(step);
 }
 function showView(viewName) {
-  // ... your existing hide/show section code ...
+    // ... your existing hide/show section code ...
 
-  if (viewName === 'profile') {
-    initProfilePage();
-  }
+    if (viewName === 'profile') {
+        initProfilePage();
+    }
 }
 // Logout handler
 function handleLogout() {
-  localStorage.removeItem('activeUser');
-  localStorage.removeItem('userEmail');
-  localStorage.removeItem('userName');
-  localStorage.removeItem('selectedAvatarName');
-  localStorage.removeItem('selectedAvatarUrl');
-  
-  // Refresh page or redirect to index/login
-  window.location.href = 'index.html';
+    localStorage.removeItem('activeUser');
+    localStorage.removeItem('userEmail');
+    localStorage.removeItem('userName');
+    localStorage.removeItem('selectedAvatarName');
+    localStorage.removeItem('selectedAvatarUrl');
+
+    // Refresh page or redirect to index/login
+    window.location.href = 'index.html';
 }
 
 
@@ -1279,56 +1336,56 @@ function handleLogout() {
 // Auto-run when document loads
 // Load active user sign-in info into profile display
 document.addEventListener('DOMContentLoaded', () => {
-  // Read from the same localStorage key used across your app
-  const currentUserRaw = localStorage.getItem('currentUser');
-  let userName = 'Aya';
-  let userEmail = 'aya@example.com';
+    // Read from the same localStorage key used across your app
+    const currentUserRaw = localStorage.getItem('currentUser');
+    let userName = 'Aya';
+    let userEmail = 'aya@example.com';
 
-  if (currentUserRaw) {
-    try {
-      const parsed = JSON.parse(currentUserRaw);
-      if (typeof parsed === 'object' && parsed !== null) {
-        userName = parsed.name || parsed.username || userName;
-        userEmail = parsed.email || userEmail;
-      } else if (typeof parsed === 'string') {
-        userName = parsed;
-      }
-    } catch (e) {
-      // Handles cases where currentUser is stored as a plain string
-      userName = currentUserRaw;
+    if (currentUserRaw) {
+        try {
+            const parsed = JSON.parse(currentUserRaw);
+            if (typeof parsed === 'object' && parsed !== null) {
+                userName = parsed.name || parsed.username || userName;
+                userEmail = parsed.email || userEmail;
+            } else if (typeof parsed === 'string') {
+                userName = parsed;
+            }
+        } catch (e) {
+            // Handles cases where currentUser is stored as a plain string
+            userName = currentUserRaw;
+        }
     }
-  }
 
-  const nameEl = document.getElementById('profileUserName');
-  const emailEl = document.getElementById('profileUserEmail');
+    const nameEl = document.getElementById('profileUserName');
+    const emailEl = document.getElementById('profileUserEmail');
 
-  if (nameEl) nameEl.textContent = userName;
-  if (emailEl) emailEl.textContent = userEmail;
+    if (nameEl) nameEl.textContent = userName;
+    if (emailEl) emailEl.textContent = userEmail;
 });
 
 function loadActiveUserProfile() {
-  // 1. Try to fetch the active logged-in user object from storage
-  const sessionUser = JSON.parse(
-    localStorage.getItem('currentUser') || 
-    sessionStorage.getItem('currentUser') || 
-    '{}'
-  );
+    // 1. Try to fetch the active logged-in user object from storage
+    const sessionUser = JSON.parse(
+        localStorage.getItem('currentUser') ||
+        sessionStorage.getItem('currentUser') ||
+        '{}'
+    );
 
-  // 2. Fall back to individual email/name keys if stored separately during login
-  const activeEmail = sessionUser.email || localStorage.getItem('userEmail') || localStorage.getItem('loginEmail');
-  const activeName = sessionUser.name || localStorage.getItem('userName') || (activeEmail ? activeEmail.split('@')[0] : '');
+    // 2. Fall back to individual email/name keys if stored separately during login
+    const activeEmail = sessionUser.email || localStorage.getItem('userEmail') || localStorage.getItem('loginEmail');
+    const activeName = sessionUser.name || localStorage.getItem('userName') || (activeEmail ? activeEmail.split('@')[0] : '');
 
-  // 3. Populate DOM elements dynamically
-  const nameDisplay = document.getElementById('profileUserName');
-  const emailDisplay = document.getElementById('profileUserEmail');
+    // 3. Populate DOM elements dynamically
+    const nameDisplay = document.getElementById('profileUserName');
+    const emailDisplay = document.getElementById('profileUserEmail');
 
-  if (nameDisplay && activeName) {
-    nameDisplay.textContent = activeName;
-  }
-  
-  if (emailDisplay && activeEmail) {
-    emailDisplay.textContent = activeEmail;
-  }
+    if (nameDisplay && activeName) {
+        nameDisplay.textContent = activeName;
+    }
+
+    if (emailDisplay && activeEmail) {
+        emailDisplay.textContent = activeEmail;
+    }
 }
 
 // Automatically load when the DOM is ready
@@ -1336,25 +1393,25 @@ document.addEventListener('DOMContentLoaded', loadActiveUserProfile);
 
 // Function to load the logged-in user's profile details
 function loadUserProfile() {
-  // Retrieve the logged-in user object/email stored during sign-in
-  const currentUserJson = localStorage.getItem("currentUser") || sessionStorage.getItem("currentUser");
-  
-  if (currentUserJson) {
-    const user = JSON.parse(currentUserJson);
-    
-    // Set email input to the signed-in email
-    const emailInput = document.getElementById("profileUserEmailInput");
-    if (emailInput && user.email) {
-      emailInput.value = user.email;
-    }
+    // Retrieve the logged-in user object/email stored during sign-in
+    const currentUserJson = localStorage.getItem("currentUser") || sessionStorage.getItem("currentUser");
 
-    // Set name input (use display name, derive from email, or fallback)
-    const nameInput = document.getElementById("profileUserNameInput");
-    if (nameInput) {
-      const derivedName = user.name || user.email.split("@")[0];
-      nameInput.value = derivedName;
+    if (currentUserJson) {
+        const user = JSON.parse(currentUserJson);
+
+        // Set email input to the signed-in email
+        const emailInput = document.getElementById("profileUserEmailInput");
+        if (emailInput && user.email) {
+            emailInput.value = user.email;
+        }
+
+        // Set name input (use display name, derive from email, or fallback)
+        const nameInput = document.getElementById("profileUserNameInput");
+        if (nameInput) {
+            const derivedName = user.name || user.email.split("@")[0];
+            nameInput.value = derivedName;
+        }
     }
-  }
 }
 
 function switchDashboardTab(tabName) {
@@ -1383,14 +1440,14 @@ function switchDashboardTab(tabName) {
 
 
 function resetPasswordFromProfile() {
-  openAuthModal('reset');
-  switchAuthTab('reset');
+    openAuthModal('reset');
+    switchAuthTab('reset');
 
     alert("A password reset link has been sent to your registered email address.");
 }
 
 async function deleteAccount() {
-  const modal = document.getElementById('deleteConfirmModal');
+    const modal = document.getElementById('deleteConfirmModal');
     if (modal) {
         modal.classList.remove('hidden');
         if (window.lucide) lucide.createIcons();
@@ -1417,7 +1474,7 @@ async function confirmDeleteAccount() {
             showToastCard('✅ Account deleted successfully');
             localStorage.clear();
             sessionStorage.clear();
-            
+
             // Redirect to landing page
             setTimeout(() => {
                 window.location.href = '/index.html';
@@ -1466,23 +1523,23 @@ function editProfile() {
             const emailEl = document.getElementById('editEmail');
             const bdayEl = document.getElementById('editBirthday');
             const genderEl = document.getElementById('editGender');
-            const bioEl = document.getElementById('editBio');
+
 
             if (nameEl) nameEl.value = user.username || '';
             if (emailEl) emailEl.value = user.email || '';
 
-           
+
             if (bdayEl && user.birthday) {
                 const parts = user.birthday.split('/');
                 if (parts.length === 3) {
-                    bdayEl.value = `${parts[2]}-${parts[1].padStart(2,'0')}-${parts[0].padStart(2,'0')}`;
+                    bdayEl.value = `${parts[2]}-${parts[1].padStart(2, '0')}-${parts[0].padStart(2, '0')}`;
                 }
             }
 
             if (genderEl) genderEl.value = user.gender || '';
-            if (bioEl) bioEl.value = user.bio || '';
 
-            
+
+
             const modal = document.getElementById('editProfileModal');
             if (modal) modal.classList.remove('hidden');
             if (window.lucide) lucide.createIcons();
@@ -1505,21 +1562,22 @@ async function saveProfileChanges(event) {
     const email = document.getElementById('editEmail')?.value.trim();
     const birthdayRaw = document.getElementById('editBirthday')?.value;   // "2000-01-01"
     const gender = document.getElementById('editGender')?.value;
-    const bio = document.getElementById('editBio')?.value.trim();
 
-    if (!username || !email) {
-        showToastCard('Username and email are required');
+
+    if (!username) {
+        showToastCard('Username is required');
         return;
     }
 
-    
+
     let birthday = '';
     if (birthdayRaw) {
         const [y, m, d] = birthdayRaw.split('-');
         birthday = `${d}/${m}/${y}`;
     }
 
-    const payload = { username, email, birthday, gender, bio };
+    const payload = { username, email, birthday, gender };
+    if (email) payload.email = email;
 
     try {
         const response = await fetch('/api/user', {
@@ -1535,10 +1593,10 @@ async function saveProfileChanges(event) {
             showToastCard('✅ Profile updated');
             closeEditProfileModal();
 
-            
+
             await loadUserProfileDetails();
 
-            
+
             const userDisp = document.getElementById('userDisplayName');
             if (userDisp) userDisp.textContent = username;
 
@@ -1550,6 +1608,41 @@ async function saveProfileChanges(event) {
         showToastCard('❌ Network error');
     }
 }
+
+async function handleUpdateProfile(event) {
+    event.preventDefault();
+
+    const username = document.getElementById('usernameInput')?.value || document.querySelector('input[name="username"]').value;
+    const birthday = document.getElementById('birthdayInput')?.value;
+    const gender = document.getElementById('genderSelect')?.value;
+
+
+
+    const currentUserEmail = currentUser?.email || "";
+
+    const payload = {
+        username: username,
+        email: currentUserEmail,
+        birthday: birthday,
+        gender: gender,
+
+    };
+
+    const response = await fetch('/api/profile/update', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+    });
+
+    const data = await response.json();
+    if (response.ok) {
+        showToastCard('Profile updated successfully!');
+
+    } else {
+        showToastCard(data.message || 'Username and email are required');
+    }
+}
+
 // ==========================================================================
 // HISTORY VIEW — List / Cards with Pagination
 // ==========================================================================
@@ -1606,7 +1699,7 @@ function renderHistoryList() {
     if (!tbody) return;
 
     const totalPages = Math.max(1, Math.ceil(moodLogs.length / ITEMS_PER_PAGE));
-    
+
     // Clamp page number
     if (listPage > totalPages) listPage = totalPages;
     if (listPage < 1) listPage = 1;
@@ -1693,8 +1786,8 @@ function renderHistoryCards() {
     // Update page indicator
     const indicator = document.getElementById('cardsPageIndicator');
     if (indicator) {
-        indicator.textContent = totalDays > 0 
-            ? `Page ${cardsPage} / ${totalDays}` 
+        indicator.textContent = totalDays > 0
+            ? `Page ${cardsPage} / ${totalDays}`
             : 'Page 0 / 0';
     }
 
@@ -1732,7 +1825,7 @@ function renderHistoryCards() {
                     <div class="day-entry-card">
                         <!-- Time in top-right corner -->
                         ${entry.created_at ? `
-                            <div class="entry-time">${new Date(entry.created_at).toLocaleTimeString('en-US', {hour: '2-digit', minute: '2-digit'})}</div>
+                            <div class="entry-time">${new Date(entry.created_at).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}</div>
                         ` : ''}
 
                         <!-- Emotion -->
