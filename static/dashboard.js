@@ -8,7 +8,8 @@ let selectedIcon = "";
 let currentDate = new Date();
 let activeTargetDate = new Date().toISOString().split('T')[0];
 
-const DAILY_EMOTION_LIMIT = 5;
+
+const DAILY_EMOTION_LIMIT = 999;
 
 let moodLogs = JSON.parse(localStorage.getItem('moodLogs')) || [
     { id: 1, log_date: new Date().toISOString().split('T')[0], emotion: "Happy", iconName: "smile", note: "Welcome to your fresh sanctuary dashboard!" }
@@ -54,6 +55,15 @@ function switchAuthTab(tab) {
     if (step1) step1.classList.remove('hidden');
     if (step2) step2.classList.add('hidden');
 }
+
+    const regHints = document.getElementById('regPasswordHints');
+    const resetHints = document.getElementById('resetPasswordHints');
+    [regHints, resetHints].forEach(box => {
+    if (box) {
+        box.querySelectorAll('.hint').forEach(h => h.classList.remove('valid', 'invalid'));
+      }
+     });
+
     if (window.lucide) lucide.createIcons();
 }
 
@@ -96,6 +106,12 @@ async function handleRegisterSubmit(event) {
     const username = nameInput ? nameInput.value.trim() : '';
     const email = emailInput ? emailInput.value.trim() : '';
     const password = passwordInput ? passwordInput.value.trim() : '';
+
+    const pwErr = validatePassword(password);
+    if (pwErr) {
+    showToastCard('❌ ' + pwErr);
+    return;
+    }
 
     try {
         const response = await fetch('/api/register', {
@@ -158,6 +174,12 @@ async function handlePasswordResetConfirm(event) {
         return;
     }
 
+    const pwErr = validatePassword(newPassword);
+    if (pwErr) {
+      showToastCard('❌ ' + pwErr);
+      return;
+    }
+
     try {
         const response = await fetch('/api/reset-password', {
             method: 'POST',
@@ -178,6 +200,49 @@ async function handlePasswordResetConfirm(event) {
     } catch (err) {
         showToastCard('❌ Server error. Please try again later.');
     }
+}
+
+function validatePassword(password) {
+    if (password.length < 8) return "Password must be at least 8 characters long.";
+    if (!/[A-Z]/.test(password)) return "Password must contain at least one uppercase letter.";
+    if (!/[a-z]/.test(password)) return "Password must contain at least one lowercase letter.";
+    if (!/[0-9]/.test(password)) return "Password must contain at least one number.";
+    if (!/[!@#$%^&*(),.?":{}|<>]/.test(password)) return "Password must contain at least one special character.";
+    return null;
+}
+
+function checkPasswordStrength(inputId, hintsId) {
+    const input = document.getElementById(inputId);
+    const hintsBox = document.getElementById(hintsId);
+    if (!input || !hintsBox) return;
+
+    const value = input.value;
+
+   
+    const rules = {
+        length: value.length >= 8,
+        upper: /[A-Z]/.test(value),
+        lower: /[a-z]/.test(value),
+        number: /[0-9]/.test(value),
+        special: /[!@#$%^&*(),.?":{}|<>]/.test(value)
+    };
+
+   
+    hintsBox.querySelectorAll('.hint').forEach(hint => {
+        const rule = hint.dataset.rule;
+        hint.classList.remove('valid', 'invalid');
+
+        if (!value) {
+           
+            return;
+        }
+
+        if (rules[rule]) {
+            hint.classList.add('valid');
+        } else {
+            hint.classList.add('invalid');
+        }
+    });
 }
 
 function enterSanctuary() {
@@ -201,24 +266,56 @@ function enterSanctuary() {
     fetchLogsAndRefresh();
 }
 
-async function logout() {
-    
+function logout() {
+    // Show confirmation modal instead of logging out immediately
+    const modal = document.getElementById('logoutConfirmModal');
+    if (modal) {
+        modal.classList.remove('hidden');
+        if (window.lucide) lucide.createIcons();
+    }
+}
+
+function closeLogoutConfirm() {
+    // Close the confirmation modal 
+    const modal = document.getElementById('logoutConfirmModal');
+    if (modal) {
+        modal.classList.add('hidden');
+    }
+}
+
+async function confirmLogout() {
+    // Close modal first
+    closeLogoutConfirm();
+
+    // 1. Call logout API
     try {
         await fetch('/api/logout', { method: 'POST' });
     } catch (e) {
         console.error('Logout error', e);
     }
 
-    const authScr = document.getElementById('authScreen');
+    // 2. Clear local state
+    localStorage.removeItem('currentUser');
+    localStorage.removeItem('activeUser');
+    localStorage.removeItem('userEmail');
+    sessionStorage.clear();
+
+    // 3. Hide app layout & auth screen
     const appLay = document.getElementById('appLayout');
+    const authScr = document.getElementById('authScreen');
+    const landingScr = document.getElementById('landingScreen');
 
     if (appLay) appLay.classList.add('hidden');
-    if (authScr) authScr.classList.remove('hidden');
-    
-    switchAuthTab('login');
-    showToastCard('Portal locked successfully.');
-}
+    if (authScr) authScr.classList.add('hidden');
 
+    // 4. Show Landing page
+    if (landingScr) {
+        landingScr.classList.remove('hidden');
+    }
+
+    // 5. Show toast message
+    showToastCard('👋 Logged out successfully');
+}
 
 // 3. UI NAVIGATION & SELECTION
 
@@ -297,15 +394,6 @@ async function logMood() {
         return;
     }
 
-    // Limit mood logging to 5 entries per day
-    const targetDateLogs = moodLogs.filter(
-        log => log.log_date === activeTargetDate
-    );
-
-    if (targetDateLogs.length >= DAILY_EMOTION_LIMIT) {
-        showToastCard("You can only log up to 5 moods per day.");
-        return;
-    }
 
     try {
         const response = await fetch('/api/logs', {
@@ -370,7 +458,7 @@ function generateCalendar() {
         "January", "February", "March", "April", "May", "June",
         "July", "August", "September", "October", "November", "December"
     ];
-    
+
     const monthYearElem = document.getElementById("monthYear");
     if (monthYearElem) {
         monthYearElem.innerText = `${monthNames[month]} ${year}`;
@@ -387,16 +475,18 @@ function generateCalendar() {
         calendarGrid.appendChild(emptyCell);
     }
 
+    
+    const EMOTION_PRIORITY = ['Happy', 'Calm', 'Neutral', 'Sad', 'Anxious'];
+
     for (let day = 1; day <= daysInMonth; day++) {
         const dayCell = document.createElement("div");
         dayCell.className = "day-cell";
-        
+
         const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
         dayCell.setAttribute("data-date", dateStr);
 
         if (dateStr === activeTargetDate) dayCell.classList.add("selected-day");
 
-       
         const dayLogs = moodLogs.filter(l => l.log_date === dateStr);
 
         if (dayLogs.length > 0) {
@@ -406,32 +496,35 @@ function generateCalendar() {
                 emotionCounts[l.emotion] = (emotionCounts[l.emotion] || 0) + 1;
             });
 
-            
-            const dominantEmotion = Object.keys(emotionCounts).reduce((a, b) => 
-                emotionCounts[a] > emotionCounts[b] ? a : (emotionCounts[a] === emotionCounts[b] ? a : b)
-            );
+           
+            const dominantEmotion = Object.keys(emotionCounts).sort((a, b) => {
+                if (emotionCounts[b] !== emotionCounts[a]) {
+                    return emotionCounts[b] - emotionCounts[a];   
+                }
+                return EMOTION_PRIORITY.indexOf(a) - EMOTION_PRIORITY.indexOf(b);   
+            })[0];
 
             const iconName = EMOTION_ICON_MAP[dominantEmotion] || 'smile';
             const totalCount = dayLogs.length;
 
             let cellContent = `<span>${day}</span><span class="day-mood-icon"><i data-lucide="${iconName}" style="width: 14px;"></i></span>`;
-            
+
             
             if (totalCount > 1) {
                 cellContent += `<span class="multi-entry-badge" style="position: absolute; top: 2px; right: 2px; background: #ff6b6b; color: white; font-size: 0.65rem; padding: 1px 5px; border-radius: 8px; font-weight: 800;">${totalCount}</span>`;
             }
-            
+
             dayCell.style.position = 'relative';
             dayCell.innerHTML = cellContent;
         } else {
             dayCell.innerHTML = `<span>${day}</span>`;
         }
-        
-    
+
         dayCell.onclick = () => openDayDetailModal(dateStr, dayLogs);
         calendarGrid.appendChild(dayCell);
     }
 }
+
 function renderStandaloneCalendar() {
     const container = document.getElementById('standaloneCalendarContainer');
     if (!container) return;
@@ -486,7 +579,12 @@ function refreshUI() {
     renderTable();
     calculateStats();
     generateCalendar();
-    renderHistoryTable();      
+
+    
+    if (typeof renderHistoryView === 'function') {
+        renderHistoryView();
+    }
+
     if (window.lucide) lucide.createIcons();
 }
 
@@ -637,23 +735,41 @@ function calculateStats() {
 }
 
 // 7. MODALS & UTILITIES
-function openDayDetailModal(dateStr, loggedEntry) {
+
+function openDayDetailModal(dateStr, loggedEntries) {
     const dateTitle = document.getElementById('dayModalDateTitle');
     if (dateTitle) dateTitle.innerText = dateStr;
 
     const contentDiv = document.getElementById('dayModalContent');
     const actionBtn = document.getElementById('dayModalActionBtn');
 
+    
+    let entries = [];
+    if (Array.isArray(loggedEntries)) {
+        entries = loggedEntries;                 
+    } else if (loggedEntries) {
+        entries = [loggedEntries];               
+    }
+
+    
     if (contentDiv) {
-        if (loggedEntry) {
-            contentDiv.innerHTML = `
-                <div style="background: var(--sidebar-bg); border: 2px solid var(--border-dark); border-radius: 16px; padding: 1rem;">
+        if (entries.length > 0) {
+            
+            contentDiv.innerHTML = entries.map(entry => `
+                <div style="background: var(--sidebar-bg); border: 2px solid var(--border-dark); border-radius: 16px; padding: 1rem; margin-bottom: 0.8rem;">
                     <div style="display: flex; align-items: center; gap: 8px; font-weight: 800; font-size: 1.1rem; margin-bottom: 0.4rem;">
-                        <i data-lucide="${loggedEntry.iconName || 'smile'}" style="width: 20px;"></i> ${loggedEntry.emotion}
+                        <i data-lucide="${entry.iconName || 'smile'}" style="width: 20px;"></i> ${entry.emotion}
                     </div>
-                    <p style="font-size: 0.85rem; font-weight: 600; color: var(--text-dark);">"${loggedEntry.note}"</p>
+                    <p style="font-size: 0.85rem; font-weight: 600; color: var(--text-dark);">
+                        "${entry.note || 'No note'}"
+                    </p>
+                    ${entry.created_at ? `
+                        <p style="font-size: 0.7rem; color: var(--text-muted); margin-top: 0.4rem;">
+                            🕐 ${new Date(entry.created_at).toLocaleTimeString()}
+                        </p>
+                    ` : ''}
                 </div>
-            `;
+            `).join('');
         } else {
             contentDiv.innerHTML = `
                 <p style="font-size: 0.9rem; font-weight: 600; color: var(--text-muted);">
@@ -668,6 +784,7 @@ function openDayDetailModal(dateStr, loggedEntry) {
             activeTargetDate = dateStr;
             toggleDayDetailModal(false);
             refreshUI();
+            showToastCard(`Now logging for ${dateStr}`);
         };
     }
 
@@ -806,11 +923,13 @@ document.addEventListener('DOMContentLoaded', async function () {
 
 let _alarmAudio = null;
 let _isAlarmRinging = false;
+let _lastDismissedAt = 0; 
+let _currentRingingAlarmId = null;
 
 function triggerAlarm(alarm) {
     _isAlarmRinging = true;
+    _currentRingingAlarmId = alarm.id;
 
-    
     if (!_alarmAudio) {
         _alarmAudio = new Audio('https://actions.google.com/sounds/v1/alarms/beep_short.ogg');
         _alarmAudio.loop = true;
@@ -836,12 +955,49 @@ function triggerAlarm(alarm) {
     }
 }
 
+async function checkAlarms() {
+    if (_isAlarmRinging) return;
+
+    // Dismiss 
+    if (Date.now() - _lastDismissedAt < 90000) return;
+
+    try {
+        const response = await fetch('/api/alarms/check', { credentials: 'include' });
+        if (!response.ok) return;
+        const data = await response.json();
+
+        if (data.triggered && data.alarms.length > 0) {
+            triggerAlarm(data.alarms[0]);
+        }
+    } catch (err) {
+        console.error('Check alarms error:', err);
+    }
+}
+
 function stopAlarm() {
     _isAlarmRinging = false;
+    _lastDismissedAt = Date.now(); 
+
+   
+    if (_currentRingingAlarmId) {
+        let alarms = JSON.parse(localStorage.getItem('alarms') || '[]');
+        alarms = alarms.map(a => {
+            if (a.id === _currentRingingAlarmId) {
+                return { ...a, enabled: false }; 
+            }
+            return a;
+        });
+        localStorage.setItem('alarms', JSON.stringify(alarms));
+        renderAlarms(); 
+        _currentRingingAlarmId = null;
+    }
 
     if (_alarmAudio) {
         _alarmAudio.pause();
         _alarmAudio.currentTime = 0;
+        _alarmAudio.loop = false;         
+        _alarmAudio.src = '';              
+        _alarmAudio = null; 
     }
 
     const modal = document.getElementById('alarmModal');
@@ -849,24 +1005,27 @@ function stopAlarm() {
 }
 
 
-document.addEventListener('DOMContentLoaded', function () {
-    const stopBtn = document.getElementById('stopAlarmBtn');
-    if (stopBtn) stopBtn.addEventListener('click', stopAlarm);
-
-    
-    setInterval(function () {
-        if (_isAlarmRinging) return;   
-
+function startLocalAlarmScheduler() {
+    setInterval(() => {
         const now = new Date();
-        const currentTime = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
+        const currentHHMM = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
+        const currentSeconds = now.getSeconds();
 
-        const alarms = JSON.parse(localStorage.getItem('alarms') || '[]');
-        alarms.forEach(alarm => {
-            if (alarm.time === currentTime && alarm.enabled !== false) {
-                triggerAlarm(alarm);
+       
+        if (currentSeconds >= 0 && currentSeconds < 5 && !_isAlarmRinging) {
+            const alarms = JSON.parse(localStorage.getItem('alarms') || '[]');
+            const matchedAlarm = alarms.find(a => a.enabled && a.time === currentHHMM);
+
+            if (matchedAlarm) {
+                triggerAlarm(matchedAlarm);
             }
-        });
-    }, 10000);
+        }
+    }, 3000); 
+}
+
+document.addEventListener('DOMContentLoaded', function () {
+    setTimeout(renderAlarms, 100);
+    startLocalAlarmScheduler(); 
 });
 
 
@@ -1231,43 +1390,60 @@ function resetPasswordFromProfile() {
 }
 
 async function deleteAccount() {
-  if (!confirm('Are you sure? This cannot be undone.')) return;
-
-  try {
-    const response = await fetch('/api/user', {
-      method: 'DELETE',
-      credentials: 'include'
-    });
-
-    if (response.ok) {
-      showToastCard('Account deleted');
-      localStorage.clear();
-      setTimeout(() => window.location.reload(), 1500);
-    } else {
-      const data = await response.json().catch(() => ({}));
-      showToastCard('❌ ' + (data.error || 'Failed to delete'));
-    }
-  } catch (err) {
-    showToastCard('❌ Network error');
-  }
-}
-
-function switchTheme(theme) {
-    const btns = document.querySelectorAll('.theme-btn');
-    btns.forEach(btn => btn.classList.remove('active'));
-
-    if (theme === 'dark') {
-        document.body.classList.add('dark-theme');
-        if (event && event.target) event.target.classList.add('active');
-    } else {
-        document.body.classList.remove('dark-theme');
-        if (event && event.target) event.target.classList.add('active');
+  const modal = document.getElementById('deleteConfirmModal');
+    if (modal) {
+        modal.classList.remove('hidden');
+        if (window.lucide) lucide.createIcons();
     }
 }
+
+function closeDeleteConfirm() {
+    const modal = document.getElementById('deleteConfirmModal');
+    if (modal) {
+        modal.classList.add('hidden');
+    }
+}
+
+async function confirmDeleteAccount() {
+    closeDeleteConfirm();
+
+    try {
+        const response = await fetch('/api/user', {
+            method: 'DELETE',
+            credentials: 'include'
+        });
+
+        if (response.ok) {
+            showToastCard('✅ Account deleted successfully');
+            localStorage.clear();
+            sessionStorage.clear();
+            
+            // Redirect to landing page
+            setTimeout(() => {
+                window.location.href = '/index.html';
+            }, 1500);
+        } else {
+            const data = await response.json().catch(() => ({}));
+            showToastCard('❌ ' + (data.error || 'Failed to delete account'));
+        }
+    } catch (err) {
+        showToastCard('❌ Network error');
+    }
+}
+
+
 
 function openAuthModal(tab) {
     const authScr = document.getElementById('authScreen');
     if (authScr) authScr.classList.remove('hidden');
+
+    ['regPasswordHints', 'resetPasswordHints'].forEach(id => {
+        const box = document.getElementById(id);
+        if (box) {
+            box.querySelectorAll('.hint').forEach(h => h.classList.remove('valid', 'invalid'));
+        }
+    });
+
     switchAuthTab(tab);
 }
 
@@ -1282,7 +1458,7 @@ function closeAuthModal() {
 // ==========================================================================
 
 function editProfile() {
-    // 1. 先用后端数据填充表单
+    // 1. 
     fetch('/api/user', { credentials: 'include' })
         .then(res => res.ok ? res.json() : Promise.reject(res))
         .then(user => {
@@ -1295,7 +1471,7 @@ function editProfile() {
             if (nameEl) nameEl.value = user.username || '';
             if (emailEl) emailEl.value = user.email || '';
 
-            // birthday 后端存的是 "01/01/2000" 格式，转成 "2000-01-01" 给 date input
+           
             if (bdayEl && user.birthday) {
                 const parts = user.birthday.split('/');
                 if (parts.length === 3) {
@@ -1306,7 +1482,7 @@ function editProfile() {
             if (genderEl) genderEl.value = user.gender || '';
             if (bioEl) bioEl.value = user.bio || '';
 
-            // 显示模态框
+            
             const modal = document.getElementById('editProfileModal');
             if (modal) modal.classList.remove('hidden');
             if (window.lucide) lucide.createIcons();
@@ -1375,55 +1551,92 @@ async function saveProfileChanges(event) {
     }
 }
 // ==========================================================================
-// HISTORY VIEW — List / Cards 
+// HISTORY VIEW — List / Cards with Pagination
 // ==========================================================================
 
 let historyStyle = 'list';   // 'list' | 'cards'
+let listPage = 1;            // Current page for list view (5 per page)
+let cardsPage = 1;           // Current day index for cards view
+const ITEMS_PER_PAGE = 5;    // 5 records per page in list view
+
+// ============================================================
+// SWITCH BETWEEN LIST AND CARDS
+// ============================================================
 
 function setHistoryStyle(style) {
     historyStyle = style;
-    console.log('🔁 setHistoryStyle:', style, '| logs:', moodLogs.length);
+    listPage = 1;      // Reset pagination
+    cardsPage = 1;
 
-    // 切换按钮高亮
+    // Highlight active button
     document.querySelectorAll('.history-style-btn').forEach(btn => {
         btn.classList.toggle('active', btn.dataset.style === style);
     });
 
-    // 切换容器显示
+    // Show/hide containers
     const listBox = document.getElementById('historyListContainer');
     const cardsBox = document.getElementById('historyCardsContainer');
 
     if (listBox) listBox.classList.toggle('hidden', style !== 'list');
     if (cardsBox) cardsBox.classList.toggle('hidden', style !== 'cards');
 
-    // 渲染
     renderHistoryView();
 }
+
+// ============================================================
+// MAIN RENDER
+// ============================================================
 
 function renderHistoryView() {
     if (!Array.isArray(moodLogs)) moodLogs = [];
 
     if (historyStyle === 'list') {
-        renderHistoryList(moodLogs);
+        renderHistoryList();
     } else {
-        renderHistoryCards(moodLogs);
+        renderHistoryCards();
     }
 }
 
-// ============ LIST 模式 ============
-function renderHistoryList(arr) {
+// ============================================================
+// LIST VIEW — 5 records per page
+// ============================================================
+
+function renderHistoryList() {
     const tbody = document.getElementById('history-list-body');
-    if (!tbody) {
-        console.warn('❌ #history-list-body 不存在');
-        return;
+    if (!tbody) return;
+
+    const totalPages = Math.max(1, Math.ceil(moodLogs.length / ITEMS_PER_PAGE));
+    
+    // Clamp page number
+    if (listPage > totalPages) listPage = totalPages;
+    if (listPage < 1) listPage = 1;
+
+    // Update page indicator
+    const indicator = document.getElementById('listPageIndicator');
+    if (indicator) {
+        indicator.textContent = `Page ${listPage} / ${totalPages}`;
     }
 
-    if (arr.length === 0) {
+    // Disable/enable buttons
+    const paginationBox = document.getElementById('listPagination');
+    if (paginationBox) {
+        const prevBtn = paginationBox.querySelector('button:first-child');
+        const nextBtn = paginationBox.querySelector('button:last-child');
+        if (prevBtn) prevBtn.disabled = listPage <= 1;
+        if (nextBtn) nextBtn.disabled = listPage >= totalPages;
+    }
+
+    if (moodLogs.length === 0) {
         tbody.innerHTML = `<tr><td colspan="4" style="text-align:center;color:var(--text-muted);padding:1.5rem 0;">No logs yet. Go to Dashboard to log your first mood!</td></tr>`;
         return;
     }
 
-    tbody.innerHTML = arr.map(log => `
+    // Get records for current page
+    const startIdx = (listPage - 1) * ITEMS_PER_PAGE;
+    const endIdx = startIdx + ITEMS_PER_PAGE;
+    const pageLogs = moodLogs.slice(startIdx, endIdx);
+
+    tbody.innerHTML = pageLogs.map(log => `
         <tr>
             <td>${log.log_date}</td>
             <td>
@@ -1443,59 +1656,124 @@ function renderHistoryList(arr) {
     if (window.lucide) lucide.createIcons();
 }
 
-// ============ CARDS 模式 ============
-function renderHistoryCards(arr) {
+function prevListPage() {
+    if (listPage > 1) {
+        listPage--;
+        renderHistoryList();
+    }
+}
+
+function nextListPage() {
+    const totalPages = Math.max(1, Math.ceil(moodLogs.length / ITEMS_PER_PAGE));
+    if (listPage < totalPages) {
+        listPage++;
+        renderHistoryList();
+    }
+}
+
+// ============================================================
+// CARDS VIEW — 1 day per page (shows all moods of that day)
+// ============================================================
+
+function renderHistoryCards() {
     const container = document.getElementById('history-cards-body');
-    if (!container) {
-        console.warn('❌ #history-cards-body 不存在');
-        return;
-    }
+    if (!container) return;
 
-    if (arr.length === 0) {
-        container.innerHTML = `<p style="color:var(--text-muted);font-weight:600;">No mood entries logged yet.</p>`;
-        return;
-    }
-
-    // 按日期分组
+    // Group logs by date
     const byDate = {};
-    arr.forEach(l => {
+    moodLogs.forEach(l => {
         if (!byDate[l.log_date]) byDate[l.log_date] = [];
         byDate[l.log_date].push(l);
     });
 
+    // Sort dates descending (newest first)
     const dates = Object.keys(byDate).sort().reverse();
+    const totalDays = dates.length;
 
+    // Update page indicator
+    const indicator = document.getElementById('cardsPageIndicator');
+    if (indicator) {
+        indicator.textContent = totalDays > 0 
+            ? `Page ${cardsPage} / ${totalDays}` 
+            : 'Page 0 / 0';
+    }
+
+    // Disable/enable buttons
+    const paginationBox = document.getElementById('cardsPagination');
+    if (paginationBox) {
+        const prevBtn = paginationBox.querySelector('button:first-child');
+        const nextBtn = paginationBox.querySelector('button:last-child');
+        if (prevBtn) prevBtn.disabled = cardsPage <= 1;
+        if (nextBtn) nextBtn.disabled = cardsPage >= totalDays;
+    }
+
+    if (totalDays === 0) {
+        container.innerHTML = `<p style="color:var(--text-muted);font-weight:600;text-align:center;padding:2rem;">No mood entries logged yet.</p>`;
+        return;
+    }
+
+    // Clamp page number
+    if (cardsPage > totalDays) cardsPage = totalDays;
+    if (cardsPage < 1) cardsPage = 1;
+
+    // Get current date and its entries
+    const currentDate = dates[cardsPage - 1];
+    const entries = byDate[currentDate];
+
+    // Render the single day
     container.innerHTML = `
-        <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:1rem;">
-            ${dates.map(date => {
-                const entries = byDate[date];
-                const total = entries.length;
+        <div class="day-group-card">
+            <div class="day-group-header">
+                <span> ${currentDate}</span>
+                <span style="font-size:0.75rem;color:var(--text-muted);">${entries.length} ${entries.length === 1 ? 'entry' : 'entries'}</span>
+            </div>
+            <div class="day-group-entries">
+                ${entries.map(entry => `
+                    <div class="day-entry-card">
+                        <!-- Time in top-right corner -->
+                        ${entry.created_at ? `
+                            <div class="entry-time">${new Date(entry.created_at).toLocaleTimeString('en-US', {hour: '2-digit', minute: '2-digit'})}</div>
+                        ` : ''}
 
-                const counts = {};
-                entries.forEach(e => counts[e.emotion] = (counts[e.emotion] || 0) + 1);
-                const dominant = Object.keys(counts).reduce((a, b) =>
-                    counts[a] > counts[b] ? a : (counts[a] === counts[b] ? a : b));
-
-                const dominantIcon = EMOTION_ICON_MAP[dominant] || 'smile';
-                const dominantBg = getEmotionBg(dominant);
-
-                return `
-                    <div style="background:white;border:2px solid var(--border-dark);padding:1rem;border-radius:16px;box-shadow:2px 2px 0 var(--border-dark);position:relative;">
-                        <div style="font-size:0.75rem;font-weight:800;color:var(--text-muted);margin-bottom:0.4rem;">${date}</div>
-                        <div style="display:flex;align-items:center;gap:6px;font-weight:800;font-size:0.95rem;background:${dominantBg};padding:4px 10px;border-radius:10px;border:1.5px solid var(--border-dark);width:fit-content;">
-                            <i data-lucide="${dominantIcon}" style="width:14px;"></i> ${dominant}
+                        <!-- Emotion -->
+                        <div class="entry-emotion">
+                            <i data-lucide="${entry.iconName || 'smile'}" style="width:18px;"></i>
+                            ${entry.emotion}
                         </div>
-                        ${entries[0].note ? `<div style="font-size:0.75rem;color:var(--text-dark);opacity:0.75;margin-top:0.6rem;">${entries[0].note}</div>` : ''}
-                        ${total > 1 ? `<span style="position:absolute;top:8px;right:8px;background:#ff6b6b;color:white;font-size:0.65rem;padding:2px 7px;border-radius:8px;font-weight:800;">${total}</span>` : ''}
+
+                        <!-- Note -->
+                        <div class="entry-note">${entry.note || 'No note'}</div>
+
+                        <!-- Delete button in bottom-right -->
+                        <div class="entry-footer">
+                            <button class="btn-delete" onclick="deleteLog(${entry.id})" title="Delete">
+                                <i data-lucide="trash-2" style="width:14px;"></i>
+                            </button>
+                        </div>
                     </div>
-                `;
-            }).join('')}
+                `).join('')}
+            </div>
         </div>
     `;
 
     if (window.lucide) lucide.createIcons();
 }
 
+function prevCardsPage() {
+    if (cardsPage > 1) {
+        cardsPage--;
+        renderHistoryCards();
+    }
+}
+
+function nextCardsPage() {
+    // Group by date to get total
+    const uniqueDates = [...new Set(moodLogs.map(l => l.log_date))];
+    if (cardsPage < uniqueDates.length) {
+        cardsPage++;
+        renderHistoryCards();
+    }
+}
 
 function addAlarm(event) {
     if (event) event.preventDefault();

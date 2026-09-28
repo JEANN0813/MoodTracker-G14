@@ -744,3 +744,283 @@ body {
     margin-bottom: 0.5rem;
     flex-shrink: 0;
 }
+
+/* ============================================================
+   HISTORY PAGINATION
+   ============================================================ */
+.history-pagination {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 1.5rem;
+    margin-top: 1.5rem;
+    padding-top: 1rem;
+    border-top: 2px solid var(--border-dark);
+}
+
+.history-pagination .cal-nav-btn {
+    background: var(--canvas-bg);
+    border: 2px solid var(--border-dark);
+    width: 38px;
+    height: 38px;
+    border-radius: 12px;
+    cursor: pointer;
+    font-weight: 800;
+    font-size: 1.2rem;
+    box-shadow: 2px 2px 0px var(--border-dark);
+    transition: all 0.15s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.history-pagination .cal-nav-btn:hover:not(:disabled) {
+    transform: translate(-2px, -2px);
+    box-shadow: 4px 4px 0px var(--border-dark);
+}
+
+.history-pagination .cal-nav-btn:disabled {
+    opacity: 0.3;
+    cursor: not-allowed;
+}
+
+/* ============================================================
+   Cards view - day group
+   ============================================================ */
+.day-group-card {
+    background: white;
+    border: 2px solid var(--border-dark);
+    border-radius: 20px;
+    padding: 1.5rem;
+    box-shadow: 3px 3px 0 var(--border-dark);
+    margin-bottom: 1rem;
+}
+
+.day-group-header {
+    font-size: 1.1rem;
+    font-weight: 800;
+    padding-bottom: 0.8rem;
+    border-bottom: 2px solid var(--border-dark);
+    margin-bottom: 1rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.day-group-entries {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+    gap: 1rem;
+}
+
+/* Individual entry card */
+.day-entry-card {
+    background: var(--canvas-bg);
+    border: 2px solid var(--border-dark);
+    border-radius: 16px;
+    padding: 1rem;
+    box-shadow: 2px 2px 0 var(--border-dark);
+    position: relative;              /* for absolute positioning */
+    display: flex;
+    flex-direction: column;
+    min-height: 140px;
+}
+
+/* Time in top-right corner */
+.day-entry-card .entry-time {
+    position: absolute;
+    top: 0.7rem;
+    right: 0.8rem;
+    font-size: 0.7rem;
+    color: var(--text-muted);
+    font-weight: 700;
+    background: transparent;
+}
+
+/* Emotion title */
+.day-entry-card .entry-emotion {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-weight: 800;
+    font-size: 1rem;
+    margin-bottom: 0.5rem;
+    padding-right: 3.5rem;           /* avoid overlapping time */
+}
+
+/* Note */
+.day-entry-card .entry-note {
+    font-size: 0.8rem;
+    color: var(--text-dark);
+    opacity: 0.8;
+    font-weight: 600;
+    line-height: 1.4;
+    flex: 1;                          /* push footer down */
+    margin-bottom: 0.6rem;
+}
+
+/* Footer with delete button in bottom-right */
+.day-entry-card .entry-footer {
+    display: flex;
+    justify-content: flex-end;
+    margin-top: auto;
+}
+
+/* Delete button - matches list view style */
+.day-entry-card .btn-delete {
+    background: #f88a8a;
+    border: 1.5px solid var(--border-dark);
+    border-radius: 8px;
+    padding: 4px 8px;
+    cursor: pointer;
+    box-shadow: 1px 1px 0px var(--border-dark);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    transition: transform 0.15s, box-shadow 0.15s;
+}
+
+.day-entry-card .btn-delete:hover {
+    transform: translate(-1px, -1px);
+    box-shadow: 2px 2px 0px var(--border-dark);
+}
+
+/* ============================================================
+   CARDS VIEW - No scroll, auto-fit layout
+   ============================================================ */
+
+#historyCardsContainer {
+    display: flex;
+    flex-direction: column;
+    min-height: 600px;
+    max-height: 600px;
+    overflow: hidden;           
+}
+
+#history-cards-body {
+    flex: 1;
+    overflow: hidden;          
+    display: flex;
+    flex-direction: column;
+    padding: 0;
+}
+
+/* Day group takes full height */
+.day-group-card {
+    background: white;
+    border: 2px solid var(--border-dark);
+    border-radius: 20px;
+    padding: 1.5rem;
+    box-shadow: 3px 3px 0 var(--border-dark);
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    overflow: hidden;
+}
+
+.day-group-header {
+    font-size: 1.1rem;
+    font-weight: 800;
+    padding-bottom: 0.8rem;
+    border-bottom: 2px solid var(--border-dark);
+    margin-bottom: 1rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-shrink: 0;
+}
+
+/* Auto-fit grid: adjusts columns AND rows */
+.day-group-entries {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    grid-auto-rows: 1fr;       
+    gap: 0.8rem;
+    flex: 1;
+    overflow: hidden;
+    align-content: stretch;
+}
+
+/* Compact card */
+.day-entry-card {
+    background: var(--canvas-bg);
+    border: 2px solid var(--border-dark);
+    border-radius: 16px;
+    padding: 0.9rem;
+    box-shadow: 2px 2px 0 var(--border-dark);
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    min-height: 0;              
+    overflow: hidden;
+}
+
+/* Time top-right */
+.day-entry-card .entry-time {
+    position: absolute;
+    top: 0.6rem;
+    right: 0.7rem;
+    font-size: 0.65rem;
+    color: var(--text-muted);
+    font-weight: 700;
+}
+
+/* Emotion */
+.day-entry-card .entry-emotion {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-weight: 800;
+    font-size: 0.9rem;
+    margin-bottom: 0.4rem;
+    padding-right: 3.5rem;
+    flex-shrink: 0;
+}
+
+/* Note - auto truncate if too long */
+.day-entry-card .entry-note {
+    font-size: 0.75rem;
+    color: var(--text-dark);
+    opacity: 0.8;
+    font-weight: 600;
+    line-height: 1.3;
+    flex: 1;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    display: -webkit-box;
+    -webkit-line-clamp: 4;       
+    -webkit-box-orient: vertical;
+    margin-bottom: 0.4rem;
+}
+
+/* Footer with delete button */
+.day-entry-card .entry-footer {
+    display: flex;
+    justify-content: flex-end;
+    flex-shrink: 0;
+}
+
+.day-entry-card .btn-delete {
+    background: #f88a8a;
+    border: 1.5px solid var(--border-dark);
+    border-radius: 8px;
+    padding: 3px 7px;
+    cursor: pointer;
+    box-shadow: 1px 1px 0px var(--border-dark);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.day-entry-card .btn-delete:hover {
+    transform: translate(-1px, -1px);
+    box-shadow: 2px 2px 0px var(--border-dark);
+}
+
+/* Pagination stays at bottom */
+#cardsPagination {
+    flex-shrink: 0;
+    margin-top: 1rem;
+    padding-top: 1rem;
+    border-top: 2px solid var(--border-dark);
+}
