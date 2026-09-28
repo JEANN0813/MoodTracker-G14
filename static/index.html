@@ -8,6 +8,8 @@
 
     <link rel="stylesheet" href="style.css">
     <script src="dashboard.js" defer></script>
+    <script src="alarm.js" defer></script>
+    
 
 
 
@@ -75,7 +77,7 @@
             }
         }
 
-        /* ==== Alarm 列表 ==== */
+        /* ==== Alarm  ==== */
         .alarm-list {
             list-style: none;
             padding: 0;
@@ -96,7 +98,7 @@
             background: var(--canvas-bg);
         }
 
-        /* ==== History / Chart 切换按钮 ==== */
+        /* ==== History / Chart  ==== */
         .history-style-btn,
         .chart-range-btn {
             background: transparent;
@@ -583,7 +585,7 @@
                             </div>
                         </div>
                         <div class="note-area">
-                            <textarea id="moodNote" placeholder="Add a note about your day (optional)..."></textarea>
+                            
                             <button class="btn-primary" style="width:100%;" onclick="logMood()">Stamp Mood
                                 Entry</button>
                         </div>
@@ -703,6 +705,15 @@
                             <div style="display:flex;flex-direction:column;gap:8px;">
                                 <input type="time" id="alarmTimeInput" required class="input-box"
                                     style="background:var(--canvas-bg);">
+
+                                <!-- REPEAT DAYS -->
+                                <div class="form-group" style="margin-bottom:1.5rem;">
+                                    <label
+                                        style="text-transform:uppercase; letter-spacing:1px; font-size:0.75rem; font-weight:800; display:block; margin-bottom:0.6rem;">
+                                        REPEAT DAYS
+                                    </label>
+                                    
+                                </div>
                                 <input type="text" id="alarmLabelInput" placeholder="Label (optional)" class="input-box"
                                     style="background:var(--canvas-bg);">
                                 <button type="submit" class="btn-primary"
@@ -853,8 +864,7 @@
                             <button type="button" class="btn-secondary" onclick="editProfile()">Edit Profile</button>
                             <button type="button" class="btn-secondary" onclick="resetPasswordFromProfile()">Reset
                                 Password</button>
-                            <button type="button" class="btn-secondary" onclick="switchTheme('dark', event)">Switch
-                                Theme</button>
+                            
                         </div>
                         <button type="button" class="btn-primary" style="background-color:#fca5a5;color:#7f1d1d;"
                             onclick="deleteAccount()">Delete Account</button>
@@ -885,6 +895,47 @@
 
         </main>
     </div>
+    <!-- ============================================================
+     MOOD ASSISTANT MODAL
+     ============================================================ -->
+    <div id="assistantModal" class="modal-overlay hidden">
+        <div class="modal-card" style="max-width: 500px;">
+            <!-- Close Button -->
+            <button class="modal-close-btn" onclick="toggleAssistantModal(false)">
+                <i data-lucide="x" style="width: 18px;"></i>
+            </button>
+
+            <!-- Header -->
+            <div class="auth-tag" style="background: var(--card-mint);">
+                <i data-lucide="bot" style="width: 14px;"></i> Active Companion
+            </div>
+
+            <h2 class="card-title" style="font-size: 1.6rem; margin-top: 0.2rem;">
+                Mood Assistant
+            </h2>
+
+            <p style="font-size: 0.85rem; color: var(--text-muted); font-weight: 600;">
+                Share how you are feeling or ask for a grounding technique.
+            </p>
+
+            <!-- Chat History -->
+            <div class="chat-history" id="chatHistory">
+                <div class="chat-bubble assistant">
+                    Hi there! I'm your sanctuary assistant. How are you feeling right now?
+                </div>
+            </div>
+
+            <!-- Input Area -->
+            <div style="display: flex; gap: 8px;">
+                <input type="text" class="input-box" id="chatInput" placeholder="Type your message..."
+                    onkeypress="handleChatKey(event)">
+                <button class="btn-primary" style="padding: 0.8rem 1.2rem;" onclick="sendChatMessage()">
+                    <i data-lucide="send" style="width: 16px;"></i>
+                </button>
+            </div>
+        </div>
+    </div>
+
 
     <!-- ============================================================
      ALARM RINGING MODAL
@@ -903,7 +954,7 @@
                 Scheduled time
             </p>
 
-            <button id="stopAlarmBtn" class="btn-primary" style="width:100%;background:#f88a8a;">
+            <button id="stopAlarmBtn" class="btn-primary" style="width:100%;background:#f88a8a;" onclick="stopAlarm()">
                 <i data-lucide="x-circle" style="width:18px;"></i> Dismiss
             </button>
         </div>

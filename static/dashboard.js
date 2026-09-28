@@ -8,6 +8,7 @@ let selectedIcon = "";
 let currentDate = new Date();
 let activeTargetDate = new Date().toISOString().split('T')[0];
 
+
 const DAILY_EMOTION_LIMIT = 999;
 
 let moodLogs = JSON.parse(localStorage.getItem('moodLogs')) || [
@@ -922,11 +923,13 @@ document.addEventListener('DOMContentLoaded', async function () {
 
 let _alarmAudio = null;
 let _isAlarmRinging = false;
+let _lastDismissedAt = 0; 
+let _currentRingingAlarmId = null;
 
 function triggerAlarm(alarm) {
     _isAlarmRinging = true;
+    _currentRingingAlarmId = alarm.id;
 
-    
     if (!_alarmAudio) {
         _alarmAudio = new Audio('https://actions.google.com/sounds/v1/alarms/beep_short.ogg');
         _alarmAudio.loop = true;
@@ -952,12 +955,49 @@ function triggerAlarm(alarm) {
     }
 }
 
+async function checkAlarms() {
+    if (_isAlarmRinging) return;
+
+    // Dismiss 
+    if (Date.now() - _lastDismissedAt < 90000) return;
+
+    try {
+        const response = await fetch('/api/alarms/check', { credentials: 'include' });
+        if (!response.ok) return;
+        const data = await response.json();
+
+        if (data.triggered && data.alarms.length > 0) {
+            triggerAlarm(data.alarms[0]);
+        }
+    } catch (err) {
+        console.error('Check alarms error:', err);
+    }
+}
+
 function stopAlarm() {
     _isAlarmRinging = false;
+    _lastDismissedAt = Date.now(); 
+
+   
+    if (_currentRingingAlarmId) {
+        let alarms = JSON.parse(localStorage.getItem('alarms') || '[]');
+        alarms = alarms.map(a => {
+            if (a.id === _currentRingingAlarmId) {
+                return { ...a, enabled: false }; 
+            }
+            return a;
+        });
+        localStorage.setItem('alarms', JSON.stringify(alarms));
+        renderAlarms(); 
+        _currentRingingAlarmId = null;
+    }
 
     if (_alarmAudio) {
         _alarmAudio.pause();
         _alarmAudio.currentTime = 0;
+        _alarmAudio.loop = false;         
+        _alarmAudio.src = '';              
+        _alarmAudio = null; 
     }
 
     const modal = document.getElementById('alarmModal');
@@ -965,24 +1005,27 @@ function stopAlarm() {
 }
 
 
-document.addEventListener('DOMContentLoaded', function () {
-    const stopBtn = document.getElementById('stopAlarmBtn');
-    if (stopBtn) stopBtn.addEventListener('click', stopAlarm);
-
-    
-    setInterval(function () {
-        if (_isAlarmRinging) return;   
-
+function startLocalAlarmScheduler() {
+    setInterval(() => {
         const now = new Date();
-        const currentTime = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
+        const currentHHMM = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
+        const currentSeconds = now.getSeconds();
 
-        const alarms = JSON.parse(localStorage.getItem('alarms') || '[]');
-        alarms.forEach(alarm => {
-            if (alarm.time === currentTime && alarm.enabled !== false) {
-                triggerAlarm(alarm);
+       
+        if (currentSeconds >= 0 && currentSeconds < 5 && !_isAlarmRinging) {
+            const alarms = JSON.parse(localStorage.getItem('alarms') || '[]');
+            const matchedAlarm = alarms.find(a => a.enabled && a.time === currentHHMM);
+
+            if (matchedAlarm) {
+                triggerAlarm(matchedAlarm);
             }
-        });
-    }, 10000);
+        }
+    }, 3000); 
+}
+
+document.addEventListener('DOMContentLoaded', function () {
+    setTimeout(renderAlarms, 100);
+    startLocalAlarmScheduler(); 
 });
 
 
@@ -1388,18 +1431,7 @@ async function confirmDeleteAccount() {
     }
 }
 
-function switchTheme(theme) {
-    const btns = document.querySelectorAll('.theme-btn');
-    btns.forEach(btn => btn.classList.remove('active'));
 
-    if (theme === 'dark') {
-        document.body.classList.add('dark-theme');
-        if (event && event.target) event.target.classList.add('active');
-    } else {
-        document.body.classList.remove('dark-theme');
-        if (event && event.target) event.target.classList.add('active');
-    }
-}
 
 function openAuthModal(tab) {
     const authScr = document.getElementById('authScreen');
@@ -1426,7 +1458,7 @@ function closeAuthModal() {
 // ==========================================================================
 
 function editProfile() {
-    // 1. 先用后端数据填充表单
+    // 1. 
     fetch('/api/user', { credentials: 'include' })
         .then(res => res.ok ? res.json() : Promise.reject(res))
         .then(user => {
@@ -1439,7 +1471,7 @@ function editProfile() {
             if (nameEl) nameEl.value = user.username || '';
             if (emailEl) emailEl.value = user.email || '';
 
-            // birthday 后端存的是 "01/01/2000" 格式，转成 "2000-01-01" 给 date input
+           
             if (bdayEl && user.birthday) {
                 const parts = user.birthday.split('/');
                 if (parts.length === 3) {
@@ -1450,7 +1482,7 @@ function editProfile() {
             if (genderEl) genderEl.value = user.gender || '';
             if (bioEl) bioEl.value = user.bio || '';
 
-            // 显示模态框
+            
             const modal = document.getElementById('editProfileModal');
             if (modal) modal.classList.remove('hidden');
             if (window.lucide) lucide.createIcons();
