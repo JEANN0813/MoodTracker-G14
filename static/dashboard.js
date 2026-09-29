@@ -1219,35 +1219,38 @@ function calculateAndRenderStats() {
  * @param {string} emoji - The selected avatar emoji icon
  */
 async function selectAvatar(emoji) {
-  const currentAvatarEl = document.getElementById('currentAvatarDisplay');
-  if (currentAvatarEl) {
-    currentAvatarEl.textContent = emoji;
-    currentAvatarEl.style.transform = 'scale(1.2) rotate(10deg)';
-    setTimeout(() => { currentAvatarEl.style.transform = ''; }, 200);
-  }
+    const currentAvatarEl = document.getElementById('currentAvatarDisplay');
+    if (currentAvatarEl) {
+        currentAvatarEl.textContent = emoji;
+        currentAvatarEl.style.transform = 'scale(1.2) rotate(10deg)';
+        setTimeout(() => { currentAvatarEl.style.transform = ''; }, 200);
+    }
 
-  document.querySelectorAll('.avatar-opt').forEach(btn => {
-    if (btn.textContent.trim() === emoji) btn.classList.add('active');
-    else btn.classList.remove('active');
-  });
-
-  localStorage.setItem('selectedAvatar', emoji);
-
-  
-  try {
-    await fetch('/api/user', {
-      method: 'PUT',
-      credentials: 'include',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ avatar: emoji })
+    
+    document.querySelectorAll('.avatar-opt').forEach(btn => {
+        if (btn.dataset.avatar === emoji) {
+            btn.classList.add('active');
+        } else {
+            btn.classList.remove('active');
+        }
     });
-  } catch (err) {
-    console.warn('Failed to save avatar:', err);
-  }
+
+    localStorage.setItem('selectedAvatar', emoji);
+
+    try {
+        await fetch('/api/user', {
+            method: 'PUT',
+            credentials: 'include',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ avatar: emoji })
+        });
+    } catch (err) {
+        console.warn('Failed to save avatar:', err);
+    }
 }
 
 function loadSavedAvatar() {
-  const savedAvatar = localStorage.getItem('selectedAvatar') || '🌸';
+  const savedAvatar = localStorage.getItem('selectedAvatar') || '🦊';
   selectAvatar(savedAvatar);
 }
 
