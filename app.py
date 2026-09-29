@@ -75,7 +75,7 @@ class User(db.Model):
     gender = db.Column(db.String(20), nullable=True)       
     avatar = db.Column(db.String(10), nullable=True)       
     title = db.Column(db.String(50), nullable=True)       
-    bio = db.Column(db.String(300), nullable=True) 
+    
     
     emotion_logs = db.relationship('EmotionLog', backref='user', lazy=True, cascade='all, delete-orphan')
 
@@ -234,11 +234,8 @@ def get_user():
         if 'avatar' in data:
             user.avatar = data['avatar']
         
-        # 7. Bio
-        if 'bio' in data:
-            user.bio = data['bio']
         
-        # 8. Title
+        # 7. Title
         if 'title' in data:
             user.title = data['title']
         
@@ -261,7 +258,6 @@ def get_user():
         'gender': user.gender or 'Female',
         'avatar': user.avatar or '🦊',
         'title': user.title or 'Bronze Tracker',
-        'bio': user.bio or '',
         'created_at': user.created_at.isoformat() if user.created_at else None
     }), 200
 
@@ -883,8 +879,7 @@ scheduler.start()
     
 
 if __name__ == '__main__':
-    with app.app_context():
-        db.create_all()  
+     
     app.run(debug=True)
     print()
     print("MoodTracker Server Starting...")
