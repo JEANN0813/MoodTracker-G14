@@ -400,7 +400,7 @@ async function confirmLogout() {
 // 3. UI NAVIGATION & SELECTION
 
 function switchView(viewId, element) {
-    const views = ['dashboardView', 'historyView', 'profileView'];   // ⬅️ 只有这 3 个
+    const views = ['dashboardView', 'historyView', 'alarmView', 'profileView'];
     views.forEach(id => {
         const el = document.getElementById(id);
         if (el) el.classList.add('hidden');
@@ -411,12 +411,10 @@ function switchView(viewId, element) {
     if (target) target.classList.remove('hidden');
     if (element) element.classList.add('active');
 
-    
     if (viewId === 'historyView') {
         setHistoryStyle(historyStyle);
     }
 
-    
     if (viewId === 'profileView') {
         if (typeof initProfilePage === 'function') {
             try { initProfilePage(); } catch (e) { console.warn(e); }

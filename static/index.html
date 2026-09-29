@@ -444,7 +444,7 @@
             </div>
 
             <!-- ============================================================ -->
-            <!-- Reset Password - 内嵌版（在登录页的 tab 里） -->
+            <!-- Reset Password 
             <!-- ============================================================ -->
             <div id="authViewReset" class="hidden">
                 <h1 class="auth-title">Reset Password.</h1>
@@ -587,6 +587,7 @@
             <a class="nav-pill active" id="navDashboard"
                 onclick="switchView('dashboardView', this)"><span>Dashboard</span></a>
             <a class="nav-pill" id="navHistory" onclick="switchView('historyView', this)"><span>History</span></a>
+            <a class="nav-pill" id="navHistory" onclick="switchView('alarmView', this)"><span>Alarm</span></a>
             <a class="nav-pill" id="navProfile" onclick="switchView('profileView', this)"><span>Profile</span></a>
             <button class="sidebar-logout" onclick="logout()">
                 <i data-lucide="log-out" style="width:16px;"></i> Log out
@@ -711,24 +712,21 @@
                         </div>
                     </div>
 
-                    <!-- Mood Count -->
+                    <!-- Mood Chart -->
                     <div class="content-card" style="margin:0;">
                         <div
                             style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:0.5rem;">
-                            <h2 class="card-title" style="margin:0;">Mood Count</h2>
+                            <h2 class="card-title" style="margin:0;">Mood Chart</h2>
                             <div style="display:flex;gap:4px;">
-                                <button class="chart-range-btn" data-range="day"
-                                    onclick="setChartRange('day')">Day</button>
-                                <button class="chart-range-btn" data-range="weekly"
-                                    onclick="setChartRange('weekly')">Weekly</button>
+
                                 <button class="chart-range-btn active" data-range="monthly"
                                     onclick="setChartRange('monthly')">Monthly</button>
                             </div>
                         </div>
-                        <div id="moodCountBar"
-                            style="width:100%;height:26px;display:flex;border:2px solid var(--border-dark);border-radius:999px;overflow:hidden;background:#fff;margin-top:1rem;">
+                        <div style="margin-top:1rem;">
+                            <svg id="moodChartSvg" viewBox="0 0 600 220" preserveAspectRatio="xMidYMid meet"
+                                style="width:100%;height:auto;display:block;background:var(--canvas-bg);border:2px solid var(--border-dark);border-radius:16px;"></svg>
                         </div>
-                        <div id="moodCountLegend" style="margin-top:0.6rem;"></div>
                     </div>
 
                     <!-- Mood Insights -->
@@ -753,52 +751,9 @@
                         </button>
                     </div>
 
-                    <!-- Mood Chart -->
-                    <div class="content-card" style="margin:0;">
-                        <div
-                            style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:0.5rem;">
-                            <h2 class="card-title" style="margin:0;">Mood Chart</h2>
-                            <div style="display:flex;gap:4px;">
-                                <button class="chart-range-btn" data-range="day"
-                                    onclick="setChartRange('day')">Day</button>
-                                <button class="chart-range-btn" data-range="weekly"
-                                    onclick="setChartRange('weekly')">Weekly</button>
-                                <button class="chart-range-btn active" data-range="monthly"
-                                    onclick="setChartRange('monthly')">Monthly</button>
-                            </div>
-                        </div>
-                        <div style="margin-top:1rem;">
-                            <svg id="moodChartSvg" viewBox="0 0 600 220" preserveAspectRatio="xMidYMid meet"
-                                style="width:100%;height:auto;display:block;background:var(--canvas-bg);border:2px solid var(--border-dark);border-radius:16px;"></svg>
-                        </div>
-                    </div>
-
-                    <!-- Alarm Card -->
-                    <div class="content-card" style="margin:0;">
-                        <h2 class="card-title">Alarm</h2>
-                        <p style="font-size:0.8rem;color:var(--text-muted);font-weight:600;margin-bottom:1rem;">Set up
-                            and control your active reminders.</p>
-
-                        <h3 style="font-size:0.95rem;font-weight:800;margin-bottom:0.5rem;">Active Alarms</h3>
-                        <ul class="alarm-list" id="alarmListContainer">
-                            <li><span>No alarms set. Use the form below to add one.</span></li>
-                        </ul>
-
-                        <form id="alarmForm" style="margin-top:1.25rem;" onsubmit="addAlarm(event)">
-                            <div style="display:flex;flex-direction:column;gap:8px;">
-                                <input type="time" id="alarmTimeInput" required class="input-box"
-                                    style="background:var(--canvas-bg);">
 
 
-                                <input type="text" id="alarmLabelInput" placeholder="Label (optional)" class="input-box"
-                                    style="background:var(--canvas-bg);">
-                                <button type="submit" class="btn-primary"
-                                    style="width:100%;padding:8px 14px;font-size:0.85rem;">
-                                    <i data-lucide="plus-circle" style="width:16px;"></i> Add Alarm
-                                </button>
-                            </div>
-                        </form>
-                    </div>
+
 
                 </div><!-- END dashboard-grid -->
 
@@ -867,6 +822,47 @@
                         <span id="cardsPageIndicator" style="font-weight:800;font-size:0.85rem;"> 1 / 1</span>
                         <button class="cal-nav-btn" onclick="nextCardsPage()">›</button>
                     </div>
+                </div>
+            </div>
+
+
+            <!-- ============ ALARM VIEW ============ -->
+            <div id="alarmView" class="hidden">
+                <h1 class="main-heading">Alarm</h1>
+                <p class="sub-heading">Set up and control your active reminders.</p>
+
+                <div class="content-card" style="max-width: 640px;">
+                    <h3 style="font-size:0.95rem;font-weight:800;margin-bottom:0.8rem;">Active Alarms</h3>
+                    <ul class="alarm-list" id="alarmListContainer">
+                        <li><span>No alarms set. Use the form below to add one.</span></li>
+                    </ul>
+
+                    <form id="alarmForm" style="margin-top:1.5rem;" onsubmit="addAlarm(event)">
+                        <div style="display:flex; flex-direction:column; gap:12px;">
+                            <div>
+                                <label for="alarmTimeInput"
+                                    style="display:block; font-size:0.75rem; font-weight:800; text-transform:uppercase; letter-spacing:1px; margin-bottom:0.4rem;">
+                                    TIME
+                                </label>
+                                <input type="time" id="alarmTimeInput" required class="input-box"
+                                    style="background:var(--canvas-bg);">
+                            </div>
+
+                            <div>
+                                <label for="alarmLabelInput"
+                                    style="display:block; font-size:0.75rem; font-weight:800; text-transform:uppercase; letter-spacing:1px; margin-bottom:0.4rem;">
+                                    LABEL
+                                </label>
+                                <input type="text" id="alarmLabelInput" placeholder="e.g. Morning Reminder"
+                                    class="input-box" style="background:var(--canvas-bg);">
+                            </div>
+
+                            <button type="submit" class="btn-primary"
+                                style="width:100%; padding:0.9rem; font-size:0.9rem;">
+                                <i data-lucide="plus-circle" style="width:16px;"></i> Add Alarm
+                            </button>
+                        </div>
+                    </form>
                 </div>
             </div>
 
@@ -1035,6 +1031,8 @@
             </button>
         </div>
     </div>
+
+
 
     <!-- ============================================================
      EDIT PROFILE MODAL
