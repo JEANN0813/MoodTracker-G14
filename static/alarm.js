@@ -175,3 +175,22 @@ document.addEventListener('DOMContentLoaded', () => {
     window.alarmManager = new AlarmManager();
     window.alarmManager.init();
 });
+
+let alarms = [];
+
+self.onmessage = function(e) {
+    if (e.data.type === 'setAlarms') {
+        alarms = e.data.alarms;
+    }
+};
+
+setInterval(() => {
+    const now = new Date();
+    const currentHHMM = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
+
+    alarms.forEach(alarm => {
+        if (alarm.enabled && alarm.time === currentHHMM) {
+            self.postMessage({ type: 'trigger', alarm: alarm });
+        }
+    });
+}, 10000);
