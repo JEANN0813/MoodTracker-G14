@@ -602,33 +602,7 @@ function generateCalendar() {
     }
 }
 
-function renderStandaloneCalendar() {
-    const container = document.getElementById('standaloneCalendarContainer');
-    if (!container) return;
 
-    if (moodLogs.length === 0) {
-        container.innerHTML = `<p style="color: var(--text-muted); font-weight: 600;">No mood entries logged yet.</p>`;
-        return;
-    }
-
-    container.innerHTML = `
-        <div style="padding: 1.5rem; background: var(--canvas-bg); border: 2px solid var(--border-dark); border-radius: 20px;">
-            <h3 style="margin-bottom: 1rem; font-family: var(--font-serif);">Calendar Logs Overview</h3>
-            <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 1rem;">
-                ${moodLogs.map(l => `
-                    <div style="background: white; border: 2px solid var(--border-dark); padding: 1rem; border-radius: 16px; box-shadow: 2px 2px 0px var(--border-dark);">
-                        <div style="font-size: 0.75rem; font-weight: 800; color: var(--text-muted);">${l.log_date}</div>
-                        <div style="font-size: 1rem; font-weight: 800; margin: 0.4rem 0; display: flex; align-items: center; gap: 6px;">
-                            <i data-lucide="${l.iconName || 'smile'}" style="width: 16px;"></i> ${l.emotion}
-                        </div>
-                        <div style="font-size: 0.75rem; color: var(--text-dark); opacity: 0.8;">${l.note}</div>
-                    </div>
-                `).join('')}
-            </div>
-        </div>
-    `;
-    if (window.lucide) lucide.createIcons();
-}
 
 function previousMonth() {
     currentDate.setMonth(currentDate.getMonth() - 1);
@@ -666,34 +640,6 @@ function refreshUI() {
 }
 
 
-function renderHistoryTable() {
-    const tbody = document.getElementById('history-table-body');
-    if (!tbody) return;
-
-    if (!Array.isArray(moodLogs) || moodLogs.length === 0) {
-        tbody.innerHTML = `<tr><td colspan="4" style="text-align:center;color:var(--text-muted);padding:1.5rem 0;">No logs yet. Go to Dashboard to log your first mood!</td></tr>`;
-        return;
-    }
-
-    tbody.innerHTML = moodLogs.map(log => `
-        <tr>
-            <td>${log.log_date}</td>
-            <td>
-                <span class="badge-emotion" style="background:${getEmotionBg(log.emotion)}">
-                    <i data-lucide="${log.iconName || 'smile'}" style="width:14px;"></i> ${log.emotion}
-                </span>
-            </td>
-            <td style="color:var(--text-muted);">${log.note || '—'}</td>
-            <td>
-                <button class="btn-delete" onclick="deleteLog(${log.id})">
-                    <i data-lucide="trash-2" style="width:14px;"></i>
-                </button>
-            </td>
-        </tr>
-    `).join('');
-
-    if (window.lucide) lucide.createIcons();
-}
 
 function renderTable() {
     const tbody = document.getElementById('logs-table-body');
@@ -1334,130 +1280,9 @@ function animateCounter(element, start, end, duration) {
   };
   window.requestAnimationFrame(step);
 }
-function showView(viewName) {
-  // ... your existing hide/show section code ...
-
-  if (viewName === 'profile') {
-    initProfilePage();
-  }
-}
-// Logout handler
-function handleLogout() {
-  localStorage.removeItem('activeUser');
-  localStorage.removeItem('userEmail');
-  localStorage.removeItem('userName');
-  localStorage.removeItem('selectedAvatarName');
-  localStorage.removeItem('selectedAvatarUrl');
-  
-  // Refresh page or redirect to index/login
-  window.location.href = 'index.html';
-}
 
 
 
-// Auto-run when document loads
-// Load active user sign-in info into profile display
-document.addEventListener('DOMContentLoaded', () => {
-  // Read from the same localStorage key used across your app
-  const currentUserRaw = localStorage.getItem('currentUser');
-  let userName = 'Aya';
-  let userEmail = 'aya@example.com';
-
-  if (currentUserRaw) {
-    try {
-      const parsed = JSON.parse(currentUserRaw);
-      if (typeof parsed === 'object' && parsed !== null) {
-        userName = parsed.name || parsed.username || userName;
-        userEmail = parsed.email || userEmail;
-      } else if (typeof parsed === 'string') {
-        userName = parsed;
-      }
-    } catch (e) {
-      // Handles cases where currentUser is stored as a plain string
-      userName = currentUserRaw;
-    }
-  }
-
-  const nameEl = document.getElementById('profileUserName');
-  const emailEl = document.getElementById('profileUserEmail');
-
-  if (nameEl) nameEl.textContent = userName;
-  if (emailEl) emailEl.textContent = userEmail;
-});
-
-function loadActiveUserProfile() {
-  // 1. Try to fetch the active logged-in user object from storage
-  const sessionUser = JSON.parse(
-    localStorage.getItem('currentUser') || 
-    sessionStorage.getItem('currentUser') || 
-    '{}'
-  );
-
-  // 2. Fall back to individual email/name keys if stored separately during login
-  const activeEmail = sessionUser.email || localStorage.getItem('userEmail') || localStorage.getItem('loginEmail');
-  const activeName = sessionUser.name || localStorage.getItem('userName') || (activeEmail ? activeEmail.split('@')[0] : '');
-
-  // 3. Populate DOM elements dynamically
-  const nameDisplay = document.getElementById('profileUserName');
-  const emailDisplay = document.getElementById('profileUserEmail');
-
-  if (nameDisplay && activeName) {
-    nameDisplay.textContent = activeName;
-  }
-  
-  if (emailDisplay && activeEmail) {
-    emailDisplay.textContent = activeEmail;
-  }
-}
-
-// Automatically load when the DOM is ready
-document.addEventListener('DOMContentLoaded', loadActiveUserProfile);
-
-// Function to load the logged-in user's profile details
-function loadUserProfile() {
-  // Retrieve the logged-in user object/email stored during sign-in
-  const currentUserJson = localStorage.getItem("currentUser") || sessionStorage.getItem("currentUser");
-  
-  if (currentUserJson) {
-    const user = JSON.parse(currentUserJson);
-    
-    // Set email input to the signed-in email
-    const emailInput = document.getElementById("profileUserEmailInput");
-    if (emailInput && user.email) {
-      emailInput.value = user.email;
-    }
-
-    // Set name input (use display name, derive from email, or fallback)
-    const nameInput = document.getElementById("profileUserNameInput");
-    if (nameInput) {
-      const derivedName = user.name || user.email.split("@")[0];
-      nameInput.value = derivedName;
-    }
-  }
-}
-
-function switchDashboardTab(tabName) {
-    const overviewSec = document.getElementById('dashboardOverviewSection');
-    const historySec = document.getElementById('dashboardHistorySection');
-    const btnOverview = document.getElementById('btnDashboardOverview');
-    const btnHistory = document.getElementById('btnDashboardHistory');
-
-    if (tabName === 'overview') {
-        overviewSec.style.display = 'flex';
-        historySec.classList.add('hidden');
-        btnOverview.style.background = 'var(--accent-yellow)';
-        btnOverview.style.borderColor = 'var(--border-dark)';
-        btnHistory.style.background = 'transparent';
-        btnHistory.style.borderColor = 'transparent';
-    } else {
-        overviewSec.style.display = 'none';
-        historySec.classList.remove('hidden');
-        btnHistory.style.background = 'var(--accent-yellow)';
-        btnHistory.style.borderColor = 'var(--border-dark)';
-        btnOverview.style.background = 'transparent';
-        btnOverview.style.borderColor = 'transparent';
-    }
-}
 // 13. Profile Action Handlers (JEANN)
 
 function resetPasswordFromProfile() {

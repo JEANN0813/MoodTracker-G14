@@ -704,7 +704,7 @@ with app.app_context():
 
 
 # Alarm Routes
-alarm_bp = Blueprint('alarm', __name__)
+app.register_blueprint(alarm_bp)
 
 @app.route('/api/alarms', methods=['GET', 'POST'])
 def manage_alarms():
@@ -764,87 +764,7 @@ def handle_single_alarm(alarm_id):
         return jsonify({'success': True, 'alarm': alarm.to_dict()}), 200
 
 
-@alarm_bp.route('/api/alarms', methods=['POST'])
-def create_alarm():
-    data = request.get_json()
-    time_str = data.get('time') 
-    
-    if not time_str:
-        return jsonify({'error': 'Time is required'}), 400
-        
-    hour, minute = map(int, time_str.split(':'))
-    
-    new_alarm = Alarm(
-        user_id=1,  
-        title=data.get('title', 'Alarm'),
-        alarm_time=time(hour, minute),
-        repeat_days=",".join(map(str, data.get('repeat_days', []))), # 传入 [1,2,3] 转成 "1,2,3"
-        is_enabled=True
-    )
-    db.session.add(new_alarm)
-    db.session.commit()
-    return jsonify({'message': 'Alarm created', 'alarm': new_alarm.to_dict()}), 201
 
-
-@alarm_bp.route('/api/alarms', methods=['GET'])
-def get_alarms():
-    alarms = Alarm.query.filter_by(user_id=1).all()
-    return jsonify([a.to_dict() for a in alarms]), 200
-
-
-@alarm_bp.route('/api/alarms/<int:alarm_id>/toggle', methods=['PATCH'])
-def toggle_alarm(alarm_id):
-    alarm = Alarm.query.get_or_404(alarm_id)
-    alarm.is_enabled = not alarm.is_enabled
-    db.session.commit()
-    return jsonify({'message': 'Status updated', 'is_enabled': alarm.is_enabled})
-
-
-@alarm_bp.route('/api/alarms/<int:alarm_id>', methods=['DELETE'])
-def delete_alarm(alarm_id):
-    alarm = Alarm.query.get_or_404(alarm_id)
-    db.session.delete(alarm)
-    db.session.commit()
-    return jsonify({'message': 'Alarm deleted'}), 200  
-
-@alarm_bp.route('/api/alarms/check', methods=['GET'])
-def check_alarms():
-    from flask import session
-    user_id = session.get('user_id', 1)
-    now = datetime.now()
-    current_hour = now.hour
-    current_minute = now.minute
-    current_weekday = str(now.isoweekday())
-
-    enabled_alarms = Alarm.query.filter_by(user_id=user_id, is_enabled=True).all()
-    triggered_alarms = []
-
-    for alarm in enabled_alarms:
-        
-        if alarm.alarm_time.hour != current_hour or alarm.alarm_time.minute != current_minute:
-            continue
-
-        
-        if alarm.last_triggered_at:
-            delta = (now - alarm.last_triggered_at).total_seconds()
-            if delta < 60:         
-                continue
-
-        
-        repeat_list = alarm.repeat_days.split(',') if alarm.repeat_days else []
-        if not repeat_list or current_weekday in repeat_list:
-            alarm.last_triggered_at = now    
-            triggered_alarms.append(alarm.to_dict())
-
-            
-            if not repeat_list:
-                alarm.is_enabled = False
-
-    db.session.commit()
-    return jsonify({
-        'triggered': len(triggered_alarms) > 0,
-        'alarms': triggered_alarms
-    }), 200
 
 def check_and_push_alarms():
     """Background daemon process: runs every minute via APScheduler."""
@@ -880,7 +800,7 @@ scheduler.start()
 
 if __name__ == '__main__':
      
-    app.run(debug=True)
+
     print()
     print("MoodTracker Server Starting...")
     print()
