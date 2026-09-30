@@ -8,8 +8,29 @@ let selectedIcon = "";
 let currentDate = new Date();
 let activeTargetDate = new Date().toISOString().split('T')[0];
 
-
 const DAILY_EMOTION_LIMIT = 999;
+
+// ==========================================================================
+// MOOD CHART STATE
+// ==========================================================================
+
+let chartRange = 'monthly';
+
+const MOOD_CHART_VALUES = {
+    'Anxious': 1,
+    'Sad': 2,
+    'Neutral': 3,
+    'Calm': 4,
+    'Happy': 5
+};
+
+const MOOD_CHART_LABELS = {
+    1: 'Anxious',
+    2: 'Sad',
+    3: 'Neutral',
+    4: 'Calm',
+    5: 'Happy'
+};
 
 let moodLogs = JSON.parse(localStorage.getItem('moodLogs')) || [
     { id: 1, log_date: new Date().toISOString().split('T')[0], emotion: "Happy", iconName: "smile", note: "Welcome to your fresh sanctuary dashboard!" }
@@ -649,21 +670,34 @@ function refreshUI() {
     const dateLabel = document.getElementById('currentDateLabel');
 
     const options = { weekday: 'long', month: 'short', day: 'numeric' };
-    if (dateLabel) dateLabel.innerText = new Date().toLocaleDateString('en-US', options);
 
-    if (loggingDateDisp) loggingDateDisp.innerText = activeTargetDate;
-    if (selectedTargetLbl) selectedTargetLbl.innerText = activeTargetDate;
+    if (dateLabel) {
+        dateLabel.innerText =
+            new Date().toLocaleDateString('en-US', options);
+    }
+
+    if (loggingDateDisp) {
+        loggingDateDisp.innerText = activeTargetDate;
+    }
+
+    if (selectedTargetLbl) {
+        selectedTargetLbl.innerText = activeTargetDate;
+    }
 
     renderTable();
     calculateStats();
     generateCalendar();
 
-    
+    // Render monthly mood chart
+    renderMoodChart();
+
     if (typeof renderHistoryView === 'function') {
         renderHistoryView();
     }
 
-    if (window.lucide) lucide.createIcons();
+    if (window.lucide) {
+        lucide.createIcons();
+    }
 }
 
 
@@ -810,6 +844,383 @@ function calculateStats() {
             mostCommonElem.innerText = 'None yet';
         }
     }
+}
+// ==========================================================================
+// MOOD CHART — MONTHLY
+// ==========================================================================
+
+function setChartRange(range) {
+    // Currently the chart only supports monthly view.
+    chartRange = 'monthly';
+
+    // Update active button
+    document.querySelectorAll('.chart-range-btn').forEach(btn => {
+        btn.classList.toggle(
+            'active',
+            btn.dataset.range === 'monthly'
+        );
+    });
+
+    renderMoodChart();
+}
+
+
+function renderMoodChart() {
+    const svg = document.getElementById('moodChartSvg');
+
+    if (!svg) return;
+
+    // Clear previous chart
+    svg.innerHTML = '';
+
+    if (!Array.isArray(moodLogs)) {
+        moodLogs = [];
+    }
+
+    // ----------------------------------------------------------------------
+    // MONTH INFORMATION
+    // ----------------------------------------------------------------------
+
+    const year = currentDate.getFullYear();
+    const month = currentDate.getMonth();
+
+    const daysInMonth = new Date(year, month + 1, 0).getDate();
+
+    // ----------------------------------------------------------------------
+    // SVG DIMENSIONS
+    // ----------------------------------------------------------------------
+
+    const width = 600;
+    const height = 220;
+
+    const paddingLeft = 55;
+    const paddingRight = 20;
+    const paddingTop = 20;
+    const paddingBottom = 35;
+
+    const chartWidth = width - paddingLeft - paddingRight;
+    const chartHeight = height - paddingTop - paddingBottom;
+
+    svg.setAttribute('viewBox', `0 0 ${width} ${height}`);
+
+    // ----------------------------------------------------------------------
+    // HELPER FUNCTIONS
+    // ----------------------------------------------------------------------
+
+    function createSvgElement(tag, attributes = {}) {
+        const element = document.createElementNS(
+            'http://www.w3.org/2000/svg',
+            tag
+        );
+
+        Object.entries(attributes).forEach(([key, value]) => {
+            element.setAttribute(key, value);
+        });
+
+        return element;
+    }
+
+    function addText(text, x, y, options = {}) {
+        const textEl = createSvgElement('text', {
+            x: x,
+            y: y,
+            'text-anchor': options.anchor || 'middle',
+            'font-size': options.size || '10',
+            'font-weight': options.weight || '700',
+            fill: options.fill || 'var(--text-dark)'
+        });
+
+        textEl.textContent = text;
+        svg.appendChild(textEl);
+
+        return textEl;
+    }
+
+    // ----------------------------------------------------------------------
+    // GET MONTH'S LOGS
+    // ----------------------------------------------------------------------
+
+    const monthlyLogs = moodLogs.filter(log => {
+        if (!log.log_date) return false;
+
+        const parts = log.log_date.split('-');
+
+        if (parts.length !== 3) return false;
+
+        const logYear = Number(parts[0]);
+        const logMonth = Number(parts[1]) - 1;
+
+        return logYear === year && logMonth === month;
+    });
+
+    // ----------------------------------------------------------------------
+    // GROUP MOODS BY DAY
+    // ----------------------------------------------------------------------
+
+    const dailyMoodValues = {};
+
+    monthlyLogs.forEach(log => {
+        const day = Number(log.log_date.split('-')[2]);
+
+        const moodValue = MOOD_CHART_VALUES[log.emotion];
+
+        if (!moodValue) return;
+
+        if (!dailyMoodValues[day]) {
+            dailyMoodValues[day] = [];
+        }
+
+        dailyMoodValues[day].push(moodValue);
+    });
+
+    // ----------------------------------------------------------------------
+    // DRAW BACKGROUND
+    // ----------------------------------------------------------------------
+
+    const background = createSvgElement('rect', {
+        x: 0,
+        y: 0,
+        width: width,
+        height: height,
+        fill: 'var(--canvas-bg)',
+        rx: 14
+    });
+
+    svg.appendChild(background);
+
+    // ----------------------------------------------------------------------
+    // Y-AXIS LABELS + GRID
+    // ----------------------------------------------------------------------
+
+    for (let moodValue = 1; moodValue <= 5; moodValue++) {
+
+        const y =
+            paddingTop +
+            chartHeight -
+            ((moodValue - 1) / 4) * chartHeight;
+
+        // Horizontal grid line
+        const gridLine = createSvgElement('line', {
+            x1: paddingLeft,
+            y1: y,
+            x2: width - paddingRight,
+            y2: y,
+            stroke: 'var(--border-dark)',
+            'stroke-width': 1,
+            opacity: 0.18
+        });
+
+        svg.appendChild(gridLine);
+
+        // Mood label
+        addText(
+            MOOD_CHART_LABELS[moodValue],
+            paddingLeft - 8,
+            y + 3,
+            {
+                anchor: 'end',
+                size: 8,
+                weight: 800,
+                fill: 'var(--text-muted)'
+            }
+        );
+    }
+
+    // ----------------------------------------------------------------------
+    // X-AXIS
+    // ----------------------------------------------------------------------
+
+    const xAxis = createSvgElement('line', {
+        x1: paddingLeft,
+        y1: paddingTop + chartHeight,
+        x2: width - paddingRight,
+        y2: paddingTop + chartHeight,
+        stroke: 'var(--border-dark)',
+        'stroke-width': 2
+    });
+
+    svg.appendChild(xAxis);
+
+    // ----------------------------------------------------------------------
+    // CALCULATE DAILY POINTS
+    // ----------------------------------------------------------------------
+
+    const points = [];
+
+    for (let day = 1; day <= daysInMonth; day++) {
+
+        const x =
+            paddingLeft +
+            ((day - 1) / Math.max(daysInMonth - 1, 1)) *
+            chartWidth;
+
+        // Show selected days along the X-axis
+        const shouldShowLabel =
+            daysInMonth <= 15 ||
+            day === 1 ||
+            day === daysInMonth ||
+            day % 5 === 0;
+
+        if (shouldShowLabel) {
+            addText(
+                day,
+                x,
+                height - 10,
+                {
+                    size: 8,
+                    weight: 800,
+                    fill: 'var(--text-muted)'
+                }
+            );
+        }
+
+        // No mood recorded on this day
+        if (!dailyMoodValues[day]) {
+            continue;
+        }
+
+        const values = dailyMoodValues[day];
+
+        // Average all moods logged on this day
+        const average =
+            values.reduce((sum, value) => sum + value, 0) /
+            values.length;
+
+        const y =
+            paddingTop +
+            chartHeight -
+            ((average - 1) / 4) * chartHeight;
+
+        points.push({
+            day,
+            x,
+            y,
+            value: average,
+            entries: values.length
+        });
+    }
+
+    // ----------------------------------------------------------------------
+    // EMPTY STATE
+    // ----------------------------------------------------------------------
+
+    if (points.length === 0) {
+
+        addText(
+            'No mood entries for this month',
+            width / 2,
+            height / 2,
+            {
+                size: 13,
+                weight: 800,
+                fill: 'var(--text-muted)'
+            }
+        );
+
+        return;
+    }
+
+    // ----------------------------------------------------------------------
+    // DRAW LINE
+    // ----------------------------------------------------------------------
+
+    if (points.length > 1) {
+
+        const pathData = points
+            .map((point, index) => {
+                return `${index === 0 ? 'M' : 'L'} ${point.x} ${point.y}`;
+            })
+            .join(' ');
+
+        const linePath = createSvgElement('path', {
+            d: pathData,
+            fill: 'none',
+            stroke: 'var(--text-dark)',
+            'stroke-width': 3,
+            'stroke-linecap': 'round',
+            'stroke-linejoin': 'round'
+        });
+
+        svg.appendChild(linePath);
+    }
+
+    // ----------------------------------------------------------------------
+    // DRAW POINTS
+    // ----------------------------------------------------------------------
+
+    points.forEach(point => {
+
+        // Outer circle
+        const outerCircle = createSvgElement('circle', {
+            cx: point.x,
+            cy: point.y,
+            r: 6,
+            fill: 'var(--accent-yellow)',
+            stroke: 'var(--border-dark)',
+            'stroke-width': 2
+        });
+
+        svg.appendChild(outerCircle);
+
+        // Small inner circle
+        const innerCircle = createSvgElement('circle', {
+            cx: point.x,
+            cy: point.y,
+            r: 2.5,
+            fill: 'var(--text-dark)'
+        });
+
+        svg.appendChild(innerCircle);
+
+        // Day label above point
+        addText(
+            point.day,
+            point.x,
+            point.y - 10,
+            {
+                size: 7,
+                weight: 800,
+                fill: 'var(--text-muted)'
+            }
+        );
+
+        // Tooltip
+        const title = createSvgElement('title');
+
+        const averageMoodName =
+            MOOD_CHART_LABELS[
+                Math.round(point.value)
+            ] || 'Unknown';
+
+        title.textContent =
+            `Day ${point.day}: ${averageMoodName}` +
+            ` (${point.entries} ${point.entries === 1 ? 'entry' : 'entries'})`;
+
+        outerCircle.appendChild(title);
+    });
+
+    // ----------------------------------------------------------------------
+    // MONTH LABEL
+    // ----------------------------------------------------------------------
+
+    const monthName = new Date(year, month, 1).toLocaleDateString(
+        'en-US',
+        {
+            month: 'long',
+            year: 'numeric'
+        }
+    );
+
+    addText(
+        monthName,
+        width / 2,
+        13,
+        {
+            size: 10,
+            weight: 800,
+            fill: 'var(--text-dark)'
+        }
+    );
 }
 
 // 7. MODALS & UTILITIES
