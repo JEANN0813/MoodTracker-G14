@@ -81,6 +81,66 @@ body {
     }
 }
 
+.btn-secondary {
+    background-color: var(--canvas-bg);
+    color: var(--text-dark);
+    border: 2px solid var(--border-dark);
+    border-radius: 20px;
+    padding: 0.8rem 1.5rem;
+    font-size: 0.9rem;
+    font-weight: 800;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    cursor: pointer;
+    box-shadow: 3px 3px 0px var(--border-dark);
+    transition: transform 0.15s, box-shadow 0.15s;
+}
+
+.btn-secondary:hover {
+    transform: translate(-2px, -2px);
+    box-shadow: 5px 5px 0px var(--border-dark);
+}
+
+.hero-container {
+  position: relative;
+  display: inline-block; /* Fits tightly around the central badge */
+  margin: 20px auto;
+}
+
+.floating-tag {
+  position: absolute; /* Takes tags out of standard document flow */
+  white-space: nowrap;
+  font-size: 0.85rem;
+  padding: 6px 12px;
+  border-radius: 20px;
+  border: 1px solid #000;
+  background-color: #fff;
+  pointer-events: none; /* Prevents interaction issues */
+}
+
+/* Position each tag relative to the hero-container corners */
+.tag-top-left {
+  top: -15px;
+  left: -120px;
+}
+
+.tag-bottom-left {
+  bottom: -15px;
+  left: -140px;
+}
+
+.tag-top-right {
+  top: -15px;
+  right: -130px;
+}
+
+.tag-bottom-right {
+  bottom: -15px;
+  right: -110px;
+}
+
 /* --- AUTHENTICATION MODULE --- */
 .auth-container {
     position: fixed; 
