@@ -887,13 +887,17 @@
                                     style="padding:6px 12px;font-size:1.2rem;" data-avatar="🦊"
                                     onclick="selectAvatar('🦊')">🦊</button>
                                 <button type="button" class="avatar-opt mood-btn"
-                                    style="padding:6px 12px;font-size:1.2rem;" data-avatar="🐼" onclick="selectAvatar('🐼')">🐼</button>
+                                    style="padding:6px 12px;font-size:1.2rem;" data-avatar="🐼"
+                                    onclick="selectAvatar('🐼')">🐼</button>
                                 <button type="button" class="avatar-opt mood-btn"
-                                    style="padding:6px 12px;font-size:1.2rem;" data-avatar="🐰" onclick="selectAvatar('🐰')">🐰</button>
+                                    style="padding:6px 12px;font-size:1.2rem;" data-avatar="🐰"
+                                    onclick="selectAvatar('🐰')">🐰</button>
                                 <button type="button" class="avatar-opt mood-btn"
-                                    style="padding:6px 12px;font-size:1.2rem;" data-avatar="🐱" onclick="selectAvatar('🐱')">🐱</button>
+                                    style="padding:6px 12px;font-size:1.2rem;" data-avatar="🐱"
+                                    onclick="selectAvatar('🐱')">🐱</button>
                                 <button type="button" class="avatar-opt mood-btn"
-                                    style="padding:6px 12px;font-size:1.2rem;" data-avatar="🐨" onclick="selectAvatar('🐨')">🐨</button>
+                                    style="padding:6px 12px;font-size:1.2rem;" data-avatar="🐨"
+                                    onclick="selectAvatar('🐨')">🐨</button>
                             </div>
                         </div>
                     </div>
@@ -920,30 +924,27 @@
                                 style="display:block;font-size:0.75rem;font-weight:800;color:var(--text-muted);letter-spacing:0.5px;">GENDER</span>
                             <span id="profileGender" style="font-size:1.1rem;font-weight:700;">—</span>
                         </div>
-
-                        <div style="grid-column:1 / -1;">
-                            <span
-                                style="display:block;font-size:0.75rem;font-weight:800;color:var(--text-muted);letter-spacing:0.5px;">ACHIEVEMENTS
-                                / TITLE</span>
-                            <span id="profileTitle" style="font-size:1.1rem;font-weight:700;">Bronze Tracker 🏆</span>
-                        </div>
                     </div>
-
-
+                    
                     <div
-                        style="display:flex;justify-content:space-between;align-items:center;padding-top:1.5rem;border-top:2px solid var(--border-dark);flex-wrap:wrap;gap:10px;">
-                        <div style="display:flex;gap:10px;flex-wrap:wrap;">
+                        style="display:flex; justify-content:space-between; align-items:flex-end; padding-top:1.5rem; border-top:2px solid var(--border-dark); gap:10px;">
+
+                     
+                        <div style="display:flex; gap:10px;">
                             <button type="button" class="btn-secondary" onclick="editProfile()">Edit Profile</button>
                             <button type="button" class="btn-secondary" onclick="resetPasswordFromProfile()">Reset
                                 Password</button>
-
                         </div>
-                        <button type="button" class="btn-primary" style="background-color:#fca5a5;color:#7f1d1d;"
-                            onclick="deleteAccount()">Delete Account</button>
+
+                        
+                        <button type="button" class="btn-primary" style="background-color:#fca5a5; color:#7f1d1d;"
+                            onclick="deleteAccount()">
+                            Delete Account
+                        </button>
                     </div>
                 </div>
 
-                
+
             </div><!-- END profileView -->
 
         </main>
