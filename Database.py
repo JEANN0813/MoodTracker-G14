@@ -1,4 +1,3 @@
-
 import sqlite3
 from datetime import datetime, timedelta
 from werkzeug.security import generate_password_hash

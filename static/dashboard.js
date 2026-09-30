@@ -1,6 +1,4 @@
-
-
-// 1. STATE & GLOBAL VARIABLES
+// 1. STATE & GLOBAL VARIABLES  (RERAY)
 let activeUser = "User";
 let activeUserId = null;
 let selectedEmotion = null;
@@ -24,7 +22,7 @@ const EMOTION_ICON_MAP = {
 };
 
 
-// 2. AUTHENTICATION & TAB SWITCHING
+// 2. AUTHENTICATION & TAB SWITCHING  (JEANN)
 function switchAuthTab(tab) {
     const vLogin = document.getElementById('authViewLogin');
     const vReg = document.getElementById('authViewRegister');
@@ -54,7 +52,7 @@ function switchAuthTab(tab) {
         if (vReset) vReset.classList.remove('hidden');
         if (tabHeader && tabHeader.children[2]) tabHeader.children[2].classList.add('active');
 
-        // Reset 到 Step 1
+        
         const step1 = document.getElementById('resetStep1');
         const step2 = document.getElementById('resetStep2');
         if (step1) step1.classList.remove('hidden');
@@ -250,9 +248,8 @@ function checkPasswordStrength(inputId, hintsId) {
     });
 }
 
-// ============================================================
-// STANDALONE RESET PASSWORD (from Profile)
-// ============================================================
+
+// 3. STANDALONE RESET PASSWORD (from Profile) (JEANN)
 
 async function handleStandaloneResetSubmit(event) {
     event.preventDefault();
@@ -324,6 +321,8 @@ async function handleStandaloneResetConfirm(event) {
         showToastCard('❌ Server error. Please try again later.');
     }
 }
+
+// 4. LOGOUT (JEANN)
 
 function enterSanctuary() {
     document.getElementById('logoutFab')?.classList.remove('hidden');
@@ -397,7 +396,7 @@ async function confirmLogout() {
     showToastCard('👋 Logged out successfully');
 }
 
-// 3. UI NAVIGATION & SELECTION
+// 5. UI NAVIGATION & SELECTION  (JEANN) 
 
 function switchView(viewId, element) {
     const views = ['dashboardView', 'historyView', 'alarmView', 'profileView'];
@@ -432,7 +431,7 @@ function selectEmotion(btn, emotion, iconName) {
 }
 
 
-// 4. MOOD LOGGING & LOCAL DATA HANDLERS
+// 6. MOOD LOGGING & LOCAL DATA HANDLERS  (RERAY)
 async function fetchLogsAndRefresh() {
     try {
         const response = await fetch('/api/logs', { method: 'GET' });
@@ -523,7 +522,7 @@ function resetLoggingDateToToday() {
 }
 
 
-// 5. CALENDAR LOGIC
+// 7. CALENDAR LOGIC  (JEANN)
 function generateCalendar() {
     const calendarGrid = document.getElementById("calendarDays");
     if (!calendarGrid) return;
@@ -642,7 +641,7 @@ function nextMonth() {
 }
 
 
-// 6. REFRESH UI & STATS CALCULATIONS
+// 8. REFRESH UI & STATS CALCULATIONS  (RERAY)
 function refreshUI() {
     const loggingDateDisp = document.getElementById('loggingDateDisplay');
     const selectedTargetLbl = document.getElementById('selectedTargetDateLabel');
@@ -812,7 +811,7 @@ function calculateStats() {
     }
 }
 
-// 7. MODALS & UTILITIES
+// 9. MODALS & UTILITIES  ()
 
 function openDayDetailModal(dateStr, loggedEntries) {
     const dateTitle = document.getElementById('dayModalDateTitle');
@@ -960,7 +959,7 @@ function showToastCard(message) {
     setTimeout(() => { toast.remove(); }, 2500);
 }
 
-// 8. INITIALIZATION
+// 10. INITIALIZATION
 document.addEventListener('DOMContentLoaded', async function () {
     
     const splash = document.getElementById("welcomeSplash");
@@ -997,7 +996,7 @@ document.addEventListener('DOMContentLoaded', async function () {
 });
 
 
-// ALARM 
+// ALARM (JEANN)
 
 let _alarmAudio = null;
 let _isAlarmRinging = false;
@@ -1107,9 +1106,8 @@ document.addEventListener('DOMContentLoaded', function () {
 });
 
 
-// ==========================================================================
-// PROFILE VIEW LOGIC (Aya)
-// ==========================================================================
+
+// 11. PROFILE VIEW LOGIC (Aya)
 
 /**
  * Initializes and populates the Profile Page UI components and dynamic stats.
@@ -1254,9 +1252,9 @@ function loadSavedAvatar() {
   selectAvatar(savedAvatar);
 }
 
-// ==========================================================================
-// HELPER CALCULATIONS
-// ==========================================================================
+
+// 12. HELPER CALCULATIONS
+
 
 /**
  * Calculates current consecutive daily logging streak.
@@ -1460,8 +1458,7 @@ function switchDashboardTab(tabName) {
         btnOverview.style.borderColor = 'transparent';
     }
 }
-// Profile Action Handlers
-
+// 13. Profile Action Handlers (JEANN)
 
 function resetPasswordFromProfile() {
     const authScr = document.getElementById('authScreen');
@@ -1534,10 +1531,8 @@ function closeAuthModal() {
     if (authScr) authScr.classList.add('hidden');
 }
 
-// 
-// ==========================================================================
-// EDIT PROFILE MODAL
-// ==========================================================================
+// 14. EDIT PROFILE MODAL
+
 
 function editProfile() {
     // 1. 
@@ -1632,18 +1627,16 @@ async function saveProfileChanges(event) {
         showToastCard('❌ Network error');
     }
 }
-// ==========================================================================
+
 // HISTORY VIEW — List / Cards with Pagination
-// ==========================================================================
 
 let historyStyle = 'list';   // 'list' | 'cards'
 let listPage = 1;            // Current page for list view (5 per page)
 let cardsPage = 1;           // Current day index for cards view
 const ITEMS_PER_PAGE = 5;    // 5 records per page in list view
 
-// ============================================================
+
 // SWITCH BETWEEN LIST AND CARDS
-// ============================================================
 
 function setHistoryStyle(style) {
     historyStyle = style;
@@ -1665,10 +1658,8 @@ function setHistoryStyle(style) {
     renderHistoryView();
 }
 
-// ============================================================
-// MAIN RENDER
-// ============================================================
 
+// MAIN RENDER
 function renderHistoryView() {
     if (!Array.isArray(moodLogs)) moodLogs = [];
 
@@ -1679,10 +1670,8 @@ function renderHistoryView() {
     }
 }
 
-// ============================================================
-// LIST VIEW — 5 records per page
-// ============================================================
 
+// LIST VIEW — 5 records per page
 function renderHistoryList() {
     const tbody = document.getElementById('history-list-body');
     if (!tbody) return;
@@ -1753,10 +1742,8 @@ function nextListPage() {
     }
 }
 
-// ============================================================
-// CARDS VIEW — 1 day per page (shows all moods of that day)
-// ============================================================
 
+// CARDS VIEW — 1 day per page (shows all moods of that day)
 function renderHistoryCards() {
     const container = document.getElementById('history-cards-body');
     if (!container) return;

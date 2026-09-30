@@ -8,7 +8,7 @@
 
     <link rel="stylesheet" href="style.css">
     <script src="dashboard.js" defer></script>
-    <script src="alarm.js" defer></script>
+
 
 
 
@@ -52,7 +52,7 @@
             transform: translate(-2px, -2px);
         }
 
-        /* ==== Dashboard 布局锁定 2 列 ==== */
+        /* ==== Dashboard ==== */
         #dashboardView .stats-row {
             display: grid;
             grid-template-columns: repeat(4, minmax(0, 1fr));
@@ -185,7 +185,7 @@
     </div>
 
     <!-- ============================================================
-     1. LANDING PAGE
+     1. LANDING PAGE (AYA)
      ============================================================ -->
     <div id="landingScreen" class="landing-screen">
         <header
@@ -381,7 +381,7 @@
     </div>
 
     <!-- ============================================================
-     2. AUTH MODAL
+     2. AUTH MODAL (AYA) 
      ============================================================ -->
     <div class="auth-container hidden" id="authScreen">
         <div class="auth-card">
@@ -444,7 +444,7 @@
             </div>
 
             <!-- ============================================================ -->
-            <!-- Reset Password 
+            <!-- Reset Password (JEANN)
             <!-- ============================================================ -->
             <div id="authViewReset" class="hidden">
                 <h1 class="auth-title">Reset Password.</h1>
@@ -497,7 +497,7 @@
 
 
             <!-- ============================================================ -->
-            <!-- Reset Password -  -->
+            <!-- Reset Password -  --> (JEANN)
             <!-- ============================================================ -->
             <div id="authViewResetStandalone" class="hidden" style="position: relative;">
 
@@ -576,7 +576,7 @@
     </div>
 
     <!-- ============================================================
-     3. MAIN APP
+     3. MAIN APP (AYA)
      ============================================================ -->
     <div class="app-layout hidden" id="appLayout">
 
@@ -760,7 +760,7 @@
 
             </div><!-- END dashboardView -->
 
-            <!-- ============ HISTORY VIEW ============ -->
+            <!-- ============ HISTORY VIEW (JEANN) ============ -->
             <div id="historyView" class="hidden">
                 <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:0.5rem;">
                     <div>
@@ -776,7 +776,7 @@
                 </div>
 
                 <!-- ============================================================
-         LIST VIEW (5 records per page)
+         LIST VIEW (5 records per page) (JEANN)
     ============================================================ -->
                 <div class="content-card" id="historyListContainer">
                     <h2 class="card-title" style="margin-bottom:1rem;">Recent Emotion Logs</h2>
@@ -808,7 +808,7 @@
                 </div>
 
                 <!-- ============================================================
-         CARDS VIEW (1 day per page, shows all moods of that day)
+         CARDS VIEW (1 day per page, shows all moods of that day) (JEANN)
     ============================================================ -->
                 <div class="content-card hidden" id="historyCardsContainer">
                     <h2 class="card-title" style="margin-bottom:1rem;">Recent Emotion Logs</h2>
@@ -826,7 +826,7 @@
             </div>
 
 
-            <!-- ============ ALARM VIEW ============ -->
+            <!-- ============ ALARM VIEW (JEANN) ============ -->
             <div id="alarmView" class="hidden">
                 <h1 class="main-heading">Alarm</h1>
                 <p class="sub-heading">Set up and control your active reminders.</p>
@@ -866,7 +866,7 @@
                 </div>
             </div>
 
-            <!-- ============ PROFILE VIEW ============ -->
+            <!-- ============ PROFILE VIEW (AYA) ============ -->
             <div id="profileView" class="hidden">
                 <h1 class="main-heading" style="margin-top:0;">User Profile</h1>
                 <p class="sub-heading" style="margin-bottom:1.25rem;">Manage your account, customize your sanctuary, and
@@ -991,7 +991,7 @@
 
 
     <!-- ============================================================
-     ALARM RINGING MODAL
+     ALARM RINGING MODAL (JEANN)
      ============================================================ -->
     <div id="alarmModal" class="modal-overlay hidden">
         <div class="modal-card" style="text-align:center;max-width:420px;">
@@ -1016,7 +1016,7 @@
 
 
     <!-- ============================================================
-     EDIT PROFILE MODAL
+     EDIT PROFILE MODAL (JEANN)
      ============================================================ -->
     <div id="editProfileModal" class="modal-overlay hidden">
         <div class="modal-card" style="max-width:460px;">
@@ -1096,7 +1096,7 @@
     </div>
 
     <!-- ============================================================
-     LOGOUT CONFIRMATION MODAL
+     LOGOUT CONFIRMATION MODAL (JEANN)
      ============================================================ -->
     <div class="modal-overlay hidden" id="logoutConfirmModal">
         <div class="modal-card" style="max-width: 420px;">
