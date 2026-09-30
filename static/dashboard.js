@@ -1404,13 +1404,12 @@ async function saveProfileChanges(event) {
     event.preventDefault();
 
     const username = document.getElementById('editUsername')?.value.trim();
-    const email = document.getElementById('editEmail')?.value.trim();
-    const birthdayRaw = document.getElementById('editBirthday')?.value;   // "2000-01-01"
+    const birthdayRaw = document.getElementById('editBirthday')?.value;   
     const gender = document.getElementById('editGender')?.value;
     const bio = document.getElementById('editBio')?.value.trim();
 
-    if (!username || !email) {
-        showToastCard('Username and email are required');
+    if (!username ) {
+        showToastCard('Username is required');
         return;
     }
 
@@ -1421,7 +1420,7 @@ async function saveProfileChanges(event) {
         birthday = `${d}/${m}/${y}`;
     }
 
-    const payload = { username, email, birthday, gender, bio };
+    const payload = { username,  birthday, gender};
 
     try {
         const response = await fetch('/api/user', {
