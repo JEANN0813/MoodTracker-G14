@@ -14,7 +14,6 @@ import string
 from datetime import datetime
 from flask import Blueprint, request, jsonify
 from datetime import datetime, time
-from alarm import alarm_bp
 import apscheduler
 from apscheduler.schedulers.background import BackgroundScheduler
 import re
@@ -897,6 +896,3 @@ if __name__ == '__main__':
     
     app.run(debug=True, host='0.0.0.0', port=5000)
 
-@app.route('/api/logs')
-def get_logs():
-    return jsonify({"message": "Connected to app.py!"})
