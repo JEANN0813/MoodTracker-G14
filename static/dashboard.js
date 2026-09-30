@@ -6,8 +6,29 @@ let selectedIcon = "";
 let currentDate = new Date();
 let activeTargetDate = new Date().toISOString().split('T')[0];
 
-
 const DAILY_EMOTION_LIMIT = 999;
+
+// ==========================================================================
+// MOOD CHART STATE
+// ==========================================================================
+
+let chartRange = 'monthly';
+
+const MOOD_CHART_VALUES = {
+    'Anxious': 1,
+    'Sad': 2,
+    'Neutral': 3,
+    'Calm': 4,
+    'Happy': 5
+};
+
+const MOOD_CHART_LABELS = {
+    1: 'Anxious',
+    2: 'Sad',
+    3: 'Neutral',
+    4: 'Calm',
+    5: 'Happy'
+};
 
 let moodLogs = JSON.parse(localStorage.getItem('moodLogs')) || [
     { id: 1, log_date: new Date().toISOString().split('T')[0], emotion: "Happy", iconName: "smile", note: "Welcome to your fresh sanctuary dashboard!" }
@@ -403,20 +424,271 @@ function selectEmotion(btn, emotion, iconName) {
 async function fetchLogsAndRefresh() {
     try {
         const response = await fetch('/api/logs', { method: 'GET' });
+
         if (response.ok) {
             const data = await response.json();
+
             moodLogs = (data.logs || []).map(log => ({
                 ...log,
                 iconName: EMOTION_ICON_MAP[log.emotion] || 'smile'
             }));
+
             console.log("Mood logs:", moodLogs);
+
             refreshUI();
+
+            updateMoodChart(moodLogs);
+
         } else if (response.status === 401) {
             logout();
         }
+
     } catch (err) {
         showToastCard('❌ Failed to load logs from server.');
     }
+}
+
+// ==========================================
+// WEEKLY MOOD CHART
+// ==========================================
+
+// Numerical values for each mood
+const MOOD_VALUES = {
+    Anxious: 0,
+    Sad: 1,
+    Neutral: 2,
+    Calm: 3,
+    Happy: 4
+};
+
+const MOOD_LABELS = [
+    "Anxious",
+    "Sad",
+    "Neutral",
+    "Calm",
+    "Happy"
+];
+
+
+/**
+ * Get the Monday of the current week.
+ */
+function getStartOfWeek(date = new Date()) {
+    const result = new Date(date);
+
+    // Sunday = 0, Monday = 1, ..., Saturday = 6
+    const day = result.getDay();
+
+    // Convert Sunday into 6 days after Monday
+    const daysFromMonday = day === 0 ? 6 : day - 1;
+
+    result.setDate(result.getDate() - daysFromMonday);
+    result.setHours(0, 0, 0, 0);
+
+    return result;
+}
+
+
+/**
+ * Convert Date into YYYY-MM-DD.
+ */
+function formatChartDate(date) {
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, "0");
+    const day = String(date.getDate()).padStart(2, "0");
+
+    return `${year}-${month}-${day}`;
+}
+
+
+/**
+ * Calculate the average mood value for one day.
+ *
+ * Anxious = 0
+ * Sad     = 1
+ * Neutral = 2
+ * Calm    = 3
+ * Happy   = 4
+ */
+function calculateDailyOverallMood(logs) {
+
+    if (!logs || logs.length === 0) {
+        return null;
+    }
+
+    const validValues = logs
+        .map(log => MOOD_VALUES[log.emotion])
+        .filter(value => value !== undefined);
+
+    if (validValues.length === 0) {
+        return null;
+    }
+
+    const total = validValues.reduce(
+        (sum, value) => sum + value,
+        0
+    );
+
+    return total / validValues.length;
+}
+
+
+/**
+ * Generate Monday-Sunday data for the current week.
+ */
+function getWeeklyMoodData(logs) {
+
+    const monday = getStartOfWeek();
+
+    const weeklyData = [];
+
+    for (let i = 0; i < 7; i++) {
+
+        const currentDate = new Date(monday);
+        currentDate.setDate(monday.getDate() + i);
+
+        const dateString = formatChartDate(currentDate);
+
+        // Get all mood logs from this day
+        const dailyLogs = logs.filter(log => {
+            return log.log_date === dateString;
+        });
+
+        const overallMood = calculateDailyOverallMood(dailyLogs);
+
+        weeklyData.push({
+            date: dateString,
+
+            day: currentDate.toLocaleDateString("en-US", {
+                weekday: "short"
+            }),
+
+            mood: overallMood,
+
+            moodLabel: overallMood !== null
+                ? MOOD_LABELS[Math.round(overallMood)]
+                : null
+        });
+    }
+
+    return weeklyData;
+}
+
+
+/**
+ * Prepare and update the weekly mood chart.
+ */
+// ==========================================
+// WEEKLY MOOD CHART - CHART.JS
+// ==========================================
+
+let moodChartInstance = null;
+
+function updateMoodChart(logs) {
+
+    const weeklyData = getWeeklyMoodData(logs);
+
+    console.log("Weekly Mood Chart Data:", weeklyData);
+
+    const canvas = document.getElementById("moodChart");
+
+    if (!canvas) {
+        console.log("Mood chart canvas not found.");
+        return;
+    }
+
+    // Destroy the previous chart before creating a new one
+    if (moodChartInstance) {
+        moodChartInstance.destroy();
+    }
+
+    const labels = weeklyData.map(day => day.day);
+
+    const moodValues = weeklyData.map(day => day.mood);
+
+    moodChartInstance = new Chart(canvas, {
+        type: "line",
+
+        data: {
+            labels: labels,
+
+            datasets: [{
+                label: "Overall Mood",
+
+                data: moodValues,
+
+                borderWidth: 3,
+
+                tension: 0.3,
+
+                pointRadius: 5,
+
+                pointHoverRadius: 7,
+
+                spanGaps: false
+            }]
+        },
+
+        options: {
+            responsive: true,
+
+            maintainAspectRatio: false,
+
+            scales: {
+
+                y: {
+                    min: 0,
+                    max: 4,
+
+                    ticks: {
+                        stepSize: 1,
+
+                        callback: function(value) {
+                            return MOOD_LABELS[value];
+                        }
+                    },
+
+                    title: {
+                        display: true,
+                        text: "Mood"
+                    }
+                },
+
+                x: {
+                    title: {
+                        display: true,
+                        text: "Day"
+                    }
+                }
+            },
+
+            plugins: {
+
+                legend: {
+                    display: false
+                },
+
+                tooltip: {
+                    callbacks: {
+
+                        label: function(context) {
+
+                            const value = context.raw;
+
+                            if (value === null || value === undefined) {
+                                return "No mood logged";
+                            }
+
+                            const roundedMood =
+                                MOOD_LABELS[Math.round(value)];
+
+                            return `${roundedMood} (${value.toFixed(2)})`;
+                        }
+                    }
+                }
+            }
+        }
+    });
 }
 
 function generateMoodNote(emotion) {
@@ -438,7 +710,6 @@ async function logMood() {
         showToastCard("Please select an emotion first!");
         return;
     }
-
 
     try {
         const response = await fetch('/api/logs', {
@@ -590,16 +861,27 @@ function refreshUI() {
     const dateLabel = document.getElementById('currentDateLabel');
 
     const options = { weekday: 'long', month: 'short', day: 'numeric' };
-    if (dateLabel) dateLabel.innerText = new Date().toLocaleDateString('en-US', options);
 
-    if (loggingDateDisp) loggingDateDisp.innerText = activeTargetDate;
-    if (selectedTargetLbl) selectedTargetLbl.innerText = activeTargetDate;
+    if (dateLabel) {
+        dateLabel.innerText =
+            new Date().toLocaleDateString('en-US', options);
+    }
+
+    if (loggingDateDisp) {
+        loggingDateDisp.innerText = activeTargetDate;
+    }
+
+    if (selectedTargetLbl) {
+        selectedTargetLbl.innerText = activeTargetDate;
+    }
 
     renderTable();
     calculateStats();
     generateCalendar();
 
-    
+    // Render monthly mood chart
+    renderMoodChart();
+
     if (typeof renderHistoryView === 'function') {
         renderHistoryView();
     }
