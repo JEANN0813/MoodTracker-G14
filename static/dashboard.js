@@ -214,39 +214,7 @@ function validatePassword(password) {
     return null;
 }
 
-function checkPasswordStrength(inputId, hintsId) {
-    const input = document.getElementById(inputId);
-    const hintsBox = document.getElementById(hintsId);
-    if (!input || !hintsBox) return;
 
-    const value = input.value;
-
-   
-    const rules = {
-        length: value.length >= 8,
-        upper: /[A-Z]/.test(value),
-        lower: /[a-z]/.test(value),
-        number: /[0-9]/.test(value),
-        special: /[!@#$%^&*(),.?":{}|<>]/.test(value)
-    };
-
-   
-    hintsBox.querySelectorAll('.hint').forEach(hint => {
-        const rule = hint.dataset.rule;
-        hint.classList.remove('valid', 'invalid');
-
-        if (!value) {
-           
-            return;
-        }
-
-        if (rules[rule]) {
-            hint.classList.add('valid');
-        } else {
-            hint.classList.add('invalid');
-        }
-    });
-}
 
 
 // 3. STANDALONE RESET PASSWORD (from Profile) (JEANN)

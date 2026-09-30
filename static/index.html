@@ -418,7 +418,7 @@
                 <form onsubmit="handleRegisterSubmit(event)">
                     <div class="form-group">
                         <label for="regFullName">Full Name</label>
-                        <input type="text" class="input-box" id="regFullName" placeholder="e.g. Mara Smith" required>
+                        <input type="text" class="input-box" id="regFullName" placeholder="Mara Smith" required>
                     </div>
                     <div class="form-group">
                         <label for="regEmail">Email Address</label>
@@ -445,7 +445,7 @@
 
             <!-- ============================================================ -->
             <!-- Reset Password (JEANN)
-            <!-- ============================================================ -->
+            <-- ============================================================ -->
             <div id="authViewReset" class="hidden">
                 <h1 class="auth-title">Reset Password.</h1>
                 <p class="auth-subtitle">Follow the steps below.</p>
@@ -486,8 +486,13 @@
                             <div class="hint" data-rule="number"><span class="dot">○</span> One number (0-9)</div>
                             <div class="hint" data-rule="special"><span class="dot">○</span> One special character
                                 (!@#$...)</div>
-                            <br>
+
+                
+                            <div id="regPasswordHints" class="password-hints"
+                                style="font-size: 0.85rem; margin-top: 5px;"></div>
                         </div>
+                        <br>
+
                         <button type="submit" class="btn-primary" style="width:100%;">
                             Confirm New Password <i data-lucide="check-circle" style="width:18px;"></i>
                         </button>
@@ -497,7 +502,7 @@
 
 
             <!-- ============================================================ -->
-            <!-- Reset Password -  --> (JEANN)
+            <!-- Reset Password  (JEANN)-  -->
             <!-- ============================================================ -->
             <div id="authViewResetStandalone" class="hidden" style="position: relative;">
 
@@ -573,7 +578,7 @@
             </div>
         </div>
     </div>
-    </div>
+
 
     <!-- ============================================================
      3. MAIN APP (AYA)
@@ -851,7 +856,7 @@
                             <div>
                                 <label for="alarmLabelInput"
                                     style="display:block; font-size:0.75rem; font-weight:800; text-transform:uppercase; letter-spacing:1px; margin-bottom:0.4rem;">
-                                    LABEL
+                                    ADD NOTE
                                 </label>
                                 <input type="text" id="alarmLabelInput" placeholder="e.g. Morning Reminder"
                                     class="input-box" style="background:var(--canvas-bg);">
@@ -925,18 +930,18 @@
                             <span id="profileGender" style="font-size:1.1rem;font-weight:700;">—</span>
                         </div>
                     </div>
-                    
+
                     <div
                         style="display:flex; justify-content:space-between; align-items:flex-end; padding-top:1.5rem; border-top:2px solid var(--border-dark); gap:10px;">
 
-                     
+
                         <div style="display:flex; gap:10px;">
                             <button type="button" class="btn-secondary" onclick="editProfile()">Edit Profile</button>
                             <button type="button" class="btn-secondary" onclick="resetPasswordFromProfile()">Reset
                                 Password</button>
                         </div>
 
-                        
+
                         <button type="button" class="btn-primary" style="background-color:#fca5a5; color:#7f1d1d;"
                             onclick="deleteAccount()">
                             Delete Account

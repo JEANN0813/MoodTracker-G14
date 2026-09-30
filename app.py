@@ -14,7 +14,6 @@ import string
 from datetime import datetime
 from flask import Blueprint, request, jsonify
 from datetime import datetime, time
-from alarm import alarm_bp
 import apscheduler
 from apscheduler.schedulers.background import BackgroundScheduler
 import re
@@ -704,7 +703,6 @@ with app.app_context():
 
 
 # Alarm Routes
-app.register_blueprint(alarm_bp)
 
 @app.route('/api/alarms', methods=['GET', 'POST'])
 def manage_alarms():
