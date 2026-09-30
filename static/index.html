@@ -9,7 +9,7 @@
     <link rel="stylesheet" href="style.css">
     <script src="dashboard.js" defer></script>
     <script src="alarm.js" defer></script>
-    
+
 
 
 
@@ -52,7 +52,7 @@
             transform: translate(-2px, -2px);
         }
 
-        /* ==== Dashboard 布局锁定 2 列 ==== */
+        /* ==== Dashboard ==== */
         #dashboardView .stats-row {
             display: grid;
             grid-template-columns: repeat(4, minmax(0, 1fr));
@@ -208,18 +208,13 @@
             <section
                 style="margin:0 auto;display:flex;flex-direction:column;align-items:center;text-align:center;max-width:900px;padding:3rem 2rem;width:100%;box-sizing:border-box;">
                 <div class="hero-container" style="position:relative;width:100%;">
-                    <!-- Floating Tags -->
-                    <span class="floating-tag tag-top-left">AI-Powered</span>
-                    <span class="floating-tag tag-bottom-left">Streak Tracking</span>
-                    <span class="floating-tag tag-top-right">Safe &amp; Secure</span>
-                    <span class="floating-tag tag-bottom-right">100% Free</span>
+                      <!-- Floating Tags -->
+                    <span class="floating-tag tag-top-left">AI-Powered</span>
+                    <span class="floating-tag tag-bottom-left">Streak Tracking</span>
+                    <span class="floating-tag tag-top-right">Safe &amp; Secure</span>
+                    <span class="floating-tag tag-bottom-right">100% Free</span>
 
-                    <div>
-                        <div
-                            style="display:inline-flex;align-items:center;gap:6px;background:var(--canvas-bg);border:2px solid var(--border-dark);padding:6px 16px;border-radius:20px;margin-bottom:1.5rem;font-size:0.8rem;font-weight:800;">
-                            <i data-lucide="stars" style="width:14px;"></i> Mindful Mental Health Tracking App
-                        </div>
-
+                                 <div>
                         <h1
                             style="font-family:var(--font-serif);font-size:2.8rem;line-height:1.15;margin-bottom:1.2rem;font-weight:800;">
                             Understand Your Mind.<br>
@@ -237,6 +232,7 @@
                                 onclick="openAuthModal('register')">Get Started Free</button>
                             <button type="button" class="btn-secondary" style="padding:12px 28px;font-size:0.95rem;"
                                 onclick="openAuthModal('login')">Log In to Account</button>
+                
                         </div>
                     </div>
                 </div>
@@ -273,8 +269,7 @@
                         <h3 style="font-family:var(--font-serif);font-size:1.3rem;margin-bottom:0.5rem;">Review Your
                             Trends</h3>
                         <p style="font-size:0.85rem;color:var(--text-muted);font-weight:600;line-height:1.4;">Visualize
-                            your emotional patterns through interactive charts. Track streaks, milestones, and weekly
-                            averages.</p>
+                            your emotional patterns through interactive charts and daily logging streaks. </p>
                     </div>
 
                     <div class="content-card" style="text-align:center;padding:2rem 1.5rem;">
@@ -284,7 +279,7 @@
                         <h3 style="font-family:var(--font-serif);font-size:1.3rem;margin-bottom:0.5rem;">Get AI Insights
                         </h3>
                         <p style="font-size:0.85rem;color:var(--text-muted);font-weight:600;line-height:1.4;">Chat with
-                            our AI Mood Assistant for personalized reflection, weekly suggestions, and habit
+                            our AI Mood Assistant for personalized reflection and 
                             recommendations.</p>
                     </div>
                 </div>
@@ -339,9 +334,9 @@
                         </div>
                         <strong
                             style="font-size:1.05rem;margin-bottom:0.4rem;color:var(--text-dark);display:block;">Privacy
-                            First</strong>
+                           </strong>
                         <span style="font-weight:600;font-size:0.85rem;color:var(--text-muted);line-height:1.4;">Your
-                            emotional logs stay private and encrypted. You remain in full control of your account
+                            emotional logs stay private. You remain in full control of your account
                             data.</span>
                     </div>
 
@@ -395,8 +390,8 @@
             </div>
 
             <div id="authViewLogin">
-                <h1 class="auth-title">Log In.</h1>
-                <p class="auth-subtitle">Enter your email and password.</p>
+                <h1 class="auth-title">Log In</h1>
+                <p class="auth-subtitle">Enter your email and password</p>
                 <form onsubmit="handleAuthSubmit(event)">
                     <div class="form-group">
                         <label for="loginEmail">Email Address</label>
@@ -413,8 +408,8 @@
             </div>
 
             <div id="authViewRegister" class="hidden">
-                <h1 class="auth-title">Register.</h1>
-                <p class="auth-subtitle">Create your Mood Sanctuary account.</p>
+                <h1 class="auth-title">Register</h1>
+                <p class="auth-subtitle">Create your Mood Sanctuary account</p>
                 <form onsubmit="handleRegisterSubmit(event)">
                     <div class="form-group">
                         <label for="regFullName">Full Name</label>
@@ -443,9 +438,14 @@
                 </form>
             </div>
 
+            <!-- ============================================================ -->
+            <!-- Reset Password 
+            <!-- ============================================================ -->
             <div id="authViewReset" class="hidden">
-                <h1 class="auth-title">Reset Password.</h1>
-                <p class="auth-subtitle">Follow the steps below.</p>
+                <h1 class="auth-title">Reset Password</h1>
+                <p class="auth-subtitle">Follow the steps below</p>
+
+                <!-- Step 1 -->
                 <div id="resetStep1">
                     <form onsubmit="handleResetSubmit(event)">
                         <div class="form-group">
@@ -458,6 +458,8 @@
                         </button>
                     </form>
                 </div>
+
+                <!-- Step 2 -->
                 <div id="resetStep2" class="hidden">
                     <form onsubmit="handlePasswordResetConfirm(event)">
                         <div class="form-group">
@@ -481,8 +483,83 @@
                                 (!@#$...)</div>
                             <br>
                         </div>
+                        <button type="submit" class="btn-primary" style="width:100%;">
+                            Confirm New Password <i data-lucide="check-circle" style="width:18px;"></i>
+                        </button>
+                    </form>
+                </div>
+            </div>
 
 
+            <!-- ============================================================ -->
+            <!-- Reset Password -  -->
+            <!-- ============================================================ -->
+            <div id="authViewResetStandalone" class="hidden" style="position: relative;">
+
+                <!-- ✕  -->
+                <button type="button" onclick="closeAuthModal()" style="
+        position: absolute;
+        top: -10px;
+        right: -10px;
+        background: var(--canvas-bg);
+        border: 2px solid var(--border-dark);
+        border-radius: 50%;
+        width: 32px;
+        height: 32px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        box-shadow: 2px 2px 0 var(--border-dark);
+        font-weight: 800;
+        font-size: 16px;
+        padding: 0;
+        z-index: 10;
+    " title="Close">
+                    <i data-lucide="x" style="width: 16px; height: 16px;"></i>
+                </button>
+
+                <h1 class="auth-title">Reset Password</h1>
+                <p class="auth-subtitle">Enter your email to receive a verification code</p>
+
+                <!-- Step 1 -->
+                <div id="standaloneResetStep1">
+                    <form onsubmit="handleStandaloneResetSubmit(event)">
+                        <div class="form-group">
+                            <label for="standaloneResetEmail">Email Address</label>
+                            <input type="email" class="input-box" id="standaloneResetEmail"
+                                placeholder="you@example.com" required>
+                        </div>
+                        <button type="submit" class="btn-primary" style="width:100%;">
+                            Send Verification Code <i data-lucide="mail" style="width:18px;"></i>
+                        </button>
+                    </form>
+                </div>
+
+                <!-- Step 2 -->
+                <div id="standaloneResetStep2" class="hidden">
+                    <form onsubmit="handleStandaloneResetConfirm(event)">
+                        <div class="form-group">
+                            <label for="standaloneResetCode">Verification Code</label>
+                            <input type="text" class="input-box" id="standaloneResetCode"
+                                placeholder="Enter 6-digit code" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="standaloneResetNewPassword">New Password</label>
+                            <input type="password" class="input-box" id="standaloneResetNewPassword"
+                                placeholder="••••••••" required>
+                        </div>
+                        <div id="standaloneResetPasswordHints" class="password-hints">
+                            <div class="hint" data-rule="length"><span class="dot">○</span> At least 8 characters</div>
+                            <div class="hint" data-rule="upper"><span class="dot">○</span> One uppercase letter (A-Z)
+                            </div>
+                            <div class="hint" data-rule="lower"><span class="dot">○</span> One lowercase letter (a-z)
+                            </div>
+                            <div class="hint" data-rule="number"><span class="dot">○</span> One number (0-9)</div>
+                            <div class="hint" data-rule="special"><span class="dot">○</span> One special character
+                                (!@#$...)</div>
+                            <br>
+                        </div>
                         <button type="submit" class="btn-primary" style="width:100%;">
                             Confirm New Password <i data-lucide="check-circle" style="width:18px;"></i>
                         </button>
@@ -490,6 +567,7 @@
                 </div>
             </div>
         </div>
+    </div>
     </div>
 
     <!-- ============================================================
@@ -504,6 +582,7 @@
             <a class="nav-pill active" id="navDashboard"
                 onclick="switchView('dashboardView', this)"><span>Dashboard</span></a>
             <a class="nav-pill" id="navHistory" onclick="switchView('historyView', this)"><span>History</span></a>
+            <a class="nav-pill" id="navHistory" onclick="switchView('alarmView', this)"><span>Alarm</span></a>
             <a class="nav-pill" id="navProfile" onclick="switchView('profileView', this)"><span>Profile</span></a>
             <button class="sidebar-logout" onclick="logout()">
                 <i data-lucide="log-out" style="width:16px;"></i> Log out
@@ -585,7 +664,7 @@
                             </div>
                         </div>
                         <div class="note-area">
-                            
+
                             <button class="btn-primary" style="width:100%;" onclick="logMood()">Stamp Mood
                                 Entry</button>
                         </div>
@@ -628,24 +707,21 @@
                         </div>
                     </div>
 
-                    <!-- Mood Count -->
+                    <!-- Mood Chart -->
                     <div class="content-card" style="margin:0;">
                         <div
                             style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:0.5rem;">
-                            <h2 class="card-title" style="margin:0;">Mood Count</h2>
+                            <h2 class="card-title" style="margin:0;">Mood Chart</h2>
                             <div style="display:flex;gap:4px;">
-                                <button class="chart-range-btn" data-range="day"
-                                    onclick="setChartRange('day')">Day</button>
-                                <button class="chart-range-btn" data-range="weekly"
-                                    onclick="setChartRange('weekly')">Weekly</button>
+
                                 <button class="chart-range-btn active" data-range="monthly"
                                     onclick="setChartRange('monthly')">Monthly</button>
                             </div>
                         </div>
-                        <div id="moodCountBar"
-                            style="width:100%;height:26px;display:flex;border:2px solid var(--border-dark);border-radius:999px;overflow:hidden;background:#fff;margin-top:1rem;">
+                        <div style="margin-top:1rem;">
+                            <svg id="moodChartSvg" viewBox="0 0 600 220" preserveAspectRatio="xMidYMid meet"
+                                style="width:100%;height:auto;display:block;background:var(--canvas-bg);border:2px solid var(--border-dark);border-radius:16px;"></svg>
                         </div>
-                        <div id="moodCountLegend" style="margin-top:0.6rem;"></div>
                     </div>
 
                     <!-- Mood Insights -->
@@ -670,52 +746,9 @@
                         </button>
                     </div>
 
-                    <!-- Mood Chart -->
-                    <div class="content-card" style="margin:0;">
-                        <div
-                            style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:0.5rem;">
-                            <h2 class="card-title" style="margin:0;">Mood Chart</h2>
-                            <div style="display:flex;gap:4px;">
-                                <button class="chart-range-btn" data-range="day"
-                                    onclick="setChartRange('day')">Day</button>
-                                <button class="chart-range-btn" data-range="weekly"
-                                    onclick="setChartRange('weekly')">Weekly</button>
-                                <button class="chart-range-btn active" data-range="monthly"
-                                    onclick="setChartRange('monthly')">Monthly</button>
-                            </div>
-                        </div>
-                        <div style="margin-top:1rem;">
-                            <svg id="moodChartSvg" viewBox="0 0 600 220" preserveAspectRatio="xMidYMid meet"
-                                style="width:100%;height:auto;display:block;background:var(--canvas-bg);border:2px solid var(--border-dark);border-radius:16px;"></svg>
-                        </div>
-                    </div>
 
-                    <!-- Alarm Card -->
-                    <div class="content-card" style="margin:0;">
-                        <h2 class="card-title">Alarm</h2>
-                        <p style="font-size:0.8rem;color:var(--text-muted);font-weight:600;margin-bottom:1rem;">Set up
-                            and control your active reminders.</p>
 
-                        <h3 style="font-size:0.95rem;font-weight:800;margin-bottom:0.5rem;">Active Alarms</h3>
-                        <ul class="alarm-list" id="alarmListContainer">
-                            <li><span>No alarms set. Use the form below to add one.</span></li>
-                        </ul>
 
-                        <form id="alarmForm" style="margin-top:1.25rem;" onsubmit="addAlarm(event)">
-                            <div style="display:flex;flex-direction:column;gap:8px;">
-                                <input type="time" id="alarmTimeInput" required class="input-box"
-                                    style="background:var(--canvas-bg);">
-
-                                
-                                <input type="text" id="alarmLabelInput" placeholder="Label (optional)" class="input-box"
-                                    style="background:var(--canvas-bg);">
-                                <button type="submit" class="btn-primary"
-                                    style="width:100%;padding:8px 14px;font-size:0.85rem;">
-                                    <i data-lucide="plus-circle" style="width:16px;"></i> Add Alarm
-                                </button>
-                            </div>
-                        </form>
-                    </div>
 
                 </div><!-- END dashboard-grid -->
 
@@ -787,6 +820,47 @@
                 </div>
             </div>
 
+
+            <!-- ============ ALARM VIEW ============ -->
+            <div id="alarmView" class="hidden">
+                <h1 class="main-heading">Alarm</h1>
+                <p class="sub-heading">Set up and control your active reminders.</p>
+
+                <div class="content-card" style="max-width: 640px;">
+                    <h3 style="font-size:0.95rem;font-weight:800;margin-bottom:0.8rem;">Active Alarms</h3>
+                    <ul class="alarm-list" id="alarmListContainer">
+                        <li><span>No alarms set. Use the form below to add one.</span></li>
+                    </ul>
+
+                    <form id="alarmForm" style="margin-top:1.5rem;" onsubmit="addAlarm(event)">
+                        <div style="display:flex; flex-direction:column; gap:12px;">
+                            <div>
+                                <label for="alarmTimeInput"
+                                    style="display:block; font-size:0.75rem; font-weight:800; text-transform:uppercase; letter-spacing:1px; margin-bottom:0.4rem;">
+                                    TIME
+                                </label>
+                                <input type="time" id="alarmTimeInput" required class="input-box"
+                                    style="background:var(--canvas-bg);">
+                            </div>
+
+                            <div>
+                                <label for="alarmLabelInput"
+                                    style="display:block; font-size:0.75rem; font-weight:800; text-transform:uppercase; letter-spacing:1px; margin-bottom:0.4rem;">
+                                    LABEL
+                                </label>
+                                <input type="text" id="alarmLabelInput" placeholder="e.g. Morning Reminder"
+                                    class="input-box" style="background:var(--canvas-bg);">
+                            </div>
+
+                            <button type="submit" class="btn-primary"
+                                style="width:100%; padding:0.9rem; font-size:0.9rem;">
+                                <i data-lucide="plus-circle" style="width:16px;"></i> Add Alarm
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
             <!-- ============ PROFILE VIEW ============ -->
             <div id="profileView" class="hidden">
                 <h1 class="main-heading" style="margin-top:0;">User Profile</h1>
@@ -805,16 +879,16 @@
                                 AVATAR</label>
                             <div style="display:flex;gap:8px;flex-wrap:wrap;">
                                 <button type="button" class="avatar-opt mood-btn"
-                                    style="padding:6px 12px;font-size:1.2rem;background:var(--accent-yellow);"
+                                    style="padding:6px 12px;font-size:1.2rem;" data-avatar="🦊"
                                     onclick="selectAvatar('🦊')">🦊</button>
                                 <button type="button" class="avatar-opt mood-btn"
-                                    style="padding:6px 12px;font-size:1.2rem;" onclick="selectAvatar('🐼')">🐼</button>
+                                    style="padding:6px 12px;font-size:1.2rem;" data-avatar="🐼" onclick="selectAvatar('🐼')">🐼</button>
                                 <button type="button" class="avatar-opt mood-btn"
-                                    style="padding:6px 12px;font-size:1.2rem;" onclick="selectAvatar('🐰')">🐰</button>
+                                    style="padding:6px 12px;font-size:1.2rem;" data-avatar="🐰" onclick="selectAvatar('🐰')">🐰</button>
                                 <button type="button" class="avatar-opt mood-btn"
-                                    style="padding:6px 12px;font-size:1.2rem;" onclick="selectAvatar('🐱')">🐱</button>
+                                    style="padding:6px 12px;font-size:1.2rem;" data-avatar="🐱" onclick="selectAvatar('🐱')">🐱</button>
                                 <button type="button" class="avatar-opt mood-btn"
-                                    style="padding:6px 12px;font-size:1.2rem;" onclick="selectAvatar('🐨')">🐨</button>
+                                    style="padding:6px 12px;font-size:1.2rem;" data-avatar="🐨" onclick="selectAvatar('🐨')">🐨</button>
                             </div>
                         </div>
                     </div>
@@ -857,33 +931,14 @@
                             <button type="button" class="btn-secondary" onclick="editProfile()">Edit Profile</button>
                             <button type="button" class="btn-secondary" onclick="resetPasswordFromProfile()">Reset
                                 Password</button>
-                            
+
                         </div>
                         <button type="button" class="btn-primary" style="background-color:#fca5a5;color:#7f1d1d;"
                             onclick="deleteAccount()">Delete Account</button>
                     </div>
                 </div>
 
-                <div class="content-card" style="padding:1.75rem 2rem;">
-                    <h2 class="card-title" style="margin-bottom:0.3rem;">Monthly Habit Progress</h2>
-                    <p style="font-size:0.85rem;color:var(--text-muted);font-weight:600;margin-bottom:1.25rem;">
-                        Consistently logging helps identify emotional patterns.</p>
-                    <div
-                        style="width:100%;height:16px;background:var(--sidebar-bg);border:2px solid var(--border-dark);border-radius:10px;overflow:hidden;margin-bottom:0.6rem;">
-                        <div id="profileProgressBar"
-                            style="width:0%;height:100%;background:var(--card-mint);transition:width 0.6s;"></div>
-                    </div>
-                    <div
-                        style="display:flex;justify-content:space-between;font-size:0.8rem;font-weight:800;color:var(--text-muted);">
-                        <span id="progressPercentText">0% Complete</span>
-                        <span>Goal: 30 Days</span>
-                    </div>
-                    <div style="display:none;">
-                        <span id="profileTotalLogs">0</span>
-                        <span id="profileStreak">0</span>
-                        <span id="profileTopMood">None</span>
-                    </div>
-                </div>
+                
             </div><!-- END profileView -->
 
         </main>
@@ -953,6 +1008,8 @@
         </div>
     </div>
 
+
+
     <!-- ============================================================
      EDIT PROFILE MODAL
      ============================================================ -->
@@ -994,7 +1051,7 @@
                     </div>
                 </div>
 
-                
+
 
                 <div style="display:flex;gap:10px;margin-top:1rem;">
                     <button type="button" class="btn-secondary" style="flex:1;" onclick="closeEditProfileModal()">
