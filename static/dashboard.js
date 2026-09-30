@@ -15,7 +15,8 @@ let selectedIcon = "";
 let currentDate = new Date();
 let activeTargetDate = new Date().toISOString().split('T')[0];
 
-const DAILY_EMOTION_LIMIT = 5;
+
+const DAILY_EMOTION_LIMIT = 999;
 
 let moodLogs = JSON.parse(localStorage.getItem('moodLogs')) || [
     { id: 1, log_date: new Date().toISOString().split('T')[0], emotion: "Happy", iconName: "smile", note: "Welcome to your fresh sanctuary dashboard!" }
@@ -35,14 +36,18 @@ function switchAuthTab(tab) {
     const vLogin = document.getElementById('authViewLogin');
     const vReg = document.getElementById('authViewRegister');
     const vReset = document.getElementById('authViewReset');
+    const vResetStandalone = document.getElementById('authViewResetStandalone');
     const tabHeader = document.getElementById('authTabsHeader');
 
+    
     if (vLogin) vLogin.classList.add('hidden');
     if (vReg) vReg.classList.add('hidden');
     if (vReset) vReset.classList.add('hidden');
+    if (vResetStandalone) vResetStandalone.classList.add('hidden');
 
     if (tabHeader) {
         tabHeader.querySelectorAll('.auth-tab-btn').forEach(btn => btn.classList.remove('active'));
+        tabHeader.classList.remove('hidden');   
     }
 
     if (tab === 'login') {
@@ -52,18 +57,28 @@ function switchAuthTab(tab) {
         if (vReg) vReg.classList.remove('hidden');
         if (tabHeader && tabHeader.children[1]) tabHeader.children[1].classList.add('active');
     } else if (tab === 'reset') {
+        
         if (vReset) vReset.classList.remove('hidden');
-    if (tabHeader && tabHeader.children[2]) tabHeader.children[2].classList.add('active');
-    
-    // Reset to Step 1 when switching to Reset tab
-    const step1 = document.getElementById('resetStep1');
-    const step2 = document.getElementById('resetStep2');
-    if (step1) step1.classList.remove('hidden');
-    if (step2) step2.classList.add('hidden');
-}
+        if (tabHeader && tabHeader.children[2]) tabHeader.children[2].classList.add('active');
+
+        // Reset 到 Step 1
+        const step1 = document.getElementById('resetStep1');
+        const step2 = document.getElementById('resetStep2');
+        if (step1) step1.classList.remove('hidden');
+        if (step2) step2.classList.add('hidden');
+    } else if (tab === 'reset-standalone') {
+        
+        if (vResetStandalone) vResetStandalone.classList.remove('hidden');
+        if (tabHeader) tabHeader.classList.add('hidden');
+
+        const step1 = document.getElementById('standaloneResetStep1');
+        const step2 = document.getElementById('standaloneResetStep2');
+        if (step1) step1.classList.remove('hidden');
+        if (step2) step2.classList.add('hidden');
+    }
+
     if (window.lucide) lucide.createIcons();
 }
-
 async function handleAuthSubmit(event) {
     event.preventDefault();
     const emailInput = document.getElementById('loginEmail');
@@ -103,6 +118,12 @@ async function handleRegisterSubmit(event) {
     const username = nameInput ? nameInput.value.trim() : '';
     const email = emailInput ? emailInput.value.trim() : '';
     const password = passwordInput ? passwordInput.value.trim() : '';
+
+    const pwErr = validatePassword(password);
+    if (pwErr) {
+    showToastCard('❌ ' + pwErr);
+    return;
+    }
 
     try {
         const response = await fetch('/api/register', {
@@ -165,6 +186,12 @@ async function handlePasswordResetConfirm(event) {
         return;
     }
 
+    const pwErr = validatePassword(newPassword);
+    if (pwErr) {
+      showToastCard('❌ ' + pwErr);
+      return;
+    }
+
     try {
         const response = await fetch('/api/reset-password', {
             method: 'POST',
@@ -187,43 +214,200 @@ async function handlePasswordResetConfirm(event) {
     }
 }
 
+function validatePassword(password) {
+    if (password.length < 8) return "Password must be at least 8 characters long.";
+    if (!/[A-Z]/.test(password)) return "Password must contain at least one uppercase letter.";
+    if (!/[a-z]/.test(password)) return "Password must contain at least one lowercase letter.";
+    if (!/[0-9]/.test(password)) return "Password must contain at least one number.";
+    if (!/[!@#$%^&*(),.?":{}|<>]/.test(password)) return "Password must contain at least one special character.";
+    return null;
+}
+
+function checkPasswordStrength(inputId, hintsId) {
+    const input = document.getElementById(inputId);
+    const hintsBox = document.getElementById(hintsId);
+    if (!input || !hintsBox) return;
+
+    const value = input.value;
+
+   
+    const rules = {
+        length: value.length >= 8,
+        upper: /[A-Z]/.test(value),
+        lower: /[a-z]/.test(value),
+        number: /[0-9]/.test(value),
+        special: /[!@#$%^&*(),.?":{}|<>]/.test(value)
+    };
+
+   
+    hintsBox.querySelectorAll('.hint').forEach(hint => {
+        const rule = hint.dataset.rule;
+        hint.classList.remove('valid', 'invalid');
+
+        if (!value) {
+           
+            return;
+        }
+
+        if (rules[rule]) {
+            hint.classList.add('valid');
+        } else {
+            hint.classList.add('invalid');
+        }
+    });
+}
+
+// ============================================================
+// STANDALONE RESET PASSWORD (from Profile)
+// ============================================================
+
+async function handleStandaloneResetSubmit(event) {
+    event.preventDefault();
+    const email = document.getElementById('standaloneResetEmail').value.trim();
+
+    if (!email) {
+        showToastCard('Please enter your email address');
+        return;
+    }
+
+    try {
+        const response = await fetch('/api/send-code', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email: email })
+        });
+
+        const data = await response.json();
+
+        if (response.ok) {
+            showToastCard('✅ Verification code sent! Check your email.');
+            document.getElementById('standaloneResetStep1').classList.add('hidden');
+            document.getElementById('standaloneResetStep2').classList.remove('hidden');
+        } else {
+            showToastCard('❌ ' + (data.error || 'Failed to send code'));
+        }
+    } catch (err) {
+        showToastCard('❌ Server error. Please try again later.');
+    }
+}
+
+async function handleStandaloneResetConfirm(event) {
+    event.preventDefault();
+    const email = document.getElementById('standaloneResetEmail').value.trim();
+    const code = document.getElementById('standaloneResetCode').value.trim();
+    const newPassword = document.getElementById('standaloneResetNewPassword').value.trim();
+
+    if (!email || !code || !newPassword) {
+        showToastCard('Please fill in all fields.');
+        return;
+    }
+
+    const pwErr = validatePassword(newPassword);
+    if (pwErr) {
+        showToastCard('❌ ' + pwErr);
+        return;
+    }
+
+    try {
+        const response = await fetch('/api/reset-password', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email, code, password: newPassword })
+        });
+
+        const data = await response.json();
+
+        if (response.ok) {
+            showToastCard('✅ Password updated!');
+            closeAuthModal();
+
+            
+            document.getElementById('standaloneResetStep1').classList.remove('hidden');
+            document.getElementById('standaloneResetStep2').classList.add('hidden');
+        } else {
+            showToastCard('❌ ' + (data.error || 'Failed to reset password.'));
+        }
+    } catch (err) {
+        showToastCard('❌ Server error. Please try again later.');
+    }
+}
+
 function enterSanctuary() {
+    document.getElementById('logoutFab')?.classList.remove('hidden');
     const userDisp = document.getElementById('userDisplayName');
     const profileText = document.getElementById('profileUserText');
     const authScr = document.getElementById('authScreen');
+    const landingScr = document.getElementById('landingScreen'); 
     const appLay = document.getElementById('appLayout');
 
     if (userDisp) userDisp.innerText = activeUser;
     if (profileText) profileText.innerText = `Active User: ${activeUser}`;
+    
+    
+    if (landingScr) landingScr.classList.add('hidden'); 
     if (authScr) authScr.classList.add('hidden');
+    
+    
     if (appLay) appLay.classList.remove('hidden');
 
     fetchLogsAndRefresh();
 }
 
-async function logout() {
+function logout() {
+    // Show confirmation modal instead of logging out immediately
+    const modal = document.getElementById('logoutConfirmModal');
+    if (modal) {
+        modal.classList.remove('hidden');
+        if (window.lucide) lucide.createIcons();
+    }
+}
+
+function closeLogoutConfirm() {
+    // Close the confirmation modal 
+    const modal = document.getElementById('logoutConfirmModal');
+    if (modal) {
+        modal.classList.add('hidden');
+    }
+}
+
+async function confirmLogout() {
+    // Close modal first
+    closeLogoutConfirm();
+
+    // 1. Call logout API
     try {
         await fetch('/api/logout', { method: 'POST' });
     } catch (e) {
         console.error('Logout error', e);
     }
 
-    const authScr = document.getElementById('authScreen');
+    // 2. Clear local state
+    localStorage.removeItem('currentUser');
+    localStorage.removeItem('activeUser');
+    localStorage.removeItem('userEmail');
+    sessionStorage.clear();
+
+    // 3. Hide app layout & auth screen
     const appLay = document.getElementById('appLayout');
+    const authScr = document.getElementById('authScreen');
+    const landingScr = document.getElementById('landingScreen');
 
     if (appLay) appLay.classList.add('hidden');
-    if (authScr) authScr.classList.remove('hidden');
-    
-    switchAuthTab('login');
-    showToastCard('Portal locked successfully.');
-}
+    if (authScr) authScr.classList.add('hidden');
 
+    // 4. Show Landing page
+    if (landingScr) {
+        landingScr.classList.remove('hidden');
+    }
+
+    // 5. Show toast message
+    showToastCard('👋 Logged out successfully');
+}
 
 // 3. UI NAVIGATION & SELECTION
 
 function switchView(viewId, element) {
-    
-    const views = ['dashboardView', 'calendarView', 'profileView', 'alarmView'];
+    const views = ['dashboardView', 'historyView', 'alarmView', 'profileView'];
     views.forEach(id => {
         const el = document.getElementById(id);
         if (el) el.classList.add('hidden');
@@ -234,11 +418,14 @@ function switchView(viewId, element) {
     if (target) target.classList.remove('hidden');
     if (element) element.classList.add('active');
 
-    if (viewId === 'calendarView') {
-        renderStandaloneCalendar();
+    if (viewId === 'historyView') {
+        setHistoryStyle(historyStyle);
     }
-    if (viewId === 'alarmView' && window.alarmManager) {
-        window.alarmManager.loadAlarms();
+
+    if (viewId === 'profileView') {
+        if (typeof initProfilePage === 'function') {
+            try { initProfilePage(); } catch (e) { console.warn(e); }
+        }
     }
 
     if (window.lucide) lucide.createIcons();
@@ -606,7 +793,7 @@ function generateCalendar() {
         "January", "February", "March", "April", "May", "June",
         "July", "August", "September", "October", "November", "December"
     ];
-    
+
     const monthYearElem = document.getElementById("monthYear");
     if (monthYearElem) {
         monthYearElem.innerText = `${monthNames[month]} ${year}`;
@@ -623,16 +810,18 @@ function generateCalendar() {
         calendarGrid.appendChild(emptyCell);
     }
 
+    
+    const EMOTION_PRIORITY = ['Happy', 'Calm', 'Neutral', 'Sad', 'Anxious'];
+
     for (let day = 1; day <= daysInMonth; day++) {
         const dayCell = document.createElement("div");
         dayCell.className = "day-cell";
-        
+
         const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
         dayCell.setAttribute("data-date", dateStr);
 
         if (dateStr === activeTargetDate) dayCell.classList.add("selected-day");
 
-       
         const dayLogs = moodLogs.filter(l => l.log_date === dateStr);
 
         if (dayLogs.length > 0) {
@@ -642,32 +831,35 @@ function generateCalendar() {
                 emotionCounts[l.emotion] = (emotionCounts[l.emotion] || 0) + 1;
             });
 
-            
-            const dominantEmotion = Object.keys(emotionCounts).reduce((a, b) => 
-                emotionCounts[a] > emotionCounts[b] ? a : (emotionCounts[a] === emotionCounts[b] ? a : b)
-            );
+           
+            const dominantEmotion = Object.keys(emotionCounts).sort((a, b) => {
+                if (emotionCounts[b] !== emotionCounts[a]) {
+                    return emotionCounts[b] - emotionCounts[a];   
+                }
+                return EMOTION_PRIORITY.indexOf(a) - EMOTION_PRIORITY.indexOf(b);   
+            })[0];
 
             const iconName = EMOTION_ICON_MAP[dominantEmotion] || 'smile';
             const totalCount = dayLogs.length;
 
             let cellContent = `<span>${day}</span><span class="day-mood-icon"><i data-lucide="${iconName}" style="width: 14px;"></i></span>`;
-            
+
             
             if (totalCount > 1) {
                 cellContent += `<span class="multi-entry-badge" style="position: absolute; top: 2px; right: 2px; background: #ff6b6b; color: white; font-size: 0.65rem; padding: 1px 5px; border-radius: 8px; font-weight: 800;">${totalCount}</span>`;
             }
-            
+
             dayCell.style.position = 'relative';
             dayCell.innerHTML = cellContent;
         } else {
             dayCell.innerHTML = `<span>${day}</span>`;
         }
-        
-    
+
         dayCell.onclick = () => openDayDetailModal(dateStr, dayLogs);
         calendarGrid.appendChild(dayCell);
     }
 }
+
 function renderStandaloneCalendar() {
     const container = document.getElementById('standaloneCalendarContainer');
     if (!container) return;
@@ -718,10 +910,46 @@ function refreshUI() {
 
     if (loggingDateDisp) loggingDateDisp.innerText = activeTargetDate;
     if (selectedTargetLbl) selectedTargetLbl.innerText = activeTargetDate;
-    
+
     renderTable();
     calculateStats();
     generateCalendar();
+
+    
+    if (typeof renderHistoryView === 'function') {
+        renderHistoryView();
+    }
+
+    if (window.lucide) lucide.createIcons();
+}
+
+
+function renderHistoryTable() {
+    const tbody = document.getElementById('history-table-body');
+    if (!tbody) return;
+
+    if (!Array.isArray(moodLogs) || moodLogs.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="4" style="text-align:center;color:var(--text-muted);padding:1.5rem 0;">No logs yet. Go to Dashboard to log your first mood!</td></tr>`;
+        return;
+    }
+
+    tbody.innerHTML = moodLogs.map(log => `
+        <tr>
+            <td>${log.log_date}</td>
+            <td>
+                <span class="badge-emotion" style="background:${getEmotionBg(log.emotion)}">
+                    <i data-lucide="${log.iconName || 'smile'}" style="width:14px;"></i> ${log.emotion}
+                </span>
+            </td>
+            <td style="color:var(--text-muted);">${log.note || '—'}</td>
+            <td>
+                <button class="btn-delete" onclick="deleteLog(${log.id})">
+                    <i data-lucide="trash-2" style="width:14px;"></i>
+                </button>
+            </td>
+        </tr>
+    `).join('');
+
     if (window.lucide) lucide.createIcons();
 }
 
@@ -842,23 +1070,41 @@ function calculateStats() {
 }
 
 // 7. MODALS & UTILITIES
-function openDayDetailModal(dateStr, loggedEntry) {
+
+function openDayDetailModal(dateStr, loggedEntries) {
     const dateTitle = document.getElementById('dayModalDateTitle');
     if (dateTitle) dateTitle.innerText = dateStr;
 
     const contentDiv = document.getElementById('dayModalContent');
     const actionBtn = document.getElementById('dayModalActionBtn');
 
+    
+    let entries = [];
+    if (Array.isArray(loggedEntries)) {
+        entries = loggedEntries;                 
+    } else if (loggedEntries) {
+        entries = [loggedEntries];               
+    }
+
+    
     if (contentDiv) {
-        if (loggedEntry) {
-            contentDiv.innerHTML = `
-                <div style="background: var(--sidebar-bg); border: 2px solid var(--border-dark); border-radius: 16px; padding: 1rem;">
+        if (entries.length > 0) {
+            
+            contentDiv.innerHTML = entries.map(entry => `
+                <div style="background: var(--sidebar-bg); border: 2px solid var(--border-dark); border-radius: 16px; padding: 1rem; margin-bottom: 0.8rem;">
                     <div style="display: flex; align-items: center; gap: 8px; font-weight: 800; font-size: 1.1rem; margin-bottom: 0.4rem;">
-                        <i data-lucide="${loggedEntry.iconName || 'smile'}" style="width: 20px;"></i> ${loggedEntry.emotion}
+                        <i data-lucide="${entry.iconName || 'smile'}" style="width: 20px;"></i> ${entry.emotion}
                     </div>
-                    <p style="font-size: 0.85rem; font-weight: 600; color: var(--text-dark);">"${loggedEntry.note}"</p>
+                    <p style="font-size: 0.85rem; font-weight: 600; color: var(--text-dark);">
+                        "${entry.note || 'No note'}"
+                    </p>
+                    ${entry.created_at ? `
+                        <p style="font-size: 0.7rem; color: var(--text-muted); margin-top: 0.4rem;">
+                            🕐 ${new Date(entry.created_at).toLocaleTimeString()}
+                        </p>
+                    ` : ''}
                 </div>
-            `;
+            `).join('');
         } else {
             contentDiv.innerHTML = `
                 <p style="font-size: 0.9rem; font-weight: 600; color: var(--text-muted);">
@@ -873,6 +1119,7 @@ function openDayDetailModal(dateStr, loggedEntry) {
             activeTargetDate = dateStr;
             toggleDayDetailModal(false);
             refreshUI();
+            showToastCard(`Now logging for ${dateStr}`);
         };
     }
 
@@ -972,25 +1219,150 @@ function showToastCard(message) {
 
 // 8. INITIALIZATION
 document.addEventListener('DOMContentLoaded', async function () {
+    
     const splash = document.getElementById("welcomeSplash");
     if (splash) {
         setTimeout(() => { splash.classList.add("hidden-splash"); }, 1500);
     }
 
+    
+    const landingScr = document.getElementById('landingScreen');
+    const appLay = document.getElementById('appLayout');
+    const authScr = document.getElementById('authScreen');
+
+    if (landingScr) landingScr.classList.remove('hidden');   
+    if (appLay) appLay.classList.add('hidden');
+    if (authScr) authScr.classList.add('hidden');
+
+    
     try {
         const response = await fetch('/api/user', { method: 'GET' });
+
         if (response.ok) {
             const user = await response.json();
             activeUser = user.username;
             activeUserId = user.id;
-            enterSanctuary();
-        } else {
-            switchAuthTab('login');
+            enterSanctuary();   
+        }
+        
+    } catch (err) {
+        console.warn('Session check failed:', err);
+       
+    }
+
+    if (window.lucide) lucide.createIcons();
+});
+
+
+// ALARM 
+
+let _alarmAudio = null;
+let _isAlarmRinging = false;
+let _lastDismissedAt = 0; 
+let _currentRingingAlarmId = null;
+
+function triggerAlarm(alarm) {
+    _isAlarmRinging = true;
+    _currentRingingAlarmId = alarm.id;
+
+    if (!_alarmAudio) {
+        _alarmAudio = new Audio('https://actions.google.com/sounds/v1/alarms/beep_short.ogg');
+        _alarmAudio.loop = true;
+    }
+    _alarmAudio.play().catch(() => {});
+
+    
+    const modal = document.getElementById('alarmModal');
+    const title = document.getElementById('modalTitle');
+    const timeEl = document.getElementById('modalTime');
+
+    if (title) title.textContent = `⏰ ${alarm.label || 'Alarm'}`;
+    if (timeEl) timeEl.textContent = `Scheduled time: ${alarm.time}`;
+    if (modal) modal.classList.remove('hidden');
+
+    if (window.lucide) lucide.createIcons();
+
+    
+    if (Notification && Notification.permission === 'granted') {
+        new Notification(`⏰ ${alarm.label || 'Alarm'}`, {
+            body: `It's ${alarm.time}`
+        });
+    }
+}
+
+async function checkAlarms() {
+    if (_isAlarmRinging) return;
+
+    // Dismiss 
+    if (Date.now() - _lastDismissedAt < 90000) return;
+
+    try {
+        const response = await fetch('/api/alarms/check', { credentials: 'include' });
+        if (!response.ok) return;
+        const data = await response.json();
+
+        if (data.triggered && data.alarms.length > 0) {
+            triggerAlarm(data.alarms[0]);
         }
     } catch (err) {
-        switchAuthTab('login');
+        console.error('Check alarms error:', err);
     }
+}
+
+function stopAlarm() {
+    _isAlarmRinging = false;
+    _lastDismissedAt = Date.now(); 
+
+   
+    if (_currentRingingAlarmId) {
+        let alarms = JSON.parse(localStorage.getItem('alarms') || '[]');
+        alarms = alarms.map(a => {
+            if (a.id === _currentRingingAlarmId) {
+                return { ...a, enabled: false }; 
+            }
+            return a;
+        });
+        localStorage.setItem('alarms', JSON.stringify(alarms));
+        renderAlarms(); 
+        _currentRingingAlarmId = null;
+    }
+
+    if (_alarmAudio) {
+        _alarmAudio.pause();
+        _alarmAudio.currentTime = 0;
+        _alarmAudio.loop = false;         
+        _alarmAudio.src = '';              
+        _alarmAudio = null; 
+    }
+
+    const modal = document.getElementById('alarmModal');
+    if (modal) modal.classList.add('hidden');
+}
+
+
+function startLocalAlarmScheduler() {
+    setInterval(() => {
+        const now = new Date();
+        const currentHHMM = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
+        const currentSeconds = now.getSeconds();
+
+       
+        if (currentSeconds >= 0 && currentSeconds < 5 && !_isAlarmRinging) {
+            const alarms = JSON.parse(localStorage.getItem('alarms') || '[]');
+            const matchedAlarm = alarms.find(a => a.enabled && a.time === currentHHMM);
+
+            if (matchedAlarm) {
+                triggerAlarm(matchedAlarm);
+            }
+        }
+    }, 3000); 
+}
+
+document.addEventListener('DOMContentLoaded', function () {
+    setTimeout(renderAlarms, 100);
+    startLocalAlarmScheduler(); 
 });
+
 
 // ==========================================================================
 // PROFILE VIEW LOGIC (Aya)
@@ -999,26 +1371,72 @@ document.addEventListener('DOMContentLoaded', async function () {
 /**
  * Initializes and populates the Profile Page UI components and dynamic stats.
  */
-function initProfilePage() {
-  loadUserProfileDetails();
-  calculateAndRenderStats();
-  loadSavedAvatar();
+async function initProfilePage() {
+    await loadUserProfileDetails();
+    calculateAndRenderStats();
+    loadSavedAvatar();
 }
 
 /**
  * Loads user details from localStorage or active session state.
  */
-function loadUserProfileDetails() {
-  const activeUser = localStorage.getItem('activeUser') || 'Aya';
-  const userEmail = localStorage.getItem('userEmail') || `${activeUser.toLowerCase()}@example.com`;
+async function loadUserProfileDetails() {
+    try {
+        const response = await fetch('/api/user', {
+            method: 'GET',
+            credentials: 'include',
+            headers: { 'Accept': 'application/json' }
+        });
 
-  const nameEl = document.getElementById('profileUserName');
-  const emailEl = document.getElementById('profileUserEmail');
+        if (!response.ok) {
+            console.warn('loadUserProfileDetails: HTTP', response.status);
+            return;
+        }
 
-  if (nameEl) nameEl.textContent = activeUser;
-  if (emailEl) emailEl.textContent = userEmail;
+        const user = await response.json();
+        console.log('✅ Profile user from backend:', user);
+
+        localStorage.setItem('currentUser', JSON.stringify(user));
+        localStorage.setItem('activeUser', user.username || 'User');
+        localStorage.setItem('userEmail', user.email || '');
+
+       
+        const nameEl = document.getElementById('profileUserName');
+        const emailEl = document.getElementById('profileUserEmail');
+        if (nameEl) nameEl.textContent = user.username || 'User';
+        if (emailEl) emailEl.textContent = user.email || '—';
+
+        // Active User
+        const activeUserEl = document.getElementById('profileUserText');
+        if (activeUserEl) activeUserEl.textContent = `Active User: ${user.username || 'User'}`;
+
+        
+        const birthdayEl = document.getElementById('profileBirthday');
+        if (birthdayEl) birthdayEl.textContent = user.birthday || '—';
+
+       
+        const genderEl = document.getElementById('profileGender');
+        if (genderEl) genderEl.textContent = user.gender || '—';
+
+        
+        const titleEl = document.getElementById('profileTitle');
+        if (titleEl) titleEl.textContent = user.title || 'Bronze Tracker 🏆';
+
+        
+        if (user.avatar) {
+            const avatarEl = document.getElementById('currentAvatarDisplay');
+            if (avatarEl) avatarEl.textContent = user.avatar;
+            localStorage.setItem('selectedAvatar', user.avatar);
+        }
+
+        // Dashboard 
+        const userDisp = document.getElementById('userDisplayName');
+        if (userDisp) userDisp.textContent = user.username || 'User';
+
+    } catch (err) {
+        console.error('loadUserProfileDetails error:', err);
+    }
 }
-
 /**
  * Computes mood statistics (Total Entries, Logging Streak, Dominant Mood, Progress)
  * from stored mood log entries and updates the profile UI.
@@ -1057,38 +1475,39 @@ function calculateAndRenderStats() {
  * Handles avatar selection click events and saves preferences locally.
  * @param {string} emoji - The selected avatar emoji icon
  */
-function selectAvatar(emoji) {
-  // Update the current display icon
-  const currentAvatarEl = document.getElementById('currentAvatarDisplay');
-  if (currentAvatarEl) {
-    currentAvatarEl.textContent = emoji;
-    
-    // Add pop animation effect on click
-    currentAvatarEl.style.transform = 'scale(1.2) rotate(10deg)';
-    setTimeout(() => {
-      currentAvatarEl.style.transform = '';
-    }, 200);
-  }
-
-  // Update active state on option buttons
-  const buttons = document.querySelectorAll('.avatar-opt');
-  buttons.forEach(btn => {
-    if (btn.textContent.trim() === emoji) {
-      btn.classList.add('active');
-    } else {
-      btn.classList.remove('active');
+async function selectAvatar(emoji) {
+    const currentAvatarEl = document.getElementById('currentAvatarDisplay');
+    if (currentAvatarEl) {
+        currentAvatarEl.textContent = emoji;
+        currentAvatarEl.style.transform = 'scale(1.2) rotate(10deg)';
+        setTimeout(() => { currentAvatarEl.style.transform = ''; }, 200);
     }
-  });
 
-  // Save selected avatar preference
-  localStorage.setItem('selectedAvatar', emoji);
+    
+    document.querySelectorAll('.avatar-opt').forEach(btn => {
+        if (btn.dataset.avatar === emoji) {
+            btn.classList.add('active');
+        } else {
+            btn.classList.remove('active');
+        }
+    });
+
+    localStorage.setItem('selectedAvatar', emoji);
+
+    try {
+        await fetch('/api/user', {
+            method: 'PUT',
+            credentials: 'include',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ avatar: emoji })
+        });
+    } catch (err) {
+        console.warn('Failed to save avatar:', err);
+    }
 }
 
-/**
- * Loads the saved avatar preference from localStorage on page load.
- */
 function loadSavedAvatar() {
-  const savedAvatar = localStorage.getItem('selectedAvatar') || '🌸';
+  const savedAvatar = localStorage.getItem('selectedAvatar') || '🦊';
   selectAvatar(savedAvatar);
 }
 
@@ -1185,6 +1604,7 @@ function showView(viewName) {
 function handleLogout() {
   localStorage.removeItem('activeUser');
   localStorage.removeItem('userEmail');
+  localStorage.removeItem('userName');
   localStorage.removeItem('selectedAvatarName');
   localStorage.removeItem('selectedAvatarUrl');
   
@@ -1192,32 +1612,7 @@ function handleLogout() {
   window.location.href = 'index.html';
 }
 
-// Avatar selection handler
-function selectAvatar(name, imgUrl) {
-  const currentAvatarImg = document.getElementById('currentAvatarImg');
-  if (currentAvatarImg) {
-    currentAvatarImg.src = imgUrl;
-  }
 
-  const buttons = document.querySelectorAll('.avatar-opt');
-  buttons.forEach(btn => {
-    if (btn.getAttribute('data-avatar') === name) {
-      btn.classList.add('active');
-    } else {
-      btn.classList.remove('active');
-    }
-  });
-
-  localStorage.setItem('selectedAvatarName', name);
-  localStorage.setItem('selectedAvatarUrl', imgUrl);
-}
-
-// Load saved avatar on page render
-function loadSavedAvatar() {
-  const savedName = localStorage.getItem('selectedAvatarName') || 'fox';
-  const savedUrl = localStorage.getItem('selectedAvatarUrl') || 'https://api.iconify.design/fluent-emoji:fox.svg';
-  selectAvatar(savedName, savedUrl);
-}
 
 // Auto-run when document loads
 // Load active user sign-in info into profile display
@@ -1323,35 +1718,449 @@ function switchDashboardTab(tabName) {
     }
 }
 // Profile Action Handlers
-function editProfile() {
-    const currentName = document.getElementById('profileDetailName').innerText;
-    const newName = prompt("Edit your full name:", currentName);
-    if (newName) {
-        document.getElementById('profileUserName').innerText = newName;
-        document.getElementById('profileDetailName').innerText = newName;
-    }
-}
+
 
 function resetPasswordFromProfile() {
-    alert("A password reset link has been sent to your registered email address.");
+    const authScr = document.getElementById('authScreen');
+    if (authScr) authScr.classList.remove('hidden');
+
+    switchAuthTab('reset-standalone');   
 }
 
-function deleteAccount() {
-    if (confirm("Are you sure you want to delete your account? This action cannot be undone.")) {
-        alert("Account deleted.");
-        location.reload();
+
+async function deleteAccount() {
+  const modal = document.getElementById('deleteConfirmModal');
+    if (modal) {
+        modal.classList.remove('hidden');
+        if (window.lucide) lucide.createIcons();
     }
 }
 
-function switchTheme(theme) {
-    const btns = document.querySelectorAll('.theme-btn');
-    btns.forEach(btn => btn.classList.remove('active'));
+function closeDeleteConfirm() {
+    const modal = document.getElementById('deleteConfirmModal');
+    if (modal) {
+        modal.classList.add('hidden');
+    }
+}
 
-    if (theme === 'dark') {
-        document.body.classList.add('dark-theme');
-        if (event && event.target) event.target.classList.add('active');
+async function confirmDeleteAccount() {
+    closeDeleteConfirm();
+
+    try {
+        const response = await fetch('/api/user', {
+            method: 'DELETE',
+            credentials: 'include'
+        });
+
+        if (response.ok) {
+            showToastCard('✅ Account deleted successfully');
+            localStorage.clear();
+            sessionStorage.clear();
+            
+            // Redirect to landing page
+            setTimeout(() => {
+                window.location.href = '/index.html';
+            }, 1500);
+        } else {
+            const data = await response.json().catch(() => ({}));
+            showToastCard('❌ ' + (data.error || 'Failed to delete account'));
+        }
+    } catch (err) {
+        showToastCard('❌ Network error');
+    }
+}
+
+
+
+function openAuthModal(tab) {
+    const authScr = document.getElementById('authScreen');
+    if (authScr) authScr.classList.remove('hidden');
+
+    ['regPasswordHints', 'resetPasswordHints'].forEach(id => {
+        const box = document.getElementById(id);
+        if (box) {
+            box.querySelectorAll('.hint').forEach(h => h.classList.remove('valid', 'invalid'));
+        }
+    });
+
+    switchAuthTab(tab);
+}
+
+function closeAuthModal() {
+    const authScr = document.getElementById('authScreen');
+    if (authScr) authScr.classList.add('hidden');
+}
+
+// 
+// ==========================================================================
+// EDIT PROFILE MODAL
+// ==========================================================================
+
+function editProfile() {
+    // 1. 
+    fetch('/api/user', { credentials: 'include' })
+        .then(res => res.ok ? res.json() : Promise.reject(res))
+        .then(user => {
+            const nameEl = document.getElementById('editUsername');
+            const emailEl = document.getElementById('editEmail');
+            const bdayEl = document.getElementById('editBirthday');
+            const genderEl = document.getElementById('editGender');
+            const bioEl = document.getElementById('editBio');
+
+            if (nameEl) nameEl.value = user.username || '';
+            if (emailEl) emailEl.value = user.email || '';
+
+           
+            if (bdayEl && user.birthday) {
+                const parts = user.birthday.split('/');
+                if (parts.length === 3) {
+                    bdayEl.value = `${parts[2]}-${parts[1].padStart(2,'0')}-${parts[0].padStart(2,'0')}`;
+                }
+            }
+
+            if (genderEl) genderEl.value = user.gender || '';
+            if (bioEl) bioEl.value = user.bio || '';
+
+            
+            const modal = document.getElementById('editProfileModal');
+            if (modal) modal.classList.remove('hidden');
+            if (window.lucide) lucide.createIcons();
+        })
+        .catch(err => {
+            console.error('editProfile fetch error:', err);
+            showToastCard('❌ Could not load profile');
+        });
+}
+
+function closeEditProfileModal() {
+    const modal = document.getElementById('editProfileModal');
+    if (modal) modal.classList.add('hidden');
+}
+
+async function saveProfileChanges(event) {
+    event.preventDefault();
+
+    const username = document.getElementById('editUsername')?.value.trim();
+    const email = document.getElementById('editEmail')?.value.trim();
+    const birthdayRaw = document.getElementById('editBirthday')?.value;   // "2000-01-01"
+    const gender = document.getElementById('editGender')?.value;
+    const bio = document.getElementById('editBio')?.value.trim();
+
+    if (!username || !email) {
+        showToastCard('Username and email are required');
+        return;
+    }
+
+    
+    let birthday = '';
+    if (birthdayRaw) {
+        const [y, m, d] = birthdayRaw.split('-');
+        birthday = `${d}/${m}/${y}`;
+    }
+
+    const payload = { username, email, birthday, gender, bio };
+
+    try {
+        const response = await fetch('/api/user', {
+            method: 'PUT',
+            credentials: 'include',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+        });
+
+        const data = await response.json().catch(() => ({}));
+
+        if (response.ok) {
+            showToastCard('✅ Profile updated');
+            closeEditProfileModal();
+
+            
+            await loadUserProfileDetails();
+
+            
+            const userDisp = document.getElementById('userDisplayName');
+            if (userDisp) userDisp.textContent = username;
+
+        } else {
+            showToastCard('❌ ' + (data.error || 'Failed to save'));
+        }
+    } catch (err) {
+        console.error('saveProfileChanges error:', err);
+        showToastCard('❌ Network error');
+    }
+}
+// ==========================================================================
+// HISTORY VIEW — List / Cards with Pagination
+// ==========================================================================
+
+let historyStyle = 'list';   // 'list' | 'cards'
+let listPage = 1;            // Current page for list view (5 per page)
+let cardsPage = 1;           // Current day index for cards view
+const ITEMS_PER_PAGE = 5;    // 5 records per page in list view
+
+// ============================================================
+// SWITCH BETWEEN LIST AND CARDS
+// ============================================================
+
+function setHistoryStyle(style) {
+    historyStyle = style;
+    listPage = 1;      // Reset pagination
+    cardsPage = 1;
+
+    // Highlight active button
+    document.querySelectorAll('.history-style-btn').forEach(btn => {
+        btn.classList.toggle('active', btn.dataset.style === style);
+    });
+
+    // Show/hide containers
+    const listBox = document.getElementById('historyListContainer');
+    const cardsBox = document.getElementById('historyCardsContainer');
+
+    if (listBox) listBox.classList.toggle('hidden', style !== 'list');
+    if (cardsBox) cardsBox.classList.toggle('hidden', style !== 'cards');
+
+    renderHistoryView();
+}
+
+// ============================================================
+// MAIN RENDER
+// ============================================================
+
+function renderHistoryView() {
+    if (!Array.isArray(moodLogs)) moodLogs = [];
+
+    if (historyStyle === 'list') {
+        renderHistoryList();
     } else {
-        document.body.classList.remove('dark-theme');
-        if (event && event.target) event.target.classList.add('active');
+        renderHistoryCards();
     }
 }
+
+// ============================================================
+// LIST VIEW — 5 records per page
+// ============================================================
+
+function renderHistoryList() {
+    const tbody = document.getElementById('history-list-body');
+    if (!tbody) return;
+
+    const totalPages = Math.max(1, Math.ceil(moodLogs.length / ITEMS_PER_PAGE));
+    
+    // Clamp page number
+    if (listPage > totalPages) listPage = totalPages;
+    if (listPage < 1) listPage = 1;
+
+    // Update page indicator
+    const indicator = document.getElementById('listPageIndicator');
+    if (indicator) {
+        indicator.textContent = `Page ${listPage} / ${totalPages}`;
+    }
+
+    // Disable/enable buttons
+    const paginationBox = document.getElementById('listPagination');
+    if (paginationBox) {
+        const prevBtn = paginationBox.querySelector('button:first-child');
+        const nextBtn = paginationBox.querySelector('button:last-child');
+        if (prevBtn) prevBtn.disabled = listPage <= 1;
+        if (nextBtn) nextBtn.disabled = listPage >= totalPages;
+    }
+
+    if (moodLogs.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="4" style="text-align:center;color:var(--text-muted);padding:1.5rem 0;">No logs yet. Go to Dashboard to log your first mood!</td></tr>`;
+        return;
+    }
+
+    // Get records for current page
+    const startIdx = (listPage - 1) * ITEMS_PER_PAGE;
+    const endIdx = startIdx + ITEMS_PER_PAGE;
+    const pageLogs = moodLogs.slice(startIdx, endIdx);
+
+    tbody.innerHTML = pageLogs.map(log => `
+        <tr>
+            <td>${log.log_date}</td>
+            <td>
+                <span class="badge-emotion" style="background:${getEmotionBg(log.emotion)}">
+                    <i data-lucide="${log.iconName || 'smile'}" style="width:14px;"></i> ${log.emotion}
+                </span>
+            </td>
+            <td style="color:var(--text-muted);">${log.note || '—'}</td>
+            <td>
+                <button class="btn-delete" onclick="deleteLog(${log.id})">
+                    <i data-lucide="trash-2" style="width:14px;"></i>
+                </button>
+            </td>
+        </tr>
+    `).join('');
+
+    if (window.lucide) lucide.createIcons();
+}
+
+function prevListPage() {
+    if (listPage > 1) {
+        listPage--;
+        renderHistoryList();
+    }
+}
+
+function nextListPage() {
+    const totalPages = Math.max(1, Math.ceil(moodLogs.length / ITEMS_PER_PAGE));
+    if (listPage < totalPages) {
+        listPage++;
+        renderHistoryList();
+    }
+}
+
+// ============================================================
+// CARDS VIEW — 1 day per page (shows all moods of that day)
+// ============================================================
+
+function renderHistoryCards() {
+    const container = document.getElementById('history-cards-body');
+    if (!container) return;
+
+    // Group logs by date
+    const byDate = {};
+    moodLogs.forEach(l => {
+        if (!byDate[l.log_date]) byDate[l.log_date] = [];
+        byDate[l.log_date].push(l);
+    });
+
+    // Sort dates descending (newest first)
+    const dates = Object.keys(byDate).sort().reverse();
+    const totalDays = dates.length;
+
+    // Update page indicator
+    const indicator = document.getElementById('cardsPageIndicator');
+    if (indicator) {
+        indicator.textContent = totalDays > 0 
+            ? `Page ${cardsPage} / ${totalDays}` 
+            : 'Page 0 / 0';
+    }
+
+    // Disable/enable buttons
+    const paginationBox = document.getElementById('cardsPagination');
+    if (paginationBox) {
+        const prevBtn = paginationBox.querySelector('button:first-child');
+        const nextBtn = paginationBox.querySelector('button:last-child');
+        if (prevBtn) prevBtn.disabled = cardsPage <= 1;
+        if (nextBtn) nextBtn.disabled = cardsPage >= totalDays;
+    }
+
+    if (totalDays === 0) {
+        container.innerHTML = `<p style="color:var(--text-muted);font-weight:600;text-align:center;padding:2rem;">No mood entries logged yet.</p>`;
+        return;
+    }
+
+    // Clamp page number
+    if (cardsPage > totalDays) cardsPage = totalDays;
+    if (cardsPage < 1) cardsPage = 1;
+
+    // Get current date and its entries
+    const currentDate = dates[cardsPage - 1];
+    const entries = byDate[currentDate];
+
+    // Render the single day
+    container.innerHTML = `
+        <div class="day-group-card">
+            <div class="day-group-header">
+                <span> ${currentDate}</span>
+                <span style="font-size:0.75rem;color:var(--text-muted);">${entries.length} ${entries.length === 1 ? 'entry' : 'entries'}</span>
+            </div>
+            <div class="day-group-entries">
+                ${entries.map(entry => `
+                    <div class="day-entry-card">
+                        <!-- Time in top-right corner -->
+                        ${entry.created_at ? `
+                            <div class="entry-time">${new Date(entry.created_at).toLocaleTimeString('en-US', {hour: '2-digit', minute: '2-digit'})}</div>
+                        ` : ''}
+
+                        <!-- Emotion -->
+                        <div class="entry-emotion">
+                            <i data-lucide="${entry.iconName || 'smile'}" style="width:18px;"></i>
+                            ${entry.emotion}
+                        </div>
+
+                        <!-- Note -->
+                        <div class="entry-note">${entry.note || 'No note'}</div>
+
+                        <!-- Delete button in bottom-right -->
+                        <div class="entry-footer">
+                            <button class="btn-delete" onclick="deleteLog(${entry.id})" title="Delete">
+                                <i data-lucide="trash-2" style="width:14px;"></i>
+                            </button>
+                        </div>
+                    </div>
+                `).join('')}
+            </div>
+        </div>
+    `;
+
+    if (window.lucide) lucide.createIcons();
+}
+
+function prevCardsPage() {
+    if (cardsPage > 1) {
+        cardsPage--;
+        renderHistoryCards();
+    }
+}
+
+function nextCardsPage() {
+    // Group by date to get total
+    const uniqueDates = [...new Set(moodLogs.map(l => l.log_date))];
+    if (cardsPage < uniqueDates.length) {
+        cardsPage++;
+        renderHistoryCards();
+    }
+}
+
+function addAlarm(event) {
+    if (event) event.preventDefault();
+    const timeInput = document.getElementById('alarmTimeInput');
+    const labelInput = document.getElementById('alarmLabelInput');
+    if (!timeInput || !timeInput.value) return showToastCard('Please select a time');
+    const alarmData = {
+        id: Date.now(),
+        time: timeInput.value,
+        label: (labelInput?.value || '').trim() || 'Alarm',
+        enabled: true
+    };
+    const alarms = JSON.parse(localStorage.getItem('alarms') || '[]');
+    alarms.push(alarmData);
+    localStorage.setItem('alarms', JSON.stringify(alarms));
+    timeInput.value = '';
+    if (labelInput) labelInput.value = '';
+    renderAlarms();
+    showToastCard('⏰ Alarm added!');
+}
+
+function renderAlarms() {
+    const list = document.getElementById('alarmListContainer');
+    if (!list) return;
+    const alarms = JSON.parse(localStorage.getItem('alarms') || '[]');
+    if (alarms.length === 0) {
+        list.innerHTML = `<li><span>No alarms set. Use the form below to add one.</span></li>`;
+        return;
+    }
+    list.innerHTML = alarms.map(a => `
+        <li>
+            <div><strong>${a.time}</strong> — <span>${a.label}</span></div>
+            <button class="btn-delete" onclick="deleteAlarm(${a.id})" title="Delete">
+                <i data-lucide="trash-2" style="width:14px;"></i>
+            </button>
+        </li>
+    `).join('');
+    if (window.lucide) lucide.createIcons();
+}
+
+function deleteAlarm(id) {
+    let alarms = JSON.parse(localStorage.getItem('alarms') || '[]');
+    alarms = alarms.filter(a => a.id !== id);
+    localStorage.setItem('alarms', JSON.stringify(alarms));
+    renderAlarms();
+    showToastCard('Alarm removed.');
+}
+
+document.addEventListener('DOMContentLoaded', function () {
+    setTimeout(renderAlarms, 100);
+});

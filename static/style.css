@@ -9,9 +9,6 @@
     --card-pink: #f8c8dc;
     --banner-pink: #f9d2dc;
     --accent-yellow: #f8d568;
-    --accent-orange: #ff9f43;
-    --accent-orange-hover: #ee5253;
-    --accent-orange-light: #fff0e6;
     --text-dark: #221c28;
     --text-muted: #635770;
     --border-dark: #221c28;
@@ -31,7 +28,6 @@ body {
     color: var(--text-dark);
     min-height: 100vh;
     display: flex;
-    flex-direction: column;
     overflow-x: hidden;
 }
 
@@ -39,10 +35,7 @@ body {
     display: none !important; 
 }
 
-/* ==========================================================================
-   2. WELCOME SPLASH TRANSITION 
-   ========================================================================== */
-
+/* --- WELCOME SPLASH TRANSITION --- */
 .welcome-splash {
     position: fixed;
     top: 0;
@@ -62,8 +55,8 @@ body {
     opacity: 0;
     visibility: hidden;
     pointer-events: none;
+    display: none !important; 
 }
-
 .splash-content {
     text-align: center;
     animation: zoomIn 0.8s ease forwards;
@@ -88,13 +81,9 @@ body {
     }
 }
 
-/* ==========================================================================
-   3. BUTTON & FORM CONTROLS
-   ========================================================================== */
-
-.btn-primary {
-    background-color: var(--accent-orange);
-    color: #ffffff;
+.btn-secondary {
+    background-color: var(--canvas-bg);
+    color: var(--text-dark);
     border: 2px solid var(--border-dark);
     border-radius: 20px;
     padding: 0.8rem 1.5rem;
@@ -106,47 +95,135 @@ body {
     gap: 8px;
     cursor: pointer;
     box-shadow: 3px 3px 0px var(--border-dark);
-    transition: transform 0.15s ease, box-shadow 0.15s ease, background-color 0.15s ease;
+    transition: transform 0.15s, box-shadow 0.15s;
 }
 
-.btn-primary:hover {
-    background-color: var(--accent-orange-hover);
+.btn-secondary:hover {
     transform: translate(-2px, -2px);
     box-shadow: 5px 5px 0px var(--border-dark);
 }
 
-.btn-secondary {
-    background: var(--accent-orange-light);
-    color: #d9730d;
-    border: 2px solid var(--border-dark);
-    padding: 10px 20px;
-    border-radius: 12px;
-    font-weight: 700;
-    cursor: pointer;
-    box-shadow: 3px 3px 0px var(--border-dark);
-    transition: transform 0.15s ease, box-shadow 0.15s ease, background-color 0.15s ease;
+.hero-container {
+  position: relative;
+  display: inline-block; /* Fits tightly around the central badge */
+  margin: 20px auto;
 }
 
-.btn-secondary:hover {
-    background: #ffe0cc;
-    transform: translate(-1px, -1px);
-    box-shadow: 4px 4px 0px var(--border-dark);
+.floating-tag {
+  position: absolute; /* Takes tags out of standard document flow */
+  white-space: nowrap;
+  font-size: 0.85rem;
+  padding: 6px 12px;
+  border-radius: 20px;
+  border: 1px solid #000;
+  background-color: #fff;
+  pointer-events: none; /* Prevents interaction issues */
 }
 
-.logout-btn {
+/* Position each tag relative to the hero-container corners */
+.tag-top-left {
+  top: -15px;
+  left: -120px;
+}
+
+.tag-bottom-left {
+  bottom: -15px;
+  left: -140px;
+}
+
+.tag-top-right {
+  top: -15px;
+  right: -130px;
+}
+
+.tag-bottom-right {
+  bottom: -15px;
+  right: -110px;
+}
+
+/* --- AUTHENTICATION MODULE --- */
+.auth-container {
+    position: fixed; 
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background: rgba(34, 28, 40, 0.5); 
+    backdrop-filter: blur(4px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 1.5rem;
+    z-index: 1000; 
+}
+
+.auth-card {
     background: #ffffff;
     border: 2px solid var(--border-dark);
-    border-radius: 10px;
-    padding: 8px 18px;
-    font-weight: 700;
-    cursor: pointer;
-    box-shadow: 2px 2px 0px var(--border-dark);
-    transition: transform 0.1s ease, box-shadow 0.1s ease;
+    border-radius: 32px;
+    padding: 2.5rem 3rem;
+    max-width: 500px;
+    width: 100%;
+    box-shadow: 6px 6px 0px var(--border-dark);
+    position: relative;
 }
 
-.logout-btn:active {
-    transform: translate(2px, 2px);
-    box-shadow: none;
+.auth-tag {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background: var(--accent-yellow);
+    border: 1.5px solid var(--border-dark);
+    border-radius: 20px;
+    padding: 4px 14px;
+    font-size: 0.75rem;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    margin-bottom: 1rem;
+}
+
+.auth-title {
+    font-family: var(--font-serif);
+    font-size: 2.5rem;
+    line-height: 1.1;
+    margin-bottom: 0.6rem;
+}
+
+.auth-subtitle {
+    color: var(--text-muted);
+    font-size: 0.9rem;
+    font-weight: 600;
+    line-height: 1.5;
+    margin-bottom: 1.5rem;
+}
+
+.auth-tabs {
+    display: flex;
+    gap: 6px;
+    margin-bottom: 1.5rem;
+    border-bottom: 2px solid var(--border-dark);
+    padding-bottom: 0.8rem;
+    flex-wrap: wrap;
+}
+
+.auth-tab-btn {
+    background: none;
+    border: none;
+    font-size: 0.85rem;
+    font-weight: 800;
+    color: var(--text-muted);
+    cursor: pointer;
+    padding: 6px 12px;
+    border-radius: 10px;
+    transition: all 0.15s ease;
+}
+
+.auth-tab-btn.active {
+    color: var(--text-dark);
+    background: var(--accent-yellow);
+    border: 1.5px solid var(--border-dark);
+    box-shadow: 2px 2px 0px var(--border-dark);
 }
 
 .form-group {
@@ -180,239 +257,29 @@ body {
     box-shadow: 2px 2px 0px var(--border-dark);
 }
 
-.note-area textarea {
-    width: 100%;
-    height: 90px;
+.btn-primary {
+    background-color: #f7a2b8;
+    color: var(--text-dark);
     border: 2px solid var(--border-dark);
-    border-radius: 16px;
-    padding: 0.8rem 1rem;
+    border-radius: 20px;
+    padding: 0.8rem 1.5rem;
     font-size: 0.9rem;
-    font-weight: 600;
-    background: var(--canvas-bg);
-    resize: none;
-    outline: none;
-    margin-bottom: 1rem;
-}
-
-.form-link-action,
-.auth-card button.form-link-action {
-    font-size: 0.8rem;
     font-weight: 800;
-    color: var(--text-dark);
-    text-decoration: underline;
-    background: none;
-    border: none;
-    cursor: pointer;
-    padding: 0;
-    transition: color 0.15s ease;
-}
-
-.form-link-action:hover {
-    color: var(--accent-orange-hover);
-}
-
-/* ==========================================================================
-   4. PUBLIC LANDING PAGE & NAVIGATION
-   ========================================================================== */
-
-.public-header {
-    display: flex;
-    width: 100%;
-    max-width: 1100px;
-    padding: 1.5rem 2rem;
-    margin: 0 auto;
-    justify-content: space-between;
+    display: inline-flex;
     align-items: center;
-    border-bottom: 2px solid var(--border-dark);
-}
-
-.brand-header-logo {
-    display: flex;
-    align-items: center;
+    justify-content: center;
     gap: 8px;
-    font-weight: 800;
-    text-transform: uppercase;
-    letter-spacing: 1px;
-    font-size: 1rem;
-}
-
-.landing-container {
-    width: 100%;
-    max-width: 1100px;
-    margin: 0 auto;
-    padding: 2rem 1.5rem;
-    display: flex;
-    flex-direction: column;
-    gap: 4rem;
-}
-
-.hero-section {
-    margin: 0 auto;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    text-align: center;
-    max-width: 900px;
-    padding: 3rem 2rem;
-    width: 100%;
-}
-
-.hero-pill-tag {
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
-    background: var(--accent-orange);
-    color: #ffffff;
-    border: 2px solid var(--border-dark);
-    padding: 6px 16px;
-    border-radius: 20px;
-    margin-bottom: 1.5rem;
-    font-size: 0.8rem;
-    font-weight: 800;
-}
-
-.hero-title {
-    font-family: var(--font-serif);
-    font-size: 2.8rem;
-    line-height: 1.15;
-    margin-bottom: 1.2rem;
-    font-weight: 800;
-}
-
-.hero-subtitle {
-    max-width: 650px;
-    margin: 0 auto 2rem auto;
-    font-size: 1rem;
-    color: var(--text-muted);
-    font-weight: 600;
-}
-
-.steps-grid {
-    display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: 1.5rem;
-    max-width: 900px;
-    margin: 0 auto;
-}
-
-.step-number-badge {
-    width: 42px;
-    height: 42px;
-    border-radius: 50%;
-    border: 2px solid var(--border-dark);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-weight: 800;
-    font-size: 1.1rem;
-    margin-bottom: 1rem;
-    background: var(--accent-yellow);
-    box-shadow: 2px 2px 0px var(--border-dark);
-}
-
-/* ==========================================================================
-   5. AUTHENTICATION MODULE
-   ========================================================================== */
-
-.auth-container {
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100vw;
-    height: 100vh;
-    background: rgba(34, 28, 40, 0.4);
-    backdrop-filter: blur(4px);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    z-index: 9999;
-    padding: 1.5rem;
-}
-
-.auth-card {
-    background: #ffffff;
-    border: 2px solid var(--border-dark);
-    border-radius: 32px;
-    padding: 2.5rem 3rem;
-    max-width: 460px;
-    width: 100%;
-    box-shadow: 6px 6px 0px var(--border-dark);
-    position: relative;
-}
-
-.modal-close-btn {
-    position: absolute;
-    top: 1.2rem;
-    right: 1.2rem;
-    width: 32px;
-    height: 32px;
-    background: var(--canvas-bg);
-    border: 2px solid var(--border-dark);
-    border-radius: 50%;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 1.2rem;
-    font-weight: 800;
-    line-height: 1;
-    color: var(--text-dark);
     cursor: pointer;
-    box-shadow: 2px 2px 0px var(--border-dark);
-    transition: transform 0.1s ease;
+    box-shadow: 3px 3px 0px var(--border-dark);
+    transition: transform 0.15s, box-shadow 0.15s;
 }
 
-.modal-close-btn:hover {
-    transform: scale(1.05);
+.btn-primary:hover {
+    transform: translate(-2px, -2px);
+    box-shadow: 5px 5px 0px var(--border-dark);
 }
 
-.auth-tag {
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
-    background: var(--accent-orange);
-    color: #ffffff;
-    border: 1.5px solid var(--border-dark);
-    border-radius: 20px;
-    padding: 4px 14px;
-    font-size: 0.75rem;
-    font-weight: 800;
-    text-transform: uppercase;
-    letter-spacing: 1px;
-    margin-bottom: 1rem;
-}
-
-.auth-title {
-    font-family: var(--font-serif);
-    font-size: 2.2rem;
-    line-height: 1.1;
-    margin-bottom: 0.4rem;
-    color: var(--text-dark);
-}
-
-.auth-subtitle {
-    color: var(--text-muted);
-    font-size: 0.88rem;
-    font-weight: 600;
-    margin-bottom: 1.5rem;
-}
-
-.auth-footer-text {
-    font-size: 0.85rem;
-    font-weight: 600;
-    color: var(--text-muted);
-    text-align: center;
-    margin-top: 1.2rem;
-}
-
-.auth-card .btn-primary {
-    width: 100%;
-    margin-top: 0.5rem;
-}
-
-/* ==========================================================================
-   6. MAIN DASHBOARD LAYOUT & CARDS
-   ========================================================================== */
-
+/* --- DASHBOARD LAYOUT --- */
 .app-layout {
     display: flex;
     width: 100%;
@@ -514,6 +381,7 @@ body {
     margin-bottom: 2rem;
 }
 
+/* STATS ROW */
 .stats-row {
     display: grid;
     grid-template-columns: repeat(4, 1fr);
@@ -527,8 +395,6 @@ body {
     border-radius: 20px;
     padding: 1.2rem 1.5rem;
     box-shadow: 4px 4px 0px var(--border-dark);
-    display: flex;
-    flex-direction: column;
 }
 
 .stat-card .stat-label {
@@ -541,7 +407,7 @@ body {
 
 .stat-card .stat-number {
     font-family: var(--font-serif);
-    font-size: 2.2rem;
+    font-size: 2.5rem;
     font-weight: 400;
     margin: 0.2rem 0;
 }
@@ -554,6 +420,7 @@ body {
     gap: 4px;
 }
 
+/* GRID LAYOUT */
 .dashboard-grid {
     display: grid;
     grid-template-columns: 1.4fr 1fr;
@@ -575,7 +442,7 @@ body {
     margin-bottom: 0.4rem;
 }
 
-/* --- EMOTION LOGGING OPTIONS --- */
+/* EMOTION LOGGING OPTIONS */
 .moods-selector {
     display: grid;
     grid-template-columns: repeat(5, 1fr);
@@ -623,7 +490,66 @@ body {
     font-weight: 800;
 }
 
-/* --- CALENDAR INTERFACE --- */
+.note-area textarea {
+    width: 100%;
+    height: 90px;
+    border: 2px solid var(--border-dark);
+    border-radius: 16px;
+    padding: 0.8rem 1rem;
+    font-size: 0.9rem;
+    font-weight: 600;
+    background: var(--canvas-bg);
+    resize: none;
+    outline: none;
+    margin-bottom: 1rem;
+}
+
+/* TABLES */
+.logs-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 1rem;
+}
+
+.logs-table th {
+    text-align: left;
+    font-size: 0.7rem;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    font-weight: 800;
+    color: var(--text-muted);
+    padding-bottom: 0.8rem;
+    border-bottom: 2px solid var(--border-dark);
+}
+
+.logs-table td {
+    padding: 0.8rem 0;
+    font-size: 0.85rem;
+    font-weight: 600;
+    border-bottom: 1px solid #e5e7eb;
+}
+
+.badge-emotion {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 4px 10px;
+    border: 1.5px solid var(--border-dark);
+    border-radius: 12px;
+    font-size: 0.75rem;
+    font-weight: 800;
+}
+
+.btn-delete {
+    background: #f88a8a;
+    border: 1.5px solid var(--border-dark);
+    border-radius: 8px;
+    padding: 4px 8px;
+    cursor: pointer;
+    box-shadow: 1px 1px 0px var(--border-dark);
+}
+
+/* CALENDAR INTERFACE */
 .calendar-header {
     display: flex;
     justify-content: space-between;
@@ -690,7 +616,7 @@ body {
     justify-content: center;
 }
 
-/* --- INSIGHTS BOXES --- */
+/* INSIGHTS BOXES */
 .insight-box {
     background: var(--sidebar-bg);
     border: 2px solid var(--border-dark);
@@ -722,39 +648,86 @@ body {
     color: var(--text-dark);
 }
 
-/* --- GRAPH & CHART COMPONENTS --- */
-.graph-container {
-    height: 140px;
+/* POPUP MODAL CARDS */
+.modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background: rgba(34, 28, 40, 0.4);
+    backdrop-filter: blur(4px);
     display: flex;
-    align-items: flex-end;
-    justify-content: space-between;
-    padding-top: 1rem;
-    border-bottom: 2px dashed var(--border-dark);
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+    padding: 1.5rem;
 }
 
-.graph-column {
+.modal-card {
+    background: #ffffff;
+    border: 2px solid var(--border-dark);
+    border-radius: 28px;
+    padding: 2rem;
+    max-width: 480px;
+    width: 100%;
+    box-shadow: 8px 8px 0px var(--border-dark);
+    animation: popIn 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    position: relative;
+}
+
+@keyframes popIn {
+    from { transform: scale(0.9); opacity: 0; }
+    to { transform: scale(1); opacity: 1; }
+}
+
+.modal-close-btn {
+    position: absolute;
+    top: 1.2rem;
+    right: 1.2rem;
+    background: var(--canvas-bg);
+    border: 2px solid var(--border-dark);
+    border-radius: 50%;
+    width: 32px;
+    height: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    box-shadow: 2px 2px 0px var(--border-dark);
+}
+
+.chat-history {
+    max-height: 240px;
+    overflow-y: auto;
+    margin: 1.2rem 0;
     display: flex;
     flex-direction: column;
-    align-items: center;
-    gap: 6px;
-    width: 100%;
+    gap: 0.8rem;
+    padding-right: 0.4rem;
 }
 
-.graph-bar {
-    width: 24px;
-    border: 2px solid var(--border-dark);
-    border-radius: 6px;
+.chat-bubble {
+    padding: 0.8rem 1rem;
+    border-radius: 16px;
+    border: 1.5px solid var(--border-dark);
+    font-size: 0.85rem;
+    font-weight: 600;
+    max-width: 85%;
+    line-height: 1.4;
 }
 
-.graph-label {
-    font-size: 0.7rem;
-    font-weight: 800;
+.chat-bubble.assistant {
+    background: var(--sidebar-bg);
+    align-self: flex-start;
 }
 
-/* ==========================================================================
-   7. RESPONSIVE BREAKPOINTS
-   ========================================================================== */
+.chat-bubble.user {
+    background: var(--accent-yellow);
+    align-self: flex-end;
+}
 
+/* RESPONSIVE LAYOUT BREAKPOINTS */
 @media (max-width: 1024px) {
     .stats-row {
         grid-template-columns: repeat(2, 1fr);
@@ -779,6 +752,10 @@ body {
         font-size: 1.4rem;
     }
 
+    .nav-pill span {
+        display: inline;
+    }
+
     .main-content {
         padding: 1.5rem;
     }
@@ -795,46 +772,315 @@ body {
         grid-template-columns: repeat(3, 1fr);
     }
 
-    .steps-grid {
-        grid-template-columns: 1fr;
+    .auth-card {
+        padding: 1.8rem 1.5rem;
     }
 }
 
-/* ==========================================
-   MOOD ASSISTANT MODAL
-   ========================================== */
+.sidebar {
+    display: flex;
+    flex-direction: column;
+   
+    height: 100vh;
+    
+    overflow-y: auto;
+   
+    min-height: 100vh;
+   
+    position: sticky;
+    top: 0;
+}
 
-.modal-overlay {
-    position: fixed;
-    inset: 0;
-    background: rgba(0, 0, 0, 0.55);
+.sidebar .brand-logo,
+.sidebar .nav-pill {
+    
+    flex-shrink: 0;
+}
+
+
+.sidebar-logout {
+    margin-top: auto !important;
+    
+    margin-bottom: 0.5rem;
+    flex-shrink: 0;
+}
+
+/* ============================================================
+   HISTORY PAGINATION
+   ============================================================ */
+.history-pagination {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 1.5rem;
+    margin-top: 1.5rem;
+    padding-top: 1rem;
+    border-top: 2px solid var(--border-dark);
+}
+
+.history-pagination .cal-nav-btn {
+    background: var(--canvas-bg);
+    border: 2px solid var(--border-dark);
+    width: 38px;
+    height: 38px;
+    border-radius: 12px;
+    cursor: pointer;
+    font-weight: 800;
+    font-size: 1.2rem;
+    box-shadow: 2px 2px 0px var(--border-dark);
+    transition: all 0.15s ease;
     display: flex;
     align-items: center;
     justify-content: center;
-    z-index: 1000;
-    padding: 20px;
 }
 
-.modal-overlay.hidden {
-    display: none !important;
+.history-pagination .cal-nav-btn:hover:not(:disabled) {
+    transform: translate(-2px, -2px);
+    box-shadow: 4px 4px 0px var(--border-dark);
 }
 
-.modal-card {
-    width: 100%;
-    max-width: 500px;
-    max-height: 80vh;
-    background: var(--bg-card);
+.history-pagination .cal-nav-btn:disabled {
+    opacity: 0.3;
+    cursor: not-allowed;
+}
+
+/* ============================================================
+   Cards view - day group
+   ============================================================ */
+.day-group-card {
+    background: white;
+    border: 2px solid var(--border-dark);
+    border-radius: 20px;
+    padding: 1.5rem;
+    box-shadow: 3px 3px 0 var(--border-dark);
+    margin-bottom: 1rem;
+}
+
+.day-group-header {
+    font-size: 1.1rem;
+    font-weight: 800;
+    padding-bottom: 0.8rem;
+    border-bottom: 2px solid var(--border-dark);
+    margin-bottom: 1rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.day-group-entries {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+    gap: 1rem;
+}
+
+/* Individual entry card */
+.day-entry-card {
+    background: var(--canvas-bg);
+    border: 2px solid var(--border-dark);
     border-radius: 16px;
-    padding: 24px;
-    box-shadow: 0 20px 50px rgba(0, 0, 0, 0.25);
-    overflow-y: auto;
-    color: var(--text-dark);
+    padding: 1rem;
+    box-shadow: 2px 2px 0 var(--border-dark);
+    position: relative;              /* for absolute positioning */
+    display: flex;
+    flex-direction: column;
+    min-height: 140px;
 }
 
-.modal-close-btn {
+/* Time in top-right corner */
+.day-entry-card .entry-time {
+    position: absolute;
+    top: 0.7rem;
+    right: 0.8rem;
+    font-size: 0.7rem;
+    color: var(--text-muted);
+    font-weight: 700;
     background: transparent;
-    border: none;
-    cursor: pointer;
+}
+
+/* Emotion title */
+.day-entry-card .entry-emotion {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-weight: 800;
+    font-size: 1rem;
+    margin-bottom: 0.5rem;
+    padding-right: 3.5rem;           /* avoid overlapping time */
+}
+
+/* Note */
+.day-entry-card .entry-note {
+    font-size: 0.8rem;
     color: var(--text-dark);
-    font-size: 20px;
+    opacity: 0.8;
+    font-weight: 600;
+    line-height: 1.4;
+    flex: 1;                          /* push footer down */
+    margin-bottom: 0.6rem;
+}
+
+/* Footer with delete button in bottom-right */
+.day-entry-card .entry-footer {
+    display: flex;
+    justify-content: flex-end;
+    margin-top: auto;
+}
+
+/* Delete button - matches list view style */
+.day-entry-card .btn-delete {
+    background: #f88a8a;
+    border: 1.5px solid var(--border-dark);
+    border-radius: 8px;
+    padding: 4px 8px;
+    cursor: pointer;
+    box-shadow: 1px 1px 0px var(--border-dark);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    transition: transform 0.15s, box-shadow 0.15s;
+}
+
+.day-entry-card .btn-delete:hover {
+    transform: translate(-1px, -1px);
+    box-shadow: 2px 2px 0px var(--border-dark);
+}
+
+/* ============================================================
+   CARDS VIEW - No scroll, auto-fit layout
+   ============================================================ */
+
+#historyCardsContainer {
+    display: flex;
+    flex-direction: column;
+    min-height: 600px;
+    max-height: 600px;
+    overflow: hidden;           
+}
+
+#history-cards-body {
+    flex: 1;
+    overflow: hidden;          
+    display: flex;
+    flex-direction: column;
+    padding: 0;
+}
+
+/* Day group takes full height */
+.day-group-card {
+    background: white;
+    border: 2px solid var(--border-dark);
+    border-radius: 20px;
+    padding: 1.5rem;
+    box-shadow: 3px 3px 0 var(--border-dark);
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    overflow: hidden;
+}
+
+.day-group-header {
+    font-size: 1.1rem;
+    font-weight: 800;
+    padding-bottom: 0.8rem;
+    border-bottom: 2px solid var(--border-dark);
+    margin-bottom: 1rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-shrink: 0;
+}
+
+/* Auto-fit grid: adjusts columns AND rows */
+.day-group-entries {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    grid-auto-rows: 1fr;       
+    gap: 0.8rem;
+    flex: 1;
+    overflow: hidden;
+    align-content: stretch;
+}
+
+/* Compact card */
+.day-entry-card {
+    background: var(--canvas-bg);
+    border: 2px solid var(--border-dark);
+    border-radius: 16px;
+    padding: 0.9rem;
+    box-shadow: 2px 2px 0 var(--border-dark);
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    min-height: 0;              
+    overflow: hidden;
+}
+
+/* Time top-right */
+.day-entry-card .entry-time {
+    position: absolute;
+    top: 0.6rem;
+    right: 0.7rem;
+    font-size: 0.65rem;
+    color: var(--text-muted);
+    font-weight: 700;
+}
+
+/* Emotion */
+.day-entry-card .entry-emotion {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-weight: 800;
+    font-size: 0.9rem;
+    margin-bottom: 0.4rem;
+    padding-right: 3.5rem;
+    flex-shrink: 0;
+}
+
+/* Note - auto truncate if too long */
+.day-entry-card .entry-note {
+    font-size: 0.75rem;
+    color: var(--text-dark);
+    opacity: 0.8;
+    font-weight: 600;
+    line-height: 1.3;
+    flex: 1;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    display: -webkit-box;
+    -webkit-line-clamp: 4;       
+    -webkit-box-orient: vertical;
+    margin-bottom: 0.4rem;
+}
+
+/* Footer with delete button */
+.day-entry-card .entry-footer {
+    display: flex;
+    justify-content: flex-end;
+    flex-shrink: 0;
+}
+
+.day-entry-card .btn-delete {
+    background: #f88a8a;
+    border: 1.5px solid var(--border-dark);
+    border-radius: 8px;
+    padding: 3px 7px;
+    cursor: pointer;
+    box-shadow: 1px 1px 0px var(--border-dark);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.day-entry-card .btn-delete:hover {
+    transform: translate(-1px, -1px);
+    box-shadow: 2px 2px 0px var(--border-dark);
+}
+
+/* Pagination stays at bottom */
+#cardsPagination {
+    flex-shrink: 0;
+    margin-top: 1rem;
+    padding-top: 1rem;
+    border-top: 2px solid var(--border-dark);
 }

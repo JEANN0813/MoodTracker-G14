@@ -15,6 +15,9 @@ from datetime import datetime
 from flask import Blueprint, request, jsonify
 from datetime import datetime, time
 from alarm import alarm_bp
+import apscheduler
+from apscheduler.schedulers.background import BackgroundScheduler
+import re
 
 client = OpenAI(
     api_key=os.environ.get("OPENAI_API_KEY")
@@ -24,8 +27,13 @@ gemini_client = genai.Client(
     api_key=os.environ.get("GEMINI_API_KEY")
 )
 
-app = Flask(__name__, static_folder='static', static_url_path='')
+BASE_DIR = os.path.abspath(os.path.dirname(__file__))
 
+app = Flask(
+    __name__,
+    static_folder=os.path.join(BASE_DIR, 'static'),
+    static_url_path=''
+)
 
 # Email configuration
 app.config['MAIL_SERVER'] = 'smtp.gmail.com'
@@ -62,6 +70,12 @@ class User(db.Model):
     
     reset_token = db.Column(db.String(100), nullable=True)
     reset_token_expiration = db.Column(db.DateTime, nullable=True)
+
+    birthday = db.Column(db.String(20), nullable=True)    
+    gender = db.Column(db.String(20), nullable=True)       
+    avatar = db.Column(db.String(10), nullable=True)       
+    title = db.Column(db.String(50), nullable=True)       
+    
     
     emotion_logs = db.relationship('EmotionLog', backref='user', lazy=True, cascade='all, delete-orphan')
 
@@ -89,6 +103,7 @@ class Alarm(db.Model):
     repeat_days = db.Column(db.String(20), default="") 
     
     is_enabled = db.Column(db.Boolean, default=True)
+    last_triggered_at = db.Column(db.DateTime, nullable=True)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
     def to_dict(self):
@@ -109,12 +124,13 @@ def get_current_user():
 @app.route('/', defaults={'path': ''})
 @app.route('/<path:path>')
 def serve_static(path):
+    static_dir = os.path.join(BASE_DIR, 'static')
     if path == '':
-        return send_from_directory('static', 'index.html')
-    file_path = os.path.join('static', path)
-    if os.path.exists(file_path):
-        return send_from_directory('static', path)
-    return jsonify({'error': 'Not found'}), 404
+        return send_from_directory(static_dir, 'index.html')
+    file_path = os.path.join(static_dir, path)
+    if os.path.isfile(file_path):
+        return send_from_directory(static_dir, path)
+    return jsonify({'error': 'Not found', 'looked_for': file_path}), 404
 
 @app.route('/api/status')
 def status():
@@ -129,6 +145,14 @@ def register():
     
     if not username or not password or not email:
         return jsonify({'error': 'Username, email and password required'}), 400
+
+    is_valid, error_msg = validate_password_strength(password)
+    if not is_valid:
+      return jsonify({'error': error_msg}), 400
+
+
+    if not re.match(r'^[^@\s]+@[^@\s]+\.[^@\s]+$', email):
+      return jsonify({'error': 'Invalid email format'}), 400
     
     if User.query.filter_by(username=username).first():
         return jsonify({'error': 'Username already exists'}), 400
@@ -136,6 +160,7 @@ def register():
     if User.query.filter_by(email=email).first():
         return jsonify({"error": "Email already registered"}), 400
     
+
     user = User(
         username=username, 
         email=email, 
@@ -184,8 +209,41 @@ def get_user():
         
     if request.method == 'PUT':
         data = request.get_json() or {}
-        user.username = data.get('username', user.username)
-        user.email = data.get('email', user.email)
+        
+        # 1. Username
+        if 'username' in data and data['username']:
+            user.username = data['username']
+        
+        # 2. Email
+        if 'email' in data and data['email']:
+            user.email = data['email']
+        
+        # 3. Password
+        if 'password' in data and data['password']:
+            user.password_hash = generate_password_hash(data['password'])
+        
+        # 4. Birthday
+        if 'birthday' in data:
+            user.birthday = data['birthday']
+        
+        # 5. Gender
+        if 'gender' in data:
+            user.gender = data['gender']
+        
+        # 6. Avatar
+        if 'avatar' in data:
+            user.avatar = data['avatar']
+        
+        
+        # 7. Title
+        if 'title' in data:
+            user.title = data['title']
+        
+        try:
+            db.session.commit()
+        except Exception as e:
+            db.session.rollback()
+            return jsonify({'error': f'Failed to update: {str(e)}'}), 400
         
         if 'password' in data and data['password']:
             user.password_hash = generate_password_hash(data['password'])
@@ -196,6 +254,10 @@ def get_user():
         'id': user.id,
         'username': user.username,
         'email': user.email,
+        'birthday': user.birthday or '01/01/2000',
+        'gender': user.gender or 'Female',
+        'avatar': user.avatar or '🦊',
+        'title': user.title or 'Bronze Tracker',
         'created_at': user.created_at.isoformat() if user.created_at else None
     }), 200
 
@@ -250,6 +312,10 @@ def reset_password():
     
     if not email or not code or not new_password:
         return jsonify({'error': 'All fields are required'}), 400
+
+    is_valid, error_msg = validate_password_strength(new_password)
+    if not is_valid:
+      return jsonify({'error': error_msg}), 400
     
     # Check verification code
     record = verification_codes.get(email)
@@ -275,6 +341,25 @@ def reset_password():
     del verification_codes[email]
     
     return jsonify({'success': True, 'message': 'Password reset successfully!'}), 200
+
+
+
+# PASSWORD VALIDATION
+def validate_password_strength(password):
+    """ (is_valid, error_message)"""
+    if len(password) < 8:
+        return False, "Password must be at least 8 characters long."
+    if not re.search(r'[A-Z]', password):
+        return False, "Password must contain at least one uppercase letter."
+    if not re.search(r'[a-z]', password):
+        return False, "Password must contain at least one lowercase letter."
+    if not re.search(r'[0-9]', password):
+        return False, "Password must contain at least one number."
+    if not re.search(r'[!@#$%^&*(),.?":{}|<>]', password):
+        return False, "Password must contain at least one special character."
+    return True, None
+
+
 # Logs Routes
 @app.route('/api/logs', methods=['POST'])
 def add_emotion_log():
@@ -595,15 +680,15 @@ def get_suggestions():
     happy_count = stats.get('Happy', 0) + stats.get('Calm', 0)
     
     if sad_count > 5:
-        suggestions.append('😢 You have been feeling down. Try talking to a friend.')
+        suggestions.append(' You have been feeling down. Try talking to a friend.')
     if stats.get('Anxious', 0) > 3:
-        suggestions.append('😰 You seem anxious. Try deep breathing exercises.')
+        suggestions.append(' You seem anxious. Try deep breathing exercises.')
     if happy_count > 5 and happy_count > sad_count:
-        suggestions.append('😊 You are doing great! Keep up the positive energy!')
+        suggestions.append(' You are doing great! Keep up the positive energy!')
     if not suggestions:
-        suggestions.append('📊 Keep logging your mood to get personalized suggestions!')
+        suggestions.append(' Keep logging your mood to get personalized suggestions!')
     
-    suggestions.append('💪 Your feelings are valid. Take care of yourself today.')
+    suggestions.append(' Your feelings are valid. Take care of yourself today.')
     
     return jsonify({
         'suggestions': suggestions,
@@ -611,11 +696,72 @@ def get_suggestions():
     }), 200
 
 with app.app_context():
-    db.create_all()
+    db.create_all
+
+
+
+
 
 
 # Alarm Routes
 alarm_bp = Blueprint('alarm', __name__)
+
+@app.route('/api/alarms', methods=['GET', 'POST'])
+def manage_alarms():
+    user = get_current_user()
+    if not user:
+        return jsonify({'error': 'Unauthorized'}), 401
+
+    if request.method == 'GET':
+        alarms = Alarm.query.filter_by(user_id=user.id).all()
+        return jsonify([alarm.to_dict() for alarm in alarms]), 200
+
+    if request.method == 'POST':
+        data = request.get_json() or {}
+        time_str = data.get('time')
+        title = data.get('title', 'Mood Reminder')
+        repeat_days = ",".join(data.get('repeat_days', []))
+
+        if not time_str:
+            return jsonify({'error': 'Time is required'}), 400
+
+        try:
+            alarm_time = datetime.strptime(time_str, '%H:%M').time()
+        except ValueError:
+            return jsonify({'error': 'Invalid time format. Use HH:MM'}), 400
+
+        alarm = Alarm(
+            user_id=user.id,
+            title=title,
+            alarm_time=alarm_time,
+            repeat_days=repeat_days,
+            is_enabled=True
+        )
+        db.session.add(alarm)
+        db.session.commit()
+
+        return jsonify({'success': True, 'alarm': alarm.to_dict()}), 201
+
+@app.route('/api/alarms/<int:alarm_id>', methods=['DELETE', 'PUT'])
+def handle_single_alarm(alarm_id):
+    user = get_current_user()
+    if not user:
+        return jsonify({'error': 'Unauthorized'}), 401
+
+    alarm = Alarm.query.filter_by(id=alarm_id, user_id=user.id).first()
+    if not alarm:
+        return jsonify({'error': 'Alarm not found'}), 404
+
+    if request.method == 'DELETE':
+        db.session.delete(alarm)
+        db.session.commit()
+        return jsonify({'message': 'Alarm deleted'}), 200
+
+    if request.method == 'PUT':
+        data = request.get_json() or {}
+        alarm.is_enabled = data.get('is_enabled', alarm.is_enabled)
+        db.session.commit()
+        return jsonify({'success': True, 'alarm': alarm.to_dict()}), 200
 
 
 @alarm_bp.route('/api/alarms', methods=['POST'])
@@ -662,45 +808,79 @@ def delete_alarm(alarm_id):
     return jsonify({'message': 'Alarm deleted'}), 200  
 
 @alarm_bp.route('/api/alarms/check', methods=['GET'])
-def check_due_alarms():
+def check_alarms():
+    from flask import session
+    user_id = session.get('user_id', 1)
     now = datetime.now()
-    current_time = now.time().replace(second=0, microsecond=0)
-    current_weekday = str(now.weekday() + 1) 
+    current_hour = now.hour
+    current_minute = now.minute
+    current_weekday = str(now.isoweekday())
 
-    active_alarms = Alarm.query.filter_by(user_id=1, is_enabled=True).all()
-    triggered = []
+    enabled_alarms = Alarm.query.filter_by(user_id=user_id, is_enabled=True).all()
+    triggered_alarms = []
 
-    for alarm in active_alarms:
+    for alarm in enabled_alarms:
         
-        if alarm.alarm_time.hour == current_time.hour and alarm.alarm_time.minute == current_time.minute:
+        if alarm.alarm_time.hour != current_hour or alarm.alarm_time.minute != current_minute:
+            continue
 
-            repeat_list = alarm.repeat_days.split(',') if alarm.repeat_days else []
-            if not repeat_list or current_weekday in repeat_list:
-                triggered.append(alarm.to_dict())
-                
-                
-                if not repeat_list:
-                    alarm.is_enabled = False
+        
+        if alarm.last_triggered_at:
+            delta = (now - alarm.last_triggered_at).total_seconds()
+            if delta < 60:         
+                continue
+
+        
+        repeat_list = alarm.repeat_days.split(',') if alarm.repeat_days else []
+        if not repeat_list or current_weekday in repeat_list:
+            alarm.last_triggered_at = now    
+            triggered_alarms.append(alarm.to_dict())
+
+            
+            if not repeat_list:
+                alarm.is_enabled = False
 
     db.session.commit()
-    return jsonify({'triggered': len(triggered) > 0, 'alarms': triggered})
+    return jsonify({
+        'triggered': len(triggered_alarms) > 0,
+        'alarms': triggered_alarms
+    }), 200
 
-app.register_blueprint(alarm_bp)
+def check_and_push_alarms():
+    """Background daemon process: runs every minute via APScheduler."""
+    with app.app_context():
+        now = datetime.now()
+        current_hour = now.hour
+        current_minute = now.minute
+        current_weekday = str(now.isoweekday())
+
+        enabled_alarms = Alarm.query.filter_by(is_enabled=True).all()
+
+        for alarm in enabled_alarms:
+            if alarm.alarm_time.hour == current_hour and alarm.alarm_time.minute == current_minute:
+                repeat_list = alarm.repeat_days.split(',') if alarm.repeat_days else []
+                
+                if not repeat_list or current_weekday in repeat_list:
+                    print(f"[Background Alert] Alarm triggered: {alarm.title} at {alarm.alarm_time}")
+                    
+                   
+                    
+                    if not repeat_list:
+                        alarm.is_enabled = False
+
+        db.session.commit()
+
+scheduler = BackgroundScheduler()
+scheduler.add_job(func=check_and_push_alarms, trigger="interval", seconds=30)
+scheduler.start()
+
+
+
+    
 
 if __name__ == '__main__':
-    print()
-    print("MoodTracker Server Starting...")
-    print()
-    print(f"Database: {app.config['SQLALCHEMY_DATABASE_URI']}")
-    print(f"Server: http://127.0.0.1:5000")
-    print(f"Static folder: static/")
-    print(f"Debug Mode: ON")
-    print()
-    print("Access the web app:")
-    print("  http://127.0.0.1:5000")
-    print()
-    print("Press Ctrl+C to stop the server")
-    print()
+     
+    app.run(debug=True)
     print()
     print("MoodTracker Server Starting...")
     print()
@@ -716,3 +896,7 @@ if __name__ == '__main__':
     print()
     
     app.run(debug=True, host='0.0.0.0', port=5000)
+
+@app.route('/api/logs')
+def get_logs():
+    return jsonify({"message": "Connected to app.py!"})
