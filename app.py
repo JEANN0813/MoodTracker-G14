@@ -794,6 +794,29 @@ scheduler = BackgroundScheduler()
 scheduler.add_job(func=check_and_push_alarms, trigger="interval", seconds=30)
 scheduler.start()
 
+@app.route('/api/alarms/check', methods=['GET'])
+def check_triggered_alarms():
+    user = get_current_user()
+    if not user:
+        return jsonify({'triggered': False}), 401
+
+    now = datetime.now()
+    current_time = now.time().replace(second=0, microsecond=0)
+
+    
+    triggered_alarms = Alarm.query.filter_by(
+        user_id=user.id, 
+        is_enabled=True, 
+        alarm_time=current_time
+    ).all()
+
+    if triggered_alarms:
+        return jsonify({
+            'triggered': True, 
+            'alarms': [a.to_dict() for a in triggered_alarms]
+        })
+
+    return jsonify({'triggered': False})
 
 
     

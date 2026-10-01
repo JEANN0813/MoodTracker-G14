@@ -2,12 +2,10 @@
 // MOODTRACKER - MAIN JAVASCRIPT
 // ==========================================
 
-
 // ==========================================
 // AHMED RAYYAN
 // ==========================================
-
-// 1. STATE & GLOBAL VARIABLES
+//  STATE & GLOBAL VARIABLES 
 let activeUser = "User";
 let activeUserId = null;
 let selectedEmotion = null;
@@ -17,10 +15,8 @@ let activeTargetDate = new Date().toISOString().split('T')[0];
 
 const DAILY_EMOTION_LIMIT = 999;
 
-// ==========================================================================
-// MOOD CHART STATE
-// ==========================================================================
 
+// MOOD CHART STATE 
 let chartRange = 'monthly';
 
 const MOOD_CHART_VALUES = {
@@ -52,380 +48,9 @@ const EMOTION_ICON_MAP = {
 };
 
 
-// 2. AUTHENTICATION & TAB SWITCHING
-function switchAuthTab(tab) {
-    const vLogin = document.getElementById('authViewLogin');
-    const vReg = document.getElementById('authViewRegister');
-    const vReset = document.getElementById('authViewReset');
-    const vResetStandalone = document.getElementById('authViewResetStandalone');
-    const tabHeader = document.getElementById('authTabsHeader');
 
-    
-    if (vLogin) vLogin.classList.add('hidden');
-    if (vReg) vReg.classList.add('hidden');
-    if (vReset) vReset.classList.add('hidden');
-    if (vResetStandalone) vResetStandalone.classList.add('hidden');
 
-    if (tabHeader) {
-        tabHeader.querySelectorAll('.auth-tab-btn').forEach(btn => btn.classList.remove('active'));
-        tabHeader.classList.remove('hidden');   
-    }
-
-    if (tab === 'login') {
-        if (vLogin) vLogin.classList.remove('hidden');
-        if (tabHeader && tabHeader.children[0]) tabHeader.children[0].classList.add('active');
-    } else if (tab === 'register') {
-        if (vReg) vReg.classList.remove('hidden');
-        if (tabHeader && tabHeader.children[1]) tabHeader.children[1].classList.add('active');
-    } else if (tab === 'reset') {
-        
-        if (vReset) vReset.classList.remove('hidden');
-        if (tabHeader && tabHeader.children[2]) tabHeader.children[2].classList.add('active');
-
-        // Reset 到 Step 1
-        const step1 = document.getElementById('resetStep1');
-        const step2 = document.getElementById('resetStep2');
-        if (step1) step1.classList.remove('hidden');
-        if (step2) step2.classList.add('hidden');
-    } else if (tab === 'reset-standalone') {
-        
-        if (vResetStandalone) vResetStandalone.classList.remove('hidden');
-        if (tabHeader) tabHeader.classList.add('hidden');
-
-        const step1 = document.getElementById('standaloneResetStep1');
-        const step2 = document.getElementById('standaloneResetStep2');
-        if (step1) step1.classList.remove('hidden');
-        if (step2) step2.classList.add('hidden');
-    }
-
-    if (window.lucide) lucide.createIcons();
-}
-async function handleAuthSubmit(event) {
-    event.preventDefault();
-    const emailInput = document.getElementById('loginEmail');
-    const passwordInput = document.getElementById('loginPassword');
-    
-    const usernameOrEmail = emailInput ? emailInput.value.trim() : '';
-    const password = passwordInput ? passwordInput.value.trim() : '';
-
-    try {
-        const response = await fetch('/api/login', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ username: usernameOrEmail, password: password })
-        });
-
-        const data = await response.json();
-
-        if (response.ok && data.success) {
-            activeUser = data.user.username;
-            activeUserId = data.user.id;
-            showToastCard('Login successful!');
-            enterSanctuary();
-        } else {
-            showToastCard('❌ ' + (data.error || 'Login failed'));
-        }
-    } catch (err) {
-        showToastCard('❌ Network error during login.');
-    }
-}
-
-async function handleRegisterSubmit(event) {
-    event.preventDefault();
-    const nameInput = document.getElementById('regFullName');
-    const emailInput = document.getElementById('regEmail');
-    const passwordInput = document.getElementById('regPassword');
-
-    const username = nameInput ? nameInput.value.trim() : '';
-    const email = emailInput ? emailInput.value.trim() : '';
-    const password = passwordInput ? passwordInput.value.trim() : '';
-
-    const pwErr = validatePassword(password);
-    if (pwErr) {
-    showToastCard('❌ ' + pwErr);
-    return;
-    }
-
-    try {
-        const response = await fetch('/api/register', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ username, email, password })
-        });
-
-        const data = await response.json();
-
-        if (response.ok && data.success) {
-            showToastCard('✅ Account created successfully! Please log in.');
-            switchAuthTab('login');
-        } else {
-            showToastCard('❌ ' + (data.error || 'Registration failed'));
-        }
-    } catch (err) {
-        showToastCard('❌ Network error during registration.');
-    }
-}
-
-async function handleResetSubmit(event) {
-    event.preventDefault();
-    const email = document.getElementById('resetEmail').value.trim();
-
-    if (!email) {
-        showToastCard('Please enter your email address');
-        return;
-    }
-
-    try {
-        const response = await fetch('/api/send-code', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ email: email })
-        });
-
-        const data = await response.json();
-        
-        if (response.ok) {
-            showToastCard('✅ Verification code sent! Check your email.');
-            document.getElementById('resetStep1').classList.add('hidden');
-            document.getElementById('resetStep2').classList.remove('hidden');
-        } else {
-            showToastCard('❌ ' + (data.error || 'Failed to send code'));
-        }
-    } catch (err) {
-        showToastCard('❌ Server error. Please try again later.');
-    }
-}
-
-async function handlePasswordResetConfirm(event) {
-    event.preventDefault();
-    const email = document.getElementById('resetEmail').value.trim();
-    const code = document.getElementById('resetCode').value.trim();
-    const newPassword = document.getElementById('resetNewPassword').value.trim();
-
-    if (!email || !code || !newPassword) {
-        showToastCard('Please fill in all fields.');
-        return;
-    }
-
-    const pwErr = validatePassword(newPassword);
-    if (pwErr) {
-      showToastCard('❌ ' + pwErr);
-      return;
-    }
-
-    try {
-        const response = await fetch('/api/reset-password', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ email, code, password: newPassword })
-        });
-
-        const data = await response.json();
-        
-        if (response.ok) {
-            showToastCard('✅ Password updated! Redirecting to login...');
-            document.getElementById('resetStep1').classList.remove('hidden');
-            document.getElementById('resetStep2').classList.add('hidden');
-            setTimeout(() => { switchAuthTab('login'); }, 1500);
-        } else {
-            showToastCard('❌ ' + (data.error || 'Failed to reset password.'));
-        }
-    } catch (err) {
-        showToastCard('❌ Server error. Please try again later.');
-    }
-}
-
-function validatePassword(password) {
-    if (password.length < 8) return "Password must be at least 8 characters long.";
-    if (!/[A-Z]/.test(password)) return "Password must contain at least one uppercase letter.";
-    if (!/[a-z]/.test(password)) return "Password must contain at least one lowercase letter.";
-    if (!/[0-9]/.test(password)) return "Password must contain at least one number.";
-    if (!/[!@#$%^&*(),.?":{}|<>]/.test(password)) return "Password must contain at least one special character.";
-    return null;
-}
-
-function checkPasswordStrength(inputId, hintsId) {
-    const input = document.getElementById(inputId);
-    const hintsBox = document.getElementById(hintsId);
-    if (!input || !hintsBox) return;
-
-    const value = input.value;
-
-   
-    const rules = {
-        length: value.length >= 8,
-        upper: /[A-Z]/.test(value),
-        lower: /[a-z]/.test(value),
-        number: /[0-9]/.test(value),
-        special: /[!@#$%^&*(),.?":{}|<>]/.test(value)
-    };
-
-   
-    hintsBox.querySelectorAll('.hint').forEach(hint => {
-        const rule = hint.dataset.rule;
-        hint.classList.remove('valid', 'invalid');
-
-        if (!value) {
-           
-            return;
-        }
-
-        if (rules[rule]) {
-            hint.classList.add('valid');
-        } else {
-            hint.classList.add('invalid');
-        }
-    });
-}
-
-// ============================================================
-// STANDALONE RESET PASSWORD (from Profile)
-// ============================================================
-
-async function handleStandaloneResetSubmit(event) {
-    event.preventDefault();
-    const email = document.getElementById('standaloneResetEmail').value.trim();
-
-    if (!email) {
-        showToastCard('Please enter your email address');
-        return;
-    }
-
-    try {
-        const response = await fetch('/api/send-code', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ email: email })
-        });
-
-        const data = await response.json();
-
-        if (response.ok) {
-            showToastCard('✅ Verification code sent! Check your email.');
-            document.getElementById('standaloneResetStep1').classList.add('hidden');
-            document.getElementById('standaloneResetStep2').classList.remove('hidden');
-        } else {
-            showToastCard('❌ ' + (data.error || 'Failed to send code'));
-        }
-    } catch (err) {
-        showToastCard('❌ Server error. Please try again later.');
-    }
-}
-
-async function handleStandaloneResetConfirm(event) {
-    event.preventDefault();
-    const email = document.getElementById('standaloneResetEmail').value.trim();
-    const code = document.getElementById('standaloneResetCode').value.trim();
-    const newPassword = document.getElementById('standaloneResetNewPassword').value.trim();
-
-    if (!email || !code || !newPassword) {
-        showToastCard('Please fill in all fields.');
-        return;
-    }
-
-    const pwErr = validatePassword(newPassword);
-    if (pwErr) {
-        showToastCard('❌ ' + pwErr);
-        return;
-    }
-
-    try {
-        const response = await fetch('/api/reset-password', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ email, code, password: newPassword })
-        });
-
-        const data = await response.json();
-
-        if (response.ok) {
-            showToastCard('✅ Password updated!');
-            closeAuthModal();
-
-            
-            document.getElementById('standaloneResetStep1').classList.remove('hidden');
-            document.getElementById('standaloneResetStep2').classList.add('hidden');
-        } else {
-            showToastCard('❌ ' + (data.error || 'Failed to reset password.'));
-        }
-    } catch (err) {
-        showToastCard('❌ Server error. Please try again later.');
-    }
-}
-
-function enterSanctuary() {
-    document.getElementById('logoutFab')?.classList.remove('hidden');
-    const userDisp = document.getElementById('userDisplayName');
-    const profileText = document.getElementById('profileUserText');
-    const authScr = document.getElementById('authScreen');
-    const landingScr = document.getElementById('landingScreen'); 
-    const appLay = document.getElementById('appLayout');
-
-    if (userDisp) userDisp.innerText = activeUser;
-    if (profileText) profileText.innerText = `Active User: ${activeUser}`;
-    
-    
-    if (landingScr) landingScr.classList.add('hidden'); 
-    if (authScr) authScr.classList.add('hidden');
-    
-    
-    if (appLay) appLay.classList.remove('hidden');
-
-    fetchLogsAndRefresh();
-}
-
-function logout() {
-    // Show confirmation modal instead of logging out immediately
-    const modal = document.getElementById('logoutConfirmModal');
-    if (modal) {
-        modal.classList.remove('hidden');
-        if (window.lucide) lucide.createIcons();
-    }
-}
-
-function closeLogoutConfirm() {
-    // Close the confirmation modal 
-    const modal = document.getElementById('logoutConfirmModal');
-    if (modal) {
-        modal.classList.add('hidden');
-    }
-}
-
-async function confirmLogout() {
-    // Close modal first
-    closeLogoutConfirm();
-
-    // 1. Call logout API
-    try {
-        await fetch('/api/logout', { method: 'POST' });
-    } catch (e) {
-        console.error('Logout error', e);
-    }
-
-    // 2. Clear local state
-    localStorage.removeItem('currentUser');
-    localStorage.removeItem('activeUser');
-    localStorage.removeItem('userEmail');
-    sessionStorage.clear();
-
-    // 3. Hide app layout & auth screen
-    const appLay = document.getElementById('appLayout');
-    const authScr = document.getElementById('authScreen');
-    const landingScr = document.getElementById('landingScreen');
-
-    if (appLay) appLay.classList.add('hidden');
-    if (authScr) authScr.classList.add('hidden');
-
-    // 4. Show Landing page
-    if (landingScr) {
-        landingScr.classList.remove('hidden');
-    }
-
-    // 5. Show toast message
-    showToastCard('👋 Logged out successfully');
-}
-
-// 3. UI NAVIGATION & SELECTION
+//  UI NAVIGATION & SELECTION
 
 function switchView(viewId, element) {
     const views = ['dashboardView', 'historyView', 'alarmView', 'profileView'];
@@ -460,7 +85,7 @@ function selectEmotion(btn, emotion, iconName) {
 }
 
 
-// 4. MOOD LOGGING & LOCAL DATA HANDLERS
+//  MOOD LOGGING & LOCAL DATA HANDLERS 
 async function fetchLogsAndRefresh() {
     try {
         const response = await fetch('/api/logs', { method: 'GET' });
@@ -488,9 +113,9 @@ async function fetchLogsAndRefresh() {
     }
 }
 
-// ==========================================
-// MONTH MOOD CHART
-// ==========================================
+
+// MONTH MOOD CHART 
+
 
 // Numerical values for each mood
 const MOOD_VALUES = {
@@ -618,9 +243,9 @@ function getWeeklyMoodData(logs) {
 /**
  * Prepare and update the month mood chart.
  */
-// ==========================================
-// MONTH MOOD CHART - CHART.JS
-// ==========================================
+
+// MONTH MOOD CHART - CHART.JS  
+
 
 let moodChartInstance = null;
 
@@ -801,126 +426,9 @@ function resetLoggingDateToToday() {
 }
 
 
-// 5. CALENDAR LOGIC
-function generateCalendar() {
-    const calendarGrid = document.getElementById("calendarDays");
-    if (!calendarGrid) return;
-
-    calendarGrid.innerHTML = "";
-    const year = currentDate.getFullYear();
-    const month = currentDate.getMonth();
-
-    const monthNames = [
-        "January", "February", "March", "April", "May", "June",
-        "July", "August", "September", "October", "November", "December"
-    ];
-
-    const monthYearElem = document.getElementById("monthYear");
-    if (monthYearElem) {
-        monthYearElem.innerText = `${monthNames[month]} ${year}`;
-    }
-
-    const firstDay = new Date(year, month, 1).getDay();
-    const daysInMonth = new Date(year, month + 1, 0).getDate();
-
-    for (let i = 0; i < firstDay; i++) {
-        const emptyCell = document.createElement("div");
-        emptyCell.className = "day-cell empty-cell";
-        emptyCell.style.opacity = "0.2";
-        emptyCell.style.cursor = "default";
-        calendarGrid.appendChild(emptyCell);
-    }
-
-    
-    const EMOTION_PRIORITY = ['Happy', 'Calm', 'Neutral', 'Sad', 'Anxious'];
-
-    for (let day = 1; day <= daysInMonth; day++) {
-        const dayCell = document.createElement("div");
-        dayCell.className = "day-cell";
-
-        const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
-        dayCell.setAttribute("data-date", dateStr);
-
-        if (dateStr === activeTargetDate) dayCell.classList.add("selected-day");
-
-        const dayLogs = moodLogs.filter(l => l.log_date === dateStr);
-
-        if (dayLogs.length > 0) {
-            
-            const emotionCounts = {};
-            dayLogs.forEach(l => {
-                emotionCounts[l.emotion] = (emotionCounts[l.emotion] || 0) + 1;
-            });
-
-           
-            const dominantEmotion = Object.keys(emotionCounts).sort((a, b) => {
-                if (emotionCounts[b] !== emotionCounts[a]) {
-                    return emotionCounts[b] - emotionCounts[a];   
-                }
-                return EMOTION_PRIORITY.indexOf(a) - EMOTION_PRIORITY.indexOf(b);   
-            })[0];
-
-            const iconName = EMOTION_ICON_MAP[dominantEmotion] || 'smile';
-            const totalCount = dayLogs.length;
-
-            let cellContent = `<span>${day}</span><span class="day-mood-icon"><i data-lucide="${iconName}" style="width: 14px;"></i></span>`;
-
-            
-            if (totalCount > 1) {
-                cellContent += `<span class="multi-entry-badge" style="position: absolute; top: 2px; right: 2px; background: #ff6b6b; color: white; font-size: 0.65rem; padding: 1px 5px; border-radius: 8px; font-weight: 800;">${totalCount}</span>`;
-            }
-
-            dayCell.style.position = 'relative';
-            dayCell.innerHTML = cellContent;
-        } else {
-            dayCell.innerHTML = `<span>${day}</span>`;
-        }
-
-        dayCell.onclick = () => openDayDetailModal(dateStr, dayLogs);
-        calendarGrid.appendChild(dayCell);
-    }
-}
-
-function renderStandaloneCalendar() {
-    const container = document.getElementById('standaloneCalendarContainer');
-    if (!container) return;
-
-    if (moodLogs.length === 0) {
-        container.innerHTML = `<p style="color: var(--text-muted); font-weight: 600;">No mood entries logged yet.</p>`;
-        return;
-    }
-
-    container.innerHTML = `
-        <div style="padding: 1.5rem; background: var(--canvas-bg); border: 2px solid var(--border-dark); border-radius: 20px;">
-            <h3 style="margin-bottom: 1rem; font-family: var(--font-serif);">Calendar Logs Overview</h3>
-            <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 1rem;">
-                ${moodLogs.map(l => `
-                    <div style="background: white; border: 2px solid var(--border-dark); padding: 1rem; border-radius: 16px; box-shadow: 2px 2px 0px var(--border-dark);">
-                        <div style="font-size: 0.75rem; font-weight: 800; color: var(--text-muted);">${l.log_date}</div>
-                        <div style="font-size: 1rem; font-weight: 800; margin: 0.4rem 0; display: flex; align-items: center; gap: 6px;">
-                            <i data-lucide="${l.iconName || 'smile'}" style="width: 16px;"></i> ${l.emotion}
-                        </div>
-                        <div style="font-size: 0.75rem; color: var(--text-dark); opacity: 0.8;">${l.note}</div>
-                    </div>
-                `).join('')}
-            </div>
-        </div>
-    `;
-    if (window.lucide) lucide.createIcons();
-}
-
-function previousMonth() {
-    currentDate.setMonth(currentDate.getMonth() - 1);
-    refreshUI();
-}
-
-function nextMonth() {
-    currentDate.setMonth(currentDate.getMonth() + 1);
-    refreshUI();
-}
 
 
-// 6. REFRESH UI & STATS CALCULATIONS
+//  REFRESH UI & STATS CALCULATIONS 
 function refreshUI() {
     const loggingDateDisp = document.getElementById('loggingDateDisplay');
     const selectedTargetLbl = document.getElementById('selectedTargetDateLabel');
@@ -1102,9 +610,9 @@ function calculateStats() {
         }
     }
 }
-// ==========================================================================
-// MOOD CHART — MONTHLY
-// ==========================================================================
+
+// MOOD CHART — MONTHLY  
+
 
 function setChartRange(range) {
     // Currently the chart only supports monthly view.
@@ -1134,19 +642,15 @@ function renderMoodChart() {
         moodLogs = [];
     }
 
-    // ----------------------------------------------------------------------
+  
     // MONTH INFORMATION
-    // ----------------------------------------------------------------------
-
     const year = currentDate.getFullYear();
     const month = currentDate.getMonth();
 
     const daysInMonth = new Date(year, month + 1, 0).getDate();
 
-    // ----------------------------------------------------------------------
+    
     // SVG DIMENSIONS
-    // ----------------------------------------------------------------------
-
     const width = 600;
     const height = 220;
 
@@ -1160,10 +664,8 @@ function renderMoodChart() {
 
     svg.setAttribute('viewBox', `0 0 ${width} ${height}`);
 
-    // ----------------------------------------------------------------------
-    // HELPER FUNCTIONS
-    // ----------------------------------------------------------------------
 
+    // HELPER FUNCTIONS 
     function createSvgElement(tag, attributes = {}) {
         const element = document.createElementNS(
             'http://www.w3.org/2000/svg',
@@ -1193,10 +695,8 @@ function renderMoodChart() {
         return textEl;
     }
 
-    // ----------------------------------------------------------------------
-    // GET MONTH'S LOGS
-    // ----------------------------------------------------------------------
 
+    // GET MONTH'S LOGS 
     const monthlyLogs = moodLogs.filter(log => {
         if (!log.log_date) return false;
 
@@ -1210,10 +710,8 @@ function renderMoodChart() {
         return logYear === year && logMonth === month;
     });
 
-    // ----------------------------------------------------------------------
-    // GROUP MOODS BY DAY
-    // ----------------------------------------------------------------------
 
+    // GROUP MOODS BY DAY
     const dailyMoodValues = {};
 
     monthlyLogs.forEach(log => {
@@ -1230,10 +728,8 @@ function renderMoodChart() {
         dailyMoodValues[day].push(moodValue);
     });
 
-    // ----------------------------------------------------------------------
-    // DRAW BACKGROUND
-    // ----------------------------------------------------------------------
 
+    // DRAW BACKGROUND
     const background = createSvgElement('rect', {
         x: 0,
         y: 0,
@@ -1245,10 +741,8 @@ function renderMoodChart() {
 
     svg.appendChild(background);
 
-    // ----------------------------------------------------------------------
-    // Y-AXIS LABELS + GRID
-    // ----------------------------------------------------------------------
 
+    // Y-AXIS LABELS + GRID
     for (let moodValue = 1; moodValue <= 5; moodValue++) {
 
         const y =
@@ -1283,10 +777,8 @@ function renderMoodChart() {
         );
     }
 
-    // ----------------------------------------------------------------------
-    // X-AXIS
-    // ----------------------------------------------------------------------
 
+    // X-AXIS
     const xAxis = createSvgElement('line', {
         x1: paddingLeft,
         y1: paddingTop + chartHeight,
@@ -1298,10 +790,8 @@ function renderMoodChart() {
 
     svg.appendChild(xAxis);
 
-    // ----------------------------------------------------------------------
-    // CALCULATE DAILY POINTS
-    // ----------------------------------------------------------------------
 
+    // CALCULATE DAILY POINTS
     const points = [];
 
     for (let day = 1; day <= daysInMonth; day++) {
@@ -1357,10 +847,8 @@ function renderMoodChart() {
         });
     }
 
-    // ----------------------------------------------------------------------
-    // EMPTY STATE
-    // ----------------------------------------------------------------------
 
+    // EMPTY STATE
     if (points.length === 0) {
 
         addText(
@@ -1377,10 +865,7 @@ function renderMoodChart() {
         return;
     }
 
-    // ----------------------------------------------------------------------
     // DRAW LINE
-    // ----------------------------------------------------------------------
-
     if (points.length > 1) {
 
         const pathData = points
@@ -1401,10 +886,8 @@ function renderMoodChart() {
         svg.appendChild(linePath);
     }
 
-    // ----------------------------------------------------------------------
+    
     // DRAW POINTS
-    // ----------------------------------------------------------------------
-
     points.forEach(point => {
 
         // Outer circle
@@ -1456,10 +939,8 @@ function renderMoodChart() {
         outerCircle.appendChild(title);
     });
 
-    // ----------------------------------------------------------------------
+    
     // MONTH LABEL
-    // ----------------------------------------------------------------------
-
     const monthName = new Date(year, month, 1).toLocaleDateString(
         'en-US',
         {
@@ -1480,7 +961,7 @@ function renderMoodChart() {
     );
 }
 
-// 7. MODALS & UTILITIES
+//  MODALS & UTILITIES 
 
 function openDayDetailModal(dateStr, loggedEntries) {
     const dateTitle = document.getElementById('dayModalDateTitle');
@@ -1628,7 +1109,7 @@ function showToastCard(message) {
     setTimeout(() => { toast.remove(); }, 2500);
 }
 
-// 8. INITIALIZATION
+//  INITIALIZATION
 document.addEventListener('DOMContentLoaded', async function () {
     
     const splash = document.getElementById("welcomeSplash");
@@ -1665,120 +1146,12 @@ document.addEventListener('DOMContentLoaded', async function () {
 });
 
 
-// ALARM 
-
-let _alarmAudio = null;
-let _isAlarmRinging = false;
-let _lastDismissedAt = 0; 
-let _currentRingingAlarmId = null;
-
-function triggerAlarm(alarm) {
-    _isAlarmRinging = true;
-    _currentRingingAlarmId = alarm.id;
-
-    if (!_alarmAudio) {
-        _alarmAudio = new Audio('https://actions.google.com/sounds/v1/alarms/beep_short.ogg');
-        _alarmAudio.loop = true;
-    }
-    _alarmAudio.play().catch(() => {});
-
-    
-    const modal = document.getElementById('alarmModal');
-    const title = document.getElementById('modalTitle');
-    const timeEl = document.getElementById('modalTime');
-
-    if (title) title.textContent = `⏰ ${alarm.label || 'Alarm'}`;
-    if (timeEl) timeEl.textContent = `Scheduled time: ${alarm.time}`;
-    if (modal) modal.classList.remove('hidden');
-
-    if (window.lucide) lucide.createIcons();
-
-    
-    if (Notification && Notification.permission === 'granted') {
-        new Notification(`⏰ ${alarm.label || 'Alarm'}`, {
-            body: `It's ${alarm.time}`
-        });
-    }
-}
-
-async function checkAlarms() {
-    if (_isAlarmRinging) return;
-
-    // Dismiss 
-    if (Date.now() - _lastDismissedAt < 90000) return;
-
-    try {
-        const response = await fetch('/api/alarms/check', { credentials: 'include' });
-        if (!response.ok) return;
-        const data = await response.json();
-
-        if (data.triggered && data.alarms.length > 0) {
-            triggerAlarm(data.alarms[0]);
-        }
-    } catch (err) {
-        console.error('Check alarms error:', err);
-    }
-}
-
-function stopAlarm() {
-    _isAlarmRinging = false;
-    _lastDismissedAt = Date.now(); 
-
-   
-    if (_currentRingingAlarmId) {
-        let alarms = JSON.parse(localStorage.getItem('alarms') || '[]');
-        alarms = alarms.map(a => {
-            if (a.id === _currentRingingAlarmId) {
-                return { ...a, enabled: false }; 
-            }
-            return a;
-        });
-        localStorage.setItem('alarms', JSON.stringify(alarms));
-        renderAlarms(); 
-        _currentRingingAlarmId = null;
-    }
-
-    if (_alarmAudio) {
-        _alarmAudio.pause();
-        _alarmAudio.currentTime = 0;
-        _alarmAudio.loop = false;         
-        _alarmAudio.src = '';              
-        _alarmAudio = null; 
-    }
-
-    const modal = document.getElementById('alarmModal');
-    if (modal) modal.classList.add('hidden');
-}
-
-
-function startLocalAlarmScheduler() {
-    setInterval(() => {
-        const now = new Date();
-        const currentHHMM = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
-        const currentSeconds = now.getSeconds();
-
-       
-        if (currentSeconds >= 0 && currentSeconds < 5 && !_isAlarmRinging) {
-            const alarms = JSON.parse(localStorage.getItem('alarms') || '[]');
-            const matchedAlarm = alarms.find(a => a.enabled && a.time === currentHHMM);
-
-            if (matchedAlarm) {
-                triggerAlarm(matchedAlarm);
-            }
-        }
-    }, 3000); 
-}
-
-document.addEventListener('DOMContentLoaded', function () {
-    setTimeout(renderAlarms, 100);
-    startLocalAlarmScheduler(); 
-});
 
 
 // ==========================================================================
-// PROFILE VIEW LOGIC (Aya)
+// Aya
 // ==========================================================================
-
+// PROFILE VIEW LOGIC 
 /**
  * Initializes and populates the Profile Page UI components and dynamic stats.
  */
@@ -1828,10 +1201,6 @@ async function loadUserProfileDetails() {
        
         const genderEl = document.getElementById('profileGender');
         if (genderEl) genderEl.textContent = user.gender || '—';
-
-        
-        const titleEl = document.getElementById('profileTitle');
-        if (titleEl) titleEl.textContent = user.title || 'Bronze Tracker 🏆';
 
         
         if (user.avatar) {
@@ -1922,9 +1291,9 @@ function loadSavedAvatar() {
   selectAvatar(savedAvatar);
 }
 
-// ==========================================================================
+
 // HELPER CALCULATIONS
-// ==========================================================================
+
 
 /**
  * Calculates current consecutive daily logging streak.
@@ -2128,9 +1497,506 @@ function switchDashboardTab(tabName) {
         btnOverview.style.borderColor = 'transparent';
     }
 }
+
+
+
+// ==========================================
+// JEANN
+// ==========================================
+
+// AUTHENTICATION & TAB SWITCHING 
+function switchAuthTab(tab) {
+    const vLogin = document.getElementById('authViewLogin');
+    const vReg = document.getElementById('authViewRegister');
+    const vReset = document.getElementById('authViewReset');
+    const vResetStandalone = document.getElementById('authViewResetStandalone');
+    const tabHeader = document.getElementById('authTabsHeader');
+
+    
+    if (vLogin) vLogin.classList.add('hidden');
+    if (vReg) vReg.classList.add('hidden');
+    if (vReset) vReset.classList.add('hidden');
+    if (vResetStandalone) vResetStandalone.classList.add('hidden');
+
+    if (tabHeader) {
+        tabHeader.querySelectorAll('.auth-tab-btn').forEach(btn => btn.classList.remove('active'));
+        tabHeader.classList.remove('hidden');   
+    }
+
+    if (tab === 'login') {
+        if (vLogin) vLogin.classList.remove('hidden');
+        if (tabHeader && tabHeader.children[0]) tabHeader.children[0].classList.add('active');
+    } else if (tab === 'register') {
+        if (vReg) vReg.classList.remove('hidden');
+        if (tabHeader && tabHeader.children[1]) tabHeader.children[1].classList.add('active');
+    } else if (tab === 'reset') {
+        
+        if (vReset) vReset.classList.remove('hidden');
+        if (tabHeader && tabHeader.children[2]) tabHeader.children[2].classList.add('active');
+
+        
+        const step1 = document.getElementById('resetStep1');
+        const step2 = document.getElementById('resetStep2');
+        if (step1) step1.classList.remove('hidden');
+        if (step2) step2.classList.add('hidden');
+    } else if (tab === 'reset-standalone') {
+        
+        if (vResetStandalone) vResetStandalone.classList.remove('hidden');
+        if (tabHeader) tabHeader.classList.add('hidden');
+
+        const step1 = document.getElementById('standaloneResetStep1');
+        const step2 = document.getElementById('standaloneResetStep2');
+        if (step1) step1.classList.remove('hidden');
+        if (step2) step2.classList.add('hidden');
+    }
+
+    if (window.lucide) lucide.createIcons();
+}
+async function handleAuthSubmit(event) {
+    event.preventDefault();
+    const emailInput = document.getElementById('loginEmail');
+    const passwordInput = document.getElementById('loginPassword');
+    
+    const usernameOrEmail = emailInput ? emailInput.value.trim() : '';
+    const password = passwordInput ? passwordInput.value.trim() : '';
+
+    try {
+        const response = await fetch('/api/login', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ username: usernameOrEmail, password: password })
+        });
+
+        const data = await response.json();
+
+        if (response.ok && data.success) {
+            activeUser = data.user.username;
+            activeUserId = data.user.id;
+            showToastCard('Login successful!');
+            enterSanctuary();
+        } else {
+            showToastCard('❌ ' + (data.error || 'Login failed'));
+        }
+    } catch (err) {
+        showToastCard('❌ Network error during login.');
+    }
+}
+
+async function handleRegisterSubmit(event) {
+    event.preventDefault();
+    const nameInput = document.getElementById('regFullName');
+    const emailInput = document.getElementById('regEmail');
+    const passwordInput = document.getElementById('regPassword');
+
+    const username = nameInput ? nameInput.value.trim() : '';
+    const email = emailInput ? emailInput.value.trim() : '';
+    const password = passwordInput ? passwordInput.value.trim() : '';
+
+    const pwErr = validatePassword(password);
+    if (pwErr) {
+    showToastCard('❌ ' + pwErr);
+    return;
+    }
+
+    try {
+        const response = await fetch('/api/register', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ username, email, password })
+        });
+
+        const data = await response.json();
+
+        if (response.ok && data.success) {
+            showToastCard('✅ Account created successfully! Please log in.');
+            switchAuthTab('login');
+        } else {
+            showToastCard('❌ ' + (data.error || 'Registration failed'));
+        }
+    } catch (err) {
+        showToastCard('❌ Network error during registration.');
+    }
+}
+
+async function handleResetSubmit(event) {
+    event.preventDefault();
+    const email = document.getElementById('resetEmail').value.trim();
+
+    if (!email) {
+        showToastCard('Please enter your email address');
+        return;
+    }
+
+    try {
+        const response = await fetch('/api/send-code', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email: email })
+        });
+
+        const data = await response.json();
+        
+        if (response.ok) {
+            showToastCard('✅ Verification code sent! Check your email.');
+            document.getElementById('resetStep1').classList.add('hidden');
+            document.getElementById('resetStep2').classList.remove('hidden');
+        } else {
+            showToastCard('❌ ' + (data.error || 'Failed to send code'));
+        }
+    } catch (err) {
+        showToastCard('❌ Server error. Please try again later.');
+    }
+}
+
+async function handlePasswordResetConfirm(event) {
+    event.preventDefault();
+    const email = document.getElementById('resetEmail').value.trim();
+    const code = document.getElementById('resetCode').value.trim();
+    const newPassword = document.getElementById('resetNewPassword').value.trim();
+
+    if (!email || !code || !newPassword) {
+        showToastCard('Please fill in all fields.');
+        return;
+    }
+
+    const pwErr = validatePassword(newPassword);
+    if (pwErr) {
+      showToastCard('❌ ' + pwErr);
+      return;
+    }
+
+    try {
+        const response = await fetch('/api/reset-password', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email, code, password: newPassword })
+        });
+
+        const data = await response.json();
+        
+        if (response.ok) {
+            showToastCard('✅ Password updated! Redirecting to login...');
+            document.getElementById('resetStep1').classList.remove('hidden');
+            document.getElementById('resetStep2').classList.add('hidden');
+            setTimeout(() => { switchAuthTab('login'); }, 1500);
+        } else {
+            showToastCard('❌ ' + (data.error || 'Failed to reset password.'));
+        }
+    } catch (err) {
+        showToastCard('❌ Server error. Please try again later.');
+    }
+}
+
+function validatePassword(password) {
+    if (password.length < 8) return "Password must be at least 8 characters long.";
+    if (!/[A-Z]/.test(password)) return "Password must contain at least one uppercase letter.";
+    if (!/[a-z]/.test(password)) return "Password must contain at least one lowercase letter.";
+    if (!/[0-9]/.test(password)) return "Password must contain at least one number.";
+    if (!/[!@#$%^&*(),.?":{}|<>]/.test(password)) return "Password must contain at least one special character.";
+    return null;
+}
+
+function checkPasswordStrength(inputId, hintsId) {
+    const input = document.getElementById(inputId);
+    const hintsBox = document.getElementById(hintsId);
+    if (!input || !hintsBox) return;
+
+    const value = input.value;
+
+   
+    const rules = {
+        length: value.length >= 8,
+        upper: /[A-Z]/.test(value),
+        lower: /[a-z]/.test(value),
+        number: /[0-9]/.test(value),
+        special: /[!@#$%^&*(),.?":{}|<>]/.test(value)
+    };
+
+   
+    hintsBox.querySelectorAll('.hint').forEach(hint => {
+        const rule = hint.dataset.rule;
+        hint.classList.remove('valid', 'invalid');
+
+        if (!value) {
+           
+            return;
+        }
+
+        if (rules[rule]) {
+            hint.classList.add('valid');
+        } else {
+            hint.classList.add('invalid');
+        }
+    });
+}
+
+
+// STANDALONE RESET PASSWORD (from Profile) 
+
+async function handleStandaloneResetSubmit(event) {
+    event.preventDefault();
+    const email = document.getElementById('standaloneResetEmail').value.trim();
+
+    if (!email) {
+        showToastCard('Please enter your email address');
+        return;
+    }
+
+    try {
+        const response = await fetch('/api/send-code', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email: email })
+        });
+
+        const data = await response.json();
+
+        if (response.ok) {
+            showToastCard('✅ Verification code sent! Check your email.');
+            document.getElementById('standaloneResetStep1').classList.add('hidden');
+            document.getElementById('standaloneResetStep2').classList.remove('hidden');
+        } else {
+            showToastCard('❌ ' + (data.error || 'Failed to send code'));
+        }
+    } catch (err) {
+        showToastCard('❌ Server error. Please try again later.');
+    }
+}
+
+async function handleStandaloneResetConfirm(event) {
+    event.preventDefault();
+    const email = document.getElementById('standaloneResetEmail').value.trim();
+    const code = document.getElementById('standaloneResetCode').value.trim();
+    const newPassword = document.getElementById('standaloneResetNewPassword').value.trim();
+
+    if (!email || !code || !newPassword) {
+        showToastCard('Please fill in all fields.');
+        return;
+    }
+
+    const pwErr = validatePassword(newPassword);
+    if (pwErr) {
+        showToastCard('❌ ' + pwErr);
+        return;
+    }
+
+    try {
+        const response = await fetch('/api/reset-password', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email, code, password: newPassword })
+        });
+
+        const data = await response.json();
+
+        if (response.ok) {
+            showToastCard('✅ Password updated!');
+            closeAuthModal();
+
+            
+            document.getElementById('standaloneResetStep1').classList.remove('hidden');
+            document.getElementById('standaloneResetStep2').classList.add('hidden');
+        } else {
+            showToastCard('❌ ' + (data.error || 'Failed to reset password.'));
+        }
+    } catch (err) {
+        showToastCard('❌ Server error. Please try again later.');
+    }
+}
+
+function enterSanctuary() {
+    document.getElementById('logoutFab')?.classList.remove('hidden');
+    const userDisp = document.getElementById('userDisplayName');
+    const profileText = document.getElementById('profileUserText');
+    const authScr = document.getElementById('authScreen');
+    const landingScr = document.getElementById('landingScreen'); 
+    const appLay = document.getElementById('appLayout');
+
+    if (userDisp) userDisp.innerText = activeUser;
+    if (profileText) profileText.innerText = `Active User: ${activeUser}`;
+    
+    
+    if (landingScr) landingScr.classList.add('hidden'); 
+    if (authScr) authScr.classList.add('hidden');
+    
+    
+    if (appLay) appLay.classList.remove('hidden');
+
+    fetchLogsAndRefresh();
+}
+
+function logout() {
+    // Show confirmation modal instead of logging out immediately
+    const modal = document.getElementById('logoutConfirmModal');
+    if (modal) {
+        modal.classList.remove('hidden');
+        if (window.lucide) lucide.createIcons();
+    }
+}
+
+function closeLogoutConfirm() {
+    // Close the confirmation modal 
+    const modal = document.getElementById('logoutConfirmModal');
+    if (modal) {
+        modal.classList.add('hidden');
+    }
+}
+
+async function confirmLogout() {
+    // Close modal first
+    closeLogoutConfirm();
+
+    // 1. Call logout API
+    try {
+        await fetch('/api/logout', { method: 'POST' });
+    } catch (e) {
+        console.error('Logout error', e);
+    }
+
+    // 2. Clear local state
+    localStorage.removeItem('currentUser');
+    localStorage.removeItem('activeUser');
+    localStorage.removeItem('userEmail');
+    sessionStorage.clear();
+
+    // 3. Hide app layout & auth screen
+    const appLay = document.getElementById('appLayout');
+    const authScr = document.getElementById('authScreen');
+    const landingScr = document.getElementById('landingScreen');
+
+    if (appLay) appLay.classList.add('hidden');
+    if (authScr) authScr.classList.add('hidden');
+
+    // 4. Show Landing page
+    if (landingScr) {
+        landingScr.classList.remove('hidden');
+    }
+
+    // 5. Show toast message
+    showToastCard('👋 Logged out successfully');
+}
+
+//  CALENDAR LOGIC  
+function generateCalendar() {
+    const calendarGrid = document.getElementById("calendarDays");
+    if (!calendarGrid) return;
+
+    calendarGrid.innerHTML = "";
+    const year = currentDate.getFullYear();
+    const month = currentDate.getMonth();
+
+    const monthNames = [
+        "January", "February", "March", "April", "May", "June",
+        "July", "August", "September", "October", "November", "December"
+    ];
+
+    const monthYearElem = document.getElementById("monthYear");
+    if (monthYearElem) {
+        monthYearElem.innerText = `${monthNames[month]} ${year}`;
+    }
+
+    const firstDay = new Date(year, month, 1).getDay();
+    const daysInMonth = new Date(year, month + 1, 0).getDate();
+
+    for (let i = 0; i < firstDay; i++) {
+        const emptyCell = document.createElement("div");
+        emptyCell.className = "day-cell empty-cell";
+        emptyCell.style.opacity = "0.2";
+        emptyCell.style.cursor = "default";
+        calendarGrid.appendChild(emptyCell);
+    }
+
+    
+    const EMOTION_PRIORITY = ['Happy', 'Calm', 'Neutral', 'Sad', 'Anxious'];
+
+    for (let day = 1; day <= daysInMonth; day++) {
+        const dayCell = document.createElement("div");
+        dayCell.className = "day-cell";
+
+        const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+        dayCell.setAttribute("data-date", dateStr);
+
+        if (dateStr === activeTargetDate) dayCell.classList.add("selected-day");
+
+        const dayLogs = moodLogs.filter(l => l.log_date === dateStr);
+
+        if (dayLogs.length > 0) {
+            
+            const emotionCounts = {};
+            dayLogs.forEach(l => {
+                emotionCounts[l.emotion] = (emotionCounts[l.emotion] || 0) + 1;
+            });
+
+           
+            const dominantEmotion = Object.keys(emotionCounts).sort((a, b) => {
+                if (emotionCounts[b] !== emotionCounts[a]) {
+                    return emotionCounts[b] - emotionCounts[a];   
+                }
+                return EMOTION_PRIORITY.indexOf(a) - EMOTION_PRIORITY.indexOf(b);   
+            })[0];
+
+            const iconName = EMOTION_ICON_MAP[dominantEmotion] || 'smile';
+            const totalCount = dayLogs.length;
+
+            let cellContent = `<span>${day}</span><span class="day-mood-icon"><i data-lucide="${iconName}" style="width: 14px;"></i></span>`;
+
+            
+            if (totalCount > 1) {
+                cellContent += `<span class="multi-entry-badge" style="position: absolute; top: 2px; right: 2px; background: #ff6b6b; color: white; font-size: 0.65rem; padding: 1px 5px; border-radius: 8px; font-weight: 800;">${totalCount}</span>`;
+            }
+
+            dayCell.style.position = 'relative';
+            dayCell.innerHTML = cellContent;
+        } else {
+            dayCell.innerHTML = `<span>${day}</span>`;
+        }
+
+        dayCell.onclick = () => openDayDetailModal(dateStr, dayLogs);
+        calendarGrid.appendChild(dayCell);
+    }
+}
+
+function renderStandaloneCalendar() {
+    const container = document.getElementById('standaloneCalendarContainer');
+    if (!container) return;
+
+    if (moodLogs.length === 0) {
+        container.innerHTML = `<p style="color: var(--text-muted); font-weight: 600;">No mood entries logged yet.</p>`;
+        return;
+    }
+
+    container.innerHTML = `
+        <div style="padding: 1.5rem; background: var(--canvas-bg); border: 2px solid var(--border-dark); border-radius: 20px;">
+            <h3 style="margin-bottom: 1rem; font-family: var(--font-serif);">Calendar Logs Overview</h3>
+            <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 1rem;">
+                ${moodLogs.map(l => `
+                    <div style="background: white; border: 2px solid var(--border-dark); padding: 1rem; border-radius: 16px; box-shadow: 2px 2px 0px var(--border-dark);">
+                        <div style="font-size: 0.75rem; font-weight: 800; color: var(--text-muted);">${l.log_date}</div>
+                        <div style="font-size: 1rem; font-weight: 800; margin: 0.4rem 0; display: flex; align-items: center; gap: 6px;">
+                            <i data-lucide="${l.iconName || 'smile'}" style="width: 16px;"></i> ${l.emotion}
+                        </div>
+                        <div style="font-size: 0.75rem; color: var(--text-dark); opacity: 0.8;">${l.note}</div>
+                    </div>
+                `).join('')}
+            </div>
+        </div>
+    `;
+    if (window.lucide) lucide.createIcons();
+}
+
+function previousMonth() {
+    currentDate.setMonth(currentDate.getMonth() - 1);
+    refreshUI();
+}
+
+function nextMonth() {
+    currentDate.setMonth(currentDate.getMonth() + 1);
+    refreshUI();
+}
+
+
+
 // Profile Action Handlers
-
-
 function resetPasswordFromProfile() {
     const authScr = document.getElementById('authScreen');
     if (authScr) authScr.classList.remove('hidden');
@@ -2202,11 +2068,8 @@ function closeAuthModal() {
     if (authScr) authScr.classList.add('hidden');
 }
 
-// 
-// ==========================================================================
-// EDIT PROFILE MODAL
-// ==========================================================================
 
+// EDIT PROFILE MODAL
 function editProfile() {
     // 1. 
     fetch('/api/user', { credentials: 'include' })
@@ -2252,13 +2115,12 @@ async function saveProfileChanges(event) {
     event.preventDefault();
 
     const username = document.getElementById('editUsername')?.value.trim();
-    const email = document.getElementById('editEmail')?.value.trim();
     const birthdayRaw = document.getElementById('editBirthday')?.value;   // "2000-01-01"
     const gender = document.getElementById('editGender')?.value;
-    const bio = document.getElementById('editBio')?.value.trim();
+ 
 
-    if (!username || !email) {
-        showToastCard('Username and email are required');
+    if (!username ) {
+        showToastCard('Username is required');
         return;
     }
 
@@ -2269,7 +2131,7 @@ async function saveProfileChanges(event) {
         birthday = `${d}/${m}/${y}`;
     }
 
-    const payload = { username, email, birthday, gender, bio };
+    const payload = { username, birthday, gender };
 
     try {
         const response = await fetch('/api/user', {
@@ -2300,18 +2162,18 @@ async function saveProfileChanges(event) {
         showToastCard('❌ Network error');
     }
 }
-// ==========================================================================
+
 // HISTORY VIEW — List / Cards with Pagination
-// ==========================================================================
+
 
 let historyStyle = 'list';   // 'list' | 'cards'
 let listPage = 1;            // Current page for list view (5 per page)
 let cardsPage = 1;           // Current day index for cards view
 const ITEMS_PER_PAGE = 5;    // 5 records per page in list view
 
-// ============================================================
+
 // SWITCH BETWEEN LIST AND CARDS
-// ============================================================
+
 
 function setHistoryStyle(style) {
     historyStyle = style;
@@ -2333,9 +2195,9 @@ function setHistoryStyle(style) {
     renderHistoryView();
 }
 
-// ============================================================
+
 // MAIN RENDER
-// ============================================================
+
 
 function renderHistoryView() {
     if (!Array.isArray(moodLogs)) moodLogs = [];
@@ -2347,9 +2209,9 @@ function renderHistoryView() {
     }
 }
 
-// ============================================================
+
 // LIST VIEW — 5 records per page
-// ============================================================
+
 
 function renderHistoryList() {
     const tbody = document.getElementById('history-list-body');
@@ -2421,9 +2283,9 @@ function nextListPage() {
     }
 }
 
-// ============================================================
+
 // CARDS VIEW — 1 day per page (shows all moods of that day)
-// ============================================================
+
 
 function renderHistoryCards() {
     const container = document.getElementById('history-cards-body');
@@ -2524,6 +2386,115 @@ function nextCardsPage() {
         renderHistoryCards();
     }
 }
+
+// ALARM 
+
+let _alarmAudio = null;
+let _isAlarmRinging = false;
+let _lastDismissedAt = 0; 
+let _currentRingingAlarmId = null;
+
+function triggerAlarm(alarm) {
+    _isAlarmRinging = true;
+    _currentRingingAlarmId = alarm.id;
+
+    if (!_alarmAudio) {
+        _alarmAudio = new Audio('https://actions.google.com/sounds/v1/alarms/beep_short.ogg');
+        _alarmAudio.loop = true;
+    }
+    _alarmAudio.play().catch(() => {});
+
+    
+    const modal = document.getElementById('alarmModal');
+    const title = document.getElementById('modalTitle');
+    const timeEl = document.getElementById('modalTime');
+
+    if (title) title.textContent = `⏰ ${alarm.label || 'Alarm'}`;
+    if (timeEl) timeEl.textContent = `Scheduled time: ${alarm.time}`;
+    if (modal) modal.classList.remove('hidden');
+
+    if (window.lucide) lucide.createIcons();
+
+    
+    if (Notification && Notification.permission === 'granted') {
+        new Notification(`⏰ ${alarm.label || 'Alarm'}`, {
+            body: `It's ${alarm.time}`
+        });
+    }
+}
+
+async function checkAlarms() {
+    if (_isAlarmRinging) return;
+
+    // Dismiss 
+    if (Date.now() - _lastDismissedAt < 90000) return;
+
+    try {
+        const response = await fetch('/api/alarms/check', { credentials: 'include' });
+        if (!response.ok) return;
+        const data = await response.json();
+
+        if (data.triggered && data.alarms.length > 0) {
+            triggerAlarm(data.alarms[0]);
+        }
+    } catch (err) {
+        console.error('Check alarms error:', err);
+    }
+}
+
+function stopAlarm() {
+    _isAlarmRinging = false;
+    _lastDismissedAt = Date.now(); 
+
+   
+    if (_currentRingingAlarmId) {
+        let alarms = JSON.parse(localStorage.getItem('alarms') || '[]');
+        alarms = alarms.map(a => {
+            if (a.id === _currentRingingAlarmId) {
+                return { ...a, enabled: false }; 
+            }
+            return a;
+        });
+        localStorage.setItem('alarms', JSON.stringify(alarms));
+        renderAlarms(); 
+        _currentRingingAlarmId = null;
+    }
+
+    if (_alarmAudio) {
+        _alarmAudio.pause();
+        _alarmAudio.currentTime = 0;
+        _alarmAudio.loop = false;         
+        _alarmAudio.src = '';              
+        _alarmAudio = null; 
+    }
+
+    const modal = document.getElementById('alarmModal');
+    if (modal) modal.classList.add('hidden');
+}
+
+
+function startLocalAlarmScheduler() {
+    setInterval(() => {
+        const now = new Date();
+        const currentHHMM = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
+        const currentSeconds = now.getSeconds();
+
+       
+        if (currentSeconds >= 0 && currentSeconds < 5 && !_isAlarmRinging) {
+            const alarms = JSON.parse(localStorage.getItem('alarms') || '[]');
+            const matchedAlarm = alarms.find(a => a.enabled && a.time === currentHHMM);
+
+            if (matchedAlarm) {
+                triggerAlarm(matchedAlarm);
+            }
+        }
+    }, 3000); 
+}
+
+document.addEventListener('DOMContentLoaded', function () {
+    setTimeout(renderAlarms, 100);
+    startLocalAlarmScheduler(); 
+});
 
 function addAlarm(event) {
     if (event) event.preventDefault();
