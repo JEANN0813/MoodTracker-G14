@@ -1,4 +1,13 @@
-// 1. STATE & GLOBAL VARIABLES  (RERAY)
+// ==========================================
+// MOODTRACKER - MAIN JAVASCRIPT
+// ==========================================
+
+
+// ==========================================
+// AHMED RAYYAN
+// ==========================================
+
+// 1. STATE & GLOBAL VARIABLES
 let activeUser = "User";
 let activeUserId = null;
 let selectedEmotion = null;
@@ -43,7 +52,7 @@ const EMOTION_ICON_MAP = {
 };
 
 
-// 2. AUTHENTICATION & TAB SWITCHING  (JEANN)
+// 2. AUTHENTICATION & TAB SWITCHING
 function switchAuthTab(tab) {
     const vLogin = document.getElementById('authViewLogin');
     const vReg = document.getElementById('authViewRegister');
@@ -73,7 +82,7 @@ function switchAuthTab(tab) {
         if (vReset) vReset.classList.remove('hidden');
         if (tabHeader && tabHeader.children[2]) tabHeader.children[2].classList.add('active');
 
-        
+        // Reset 到 Step 1
         const step1 = document.getElementById('resetStep1');
         const step2 = document.getElementById('resetStep2');
         if (step1) step1.classList.remove('hidden');
@@ -235,10 +244,43 @@ function validatePassword(password) {
     return null;
 }
 
+function checkPasswordStrength(inputId, hintsId) {
+    const input = document.getElementById(inputId);
+    const hintsBox = document.getElementById(hintsId);
+    if (!input || !hintsBox) return;
 
+    const value = input.value;
 
+   
+    const rules = {
+        length: value.length >= 8,
+        upper: /[A-Z]/.test(value),
+        lower: /[a-z]/.test(value),
+        number: /[0-9]/.test(value),
+        special: /[!@#$%^&*(),.?":{}|<>]/.test(value)
+    };
 
-// 3. STANDALONE RESET PASSWORD (from Profile) (JEANN)
+   
+    hintsBox.querySelectorAll('.hint').forEach(hint => {
+        const rule = hint.dataset.rule;
+        hint.classList.remove('valid', 'invalid');
+
+        if (!value) {
+           
+            return;
+        }
+
+        if (rules[rule]) {
+            hint.classList.add('valid');
+        } else {
+            hint.classList.add('invalid');
+        }
+    });
+}
+
+// ============================================================
+// STANDALONE RESET PASSWORD (from Profile)
+// ============================================================
 
 async function handleStandaloneResetSubmit(event) {
     event.preventDefault();
@@ -310,8 +352,6 @@ async function handleStandaloneResetConfirm(event) {
         showToastCard('❌ Server error. Please try again later.');
     }
 }
-
-// 4. LOGOUT (JEANN)
 
 function enterSanctuary() {
     document.getElementById('logoutFab')?.classList.remove('hidden');
@@ -385,7 +425,7 @@ async function confirmLogout() {
     showToastCard('👋 Logged out successfully');
 }
 
-// 5. UI NAVIGATION & SELECTION  (JEANN) 
+// 3. UI NAVIGATION & SELECTION
 
 function switchView(viewId, element) {
     const views = ['dashboardView', 'historyView', 'alarmView', 'profileView'];
@@ -420,7 +460,7 @@ function selectEmotion(btn, emotion, iconName) {
 }
 
 
-// 6. MOOD LOGGING & LOCAL DATA HANDLERS  (RERAY)
+// 4. MOOD LOGGING & LOCAL DATA HANDLERS
 async function fetchLogsAndRefresh() {
     try {
         const response = await fetch('/api/logs', { method: 'GET' });
@@ -761,7 +801,7 @@ function resetLoggingDateToToday() {
 }
 
 
-// 7. CALENDAR LOGIC  (JEANN)
+// 5. CALENDAR LOGIC
 function generateCalendar() {
     const calendarGrid = document.getElementById("calendarDays");
     if (!calendarGrid) return;
@@ -841,7 +881,33 @@ function generateCalendar() {
     }
 }
 
+function renderStandaloneCalendar() {
+    const container = document.getElementById('standaloneCalendarContainer');
+    if (!container) return;
 
+    if (moodLogs.length === 0) {
+        container.innerHTML = `<p style="color: var(--text-muted); font-weight: 600;">No mood entries logged yet.</p>`;
+        return;
+    }
+
+    container.innerHTML = `
+        <div style="padding: 1.5rem; background: var(--canvas-bg); border: 2px solid var(--border-dark); border-radius: 20px;">
+            <h3 style="margin-bottom: 1rem; font-family: var(--font-serif);">Calendar Logs Overview</h3>
+            <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 1rem;">
+                ${moodLogs.map(l => `
+                    <div style="background: white; border: 2px solid var(--border-dark); padding: 1rem; border-radius: 16px; box-shadow: 2px 2px 0px var(--border-dark);">
+                        <div style="font-size: 0.75rem; font-weight: 800; color: var(--text-muted);">${l.log_date}</div>
+                        <div style="font-size: 1rem; font-weight: 800; margin: 0.4rem 0; display: flex; align-items: center; gap: 6px;">
+                            <i data-lucide="${l.iconName || 'smile'}" style="width: 16px;"></i> ${l.emotion}
+                        </div>
+                        <div style="font-size: 0.75rem; color: var(--text-dark); opacity: 0.8;">${l.note}</div>
+                    </div>
+                `).join('')}
+            </div>
+        </div>
+    `;
+    if (window.lucide) lucide.createIcons();
+}
 
 function previousMonth() {
     currentDate.setMonth(currentDate.getMonth() - 1);
@@ -854,7 +920,7 @@ function nextMonth() {
 }
 
 
-// 8. REFRESH UI & STATS CALCULATIONS  (RERAY)
+// 6. REFRESH UI & STATS CALCULATIONS
 function refreshUI() {
     const loggingDateDisp = document.getElementById('loggingDateDisplay');
     const selectedTargetLbl = document.getElementById('selectedTargetDateLabel');
@@ -886,10 +952,40 @@ function refreshUI() {
         renderHistoryView();
     }
 
-    if (window.lucide) lucide.createIcons();
+    if (window.lucide) {
+        lucide.createIcons();
+    }
 }
 
 
+function renderHistoryTable() {
+    const tbody = document.getElementById('history-table-body');
+    if (!tbody) return;
+
+    if (!Array.isArray(moodLogs) || moodLogs.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="4" style="text-align:center;color:var(--text-muted);padding:1.5rem 0;">No logs yet. Go to Dashboard to log your first mood!</td></tr>`;
+        return;
+    }
+
+    tbody.innerHTML = moodLogs.map(log => `
+        <tr>
+            <td>${log.log_date}</td>
+            <td>
+                <span class="badge-emotion" style="background:${getEmotionBg(log.emotion)}">
+                    <i data-lucide="${log.iconName || 'smile'}" style="width:14px;"></i> ${log.emotion}
+                </span>
+            </td>
+            <td style="color:var(--text-muted);">${log.note || '—'}</td>
+            <td>
+                <button class="btn-delete" onclick="deleteLog(${log.id})">
+                    <i data-lucide="trash-2" style="width:14px;"></i>
+                </button>
+            </td>
+        </tr>
+    `).join('');
+
+    if (window.lucide) lucide.createIcons();
+}
 
 function renderTable() {
     const tbody = document.getElementById('logs-table-body');
@@ -1006,8 +1102,385 @@ function calculateStats() {
         }
     }
 }
+// ==========================================================================
+// MOOD CHART — MONTHLY
+// ==========================================================================
 
-// 9. MODALS & UTILITIES  ()
+function setChartRange(range) {
+    // Currently the chart only supports monthly view.
+    chartRange = 'monthly';
+
+    // Update active button
+    document.querySelectorAll('.chart-range-btn').forEach(btn => {
+        btn.classList.toggle(
+            'active',
+            btn.dataset.range === 'monthly'
+        );
+    });
+
+    renderMoodChart();
+}
+
+
+function renderMoodChart() {
+    const svg = document.getElementById('moodChartSvg');
+
+    if (!svg) return;
+
+    // Clear previous chart
+    svg.innerHTML = '';
+
+    if (!Array.isArray(moodLogs)) {
+        moodLogs = [];
+    }
+
+    // ----------------------------------------------------------------------
+    // MONTH INFORMATION
+    // ----------------------------------------------------------------------
+
+    const year = currentDate.getFullYear();
+    const month = currentDate.getMonth();
+
+    const daysInMonth = new Date(year, month + 1, 0).getDate();
+
+    // ----------------------------------------------------------------------
+    // SVG DIMENSIONS
+    // ----------------------------------------------------------------------
+
+    const width = 600;
+    const height = 220;
+
+    const paddingLeft = 55;
+    const paddingRight = 20;
+    const paddingTop = 20;
+    const paddingBottom = 35;
+
+    const chartWidth = width - paddingLeft - paddingRight;
+    const chartHeight = height - paddingTop - paddingBottom;
+
+    svg.setAttribute('viewBox', `0 0 ${width} ${height}`);
+
+    // ----------------------------------------------------------------------
+    // HELPER FUNCTIONS
+    // ----------------------------------------------------------------------
+
+    function createSvgElement(tag, attributes = {}) {
+        const element = document.createElementNS(
+            'http://www.w3.org/2000/svg',
+            tag
+        );
+
+        Object.entries(attributes).forEach(([key, value]) => {
+            element.setAttribute(key, value);
+        });
+
+        return element;
+    }
+
+    function addText(text, x, y, options = {}) {
+        const textEl = createSvgElement('text', {
+            x: x,
+            y: y,
+            'text-anchor': options.anchor || 'middle',
+            'font-size': options.size || '10',
+            'font-weight': options.weight || '700',
+            fill: options.fill || 'var(--text-dark)'
+        });
+
+        textEl.textContent = text;
+        svg.appendChild(textEl);
+
+        return textEl;
+    }
+
+    // ----------------------------------------------------------------------
+    // GET MONTH'S LOGS
+    // ----------------------------------------------------------------------
+
+    const monthlyLogs = moodLogs.filter(log => {
+        if (!log.log_date) return false;
+
+        const parts = log.log_date.split('-');
+
+        if (parts.length !== 3) return false;
+
+        const logYear = Number(parts[0]);
+        const logMonth = Number(parts[1]) - 1;
+
+        return logYear === year && logMonth === month;
+    });
+
+    // ----------------------------------------------------------------------
+    // GROUP MOODS BY DAY
+    // ----------------------------------------------------------------------
+
+    const dailyMoodValues = {};
+
+    monthlyLogs.forEach(log => {
+        const day = Number(log.log_date.split('-')[2]);
+
+        const moodValue = MOOD_CHART_VALUES[log.emotion];
+
+        if (!moodValue) return;
+
+        if (!dailyMoodValues[day]) {
+            dailyMoodValues[day] = [];
+        }
+
+        dailyMoodValues[day].push(moodValue);
+    });
+
+    // ----------------------------------------------------------------------
+    // DRAW BACKGROUND
+    // ----------------------------------------------------------------------
+
+    const background = createSvgElement('rect', {
+        x: 0,
+        y: 0,
+        width: width,
+        height: height,
+        fill: 'var(--canvas-bg)',
+        rx: 14
+    });
+
+    svg.appendChild(background);
+
+    // ----------------------------------------------------------------------
+    // Y-AXIS LABELS + GRID
+    // ----------------------------------------------------------------------
+
+    for (let moodValue = 1; moodValue <= 5; moodValue++) {
+
+        const y =
+            paddingTop +
+            chartHeight -
+            ((moodValue - 1) / 4) * chartHeight;
+
+        // Horizontal grid line
+        const gridLine = createSvgElement('line', {
+            x1: paddingLeft,
+            y1: y,
+            x2: width - paddingRight,
+            y2: y,
+            stroke: 'var(--border-dark)',
+            'stroke-width': 1,
+            opacity: 0.18
+        });
+
+        svg.appendChild(gridLine);
+
+        // Mood label
+        addText(
+            MOOD_CHART_LABELS[moodValue],
+            paddingLeft - 8,
+            y + 3,
+            {
+                anchor: 'end',
+                size: 8,
+                weight: 800,
+                fill: 'var(--text-muted)'
+            }
+        );
+    }
+
+    // ----------------------------------------------------------------------
+    // X-AXIS
+    // ----------------------------------------------------------------------
+
+    const xAxis = createSvgElement('line', {
+        x1: paddingLeft,
+        y1: paddingTop + chartHeight,
+        x2: width - paddingRight,
+        y2: paddingTop + chartHeight,
+        stroke: 'var(--border-dark)',
+        'stroke-width': 2
+    });
+
+    svg.appendChild(xAxis);
+
+    // ----------------------------------------------------------------------
+    // CALCULATE DAILY POINTS
+    // ----------------------------------------------------------------------
+
+    const points = [];
+
+    for (let day = 1; day <= daysInMonth; day++) {
+
+        const x =
+            paddingLeft +
+            ((day - 1) / Math.max(daysInMonth - 1, 1)) *
+            chartWidth;
+
+        // Show selected days along the X-axis
+        const shouldShowLabel =
+            daysInMonth <= 15 ||
+            day === 1 ||
+            day === daysInMonth ||
+            day % 5 === 0;
+
+        if (shouldShowLabel) {
+            addText(
+                day,
+                x,
+                height - 10,
+                {
+                    size: 8,
+                    weight: 800,
+                    fill: 'var(--text-muted)'
+                }
+            );
+        }
+
+        // No mood recorded on this day
+        if (!dailyMoodValues[day]) {
+            continue;
+        }
+
+        const values = dailyMoodValues[day];
+
+        // Average all moods logged on this day
+        const average =
+            values.reduce((sum, value) => sum + value, 0) /
+            values.length;
+
+        const y =
+            paddingTop +
+            chartHeight -
+            ((average - 1) / 4) * chartHeight;
+
+        points.push({
+            day,
+            x,
+            y,
+            value: average,
+            entries: values.length
+        });
+    }
+
+    // ----------------------------------------------------------------------
+    // EMPTY STATE
+    // ----------------------------------------------------------------------
+
+    if (points.length === 0) {
+
+        addText(
+            'No mood entries for this month',
+            width / 2,
+            height / 2,
+            {
+                size: 13,
+                weight: 800,
+                fill: 'var(--text-muted)'
+            }
+        );
+
+        return;
+    }
+
+    // ----------------------------------------------------------------------
+    // DRAW LINE
+    // ----------------------------------------------------------------------
+
+    if (points.length > 1) {
+
+        const pathData = points
+            .map((point, index) => {
+                return `${index === 0 ? 'M' : 'L'} ${point.x} ${point.y}`;
+            })
+            .join(' ');
+
+        const linePath = createSvgElement('path', {
+            d: pathData,
+            fill: 'none',
+            stroke: 'var(--text-dark)',
+            'stroke-width': 3,
+            'stroke-linecap': 'round',
+            'stroke-linejoin': 'round'
+        });
+
+        svg.appendChild(linePath);
+    }
+
+    // ----------------------------------------------------------------------
+    // DRAW POINTS
+    // ----------------------------------------------------------------------
+
+    points.forEach(point => {
+
+        // Outer circle
+        const outerCircle = createSvgElement('circle', {
+            cx: point.x,
+            cy: point.y,
+            r: 6,
+            fill: 'var(--accent-yellow)',
+            stroke: 'var(--border-dark)',
+            'stroke-width': 2
+        });
+
+        svg.appendChild(outerCircle);
+
+        // Small inner circle
+        const innerCircle = createSvgElement('circle', {
+            cx: point.x,
+            cy: point.y,
+            r: 2.5,
+            fill: 'var(--text-dark)'
+        });
+
+        svg.appendChild(innerCircle);
+
+        // Day label above point
+        addText(
+            point.day,
+            point.x,
+            point.y - 10,
+            {
+                size: 7,
+                weight: 800,
+                fill: 'var(--text-muted)'
+            }
+        );
+
+        // Tooltip
+        const title = createSvgElement('title');
+
+        const averageMoodName =
+            MOOD_CHART_LABELS[
+                Math.round(point.value)
+            ] || 'Unknown';
+
+        title.textContent =
+            `Day ${point.day}: ${averageMoodName}` +
+            ` (${point.entries} ${point.entries === 1 ? 'entry' : 'entries'})`;
+
+        outerCircle.appendChild(title);
+    });
+
+    // ----------------------------------------------------------------------
+    // MONTH LABEL
+    // ----------------------------------------------------------------------
+
+    const monthName = new Date(year, month, 1).toLocaleDateString(
+        'en-US',
+        {
+            month: 'long',
+            year: 'numeric'
+        }
+    );
+
+    addText(
+        monthName,
+        width / 2,
+        13,
+        {
+            size: 10,
+            weight: 800,
+            fill: 'var(--text-dark)'
+        }
+    );
+}
+
+// 7. MODALS & UTILITIES
 
 function openDayDetailModal(dateStr, loggedEntries) {
     const dateTitle = document.getElementById('dayModalDateTitle');
@@ -1155,7 +1628,7 @@ function showToastCard(message) {
     setTimeout(() => { toast.remove(); }, 2500);
 }
 
-// 10. INITIALIZATION
+// 8. INITIALIZATION
 document.addEventListener('DOMContentLoaded', async function () {
     
     const splash = document.getElementById("welcomeSplash");
@@ -1192,7 +1665,7 @@ document.addEventListener('DOMContentLoaded', async function () {
 });
 
 
-// ALARM (JEANN)
+// ALARM 
 
 let _alarmAudio = null;
 let _isAlarmRinging = false;
@@ -1302,8 +1775,9 @@ document.addEventListener('DOMContentLoaded', function () {
 });
 
 
-
-// 11. PROFILE VIEW LOGIC (Aya)
+// ==========================================================================
+// PROFILE VIEW LOGIC (Aya)
+// ==========================================================================
 
 /**
  * Initializes and populates the Profile Page UI components and dynamic stats.
@@ -1448,9 +1922,9 @@ function loadSavedAvatar() {
   selectAvatar(savedAvatar);
 }
 
-
-// 12. HELPER CALCULATIONS
-
+// ==========================================================================
+// HELPER CALCULATIONS
+// ==========================================================================
 
 /**
  * Calculates current consecutive daily logging streak.
@@ -1530,10 +2004,132 @@ function animateCounter(element, start, end, duration) {
   };
   window.requestAnimationFrame(step);
 }
+function showView(viewName) {
+  // ... your existing hide/show section code ...
+
+  if (viewName === 'profile') {
+    initProfilePage();
+  }
+}
+// Logout handler
+function handleLogout() {
+  localStorage.removeItem('activeUser');
+  localStorage.removeItem('userEmail');
+  localStorage.removeItem('userName');
+  localStorage.removeItem('selectedAvatarName');
+  localStorage.removeItem('selectedAvatarUrl');
+  
+  // Refresh page or redirect to index/login
+  window.location.href = 'index.html';
+}
 
 
 
-// 13. Profile Action Handlers (JEANN)
+// Auto-run when document loads
+// Load active user sign-in info into profile display
+document.addEventListener('DOMContentLoaded', () => {
+  // Read from the same localStorage key used across your app
+  const currentUserRaw = localStorage.getItem('currentUser');
+  let userName = 'Aya';
+  let userEmail = 'aya@example.com';
+
+  if (currentUserRaw) {
+    try {
+      const parsed = JSON.parse(currentUserRaw);
+      if (typeof parsed === 'object' && parsed !== null) {
+        userName = parsed.name || parsed.username || userName;
+        userEmail = parsed.email || userEmail;
+      } else if (typeof parsed === 'string') {
+        userName = parsed;
+      }
+    } catch (e) {
+      // Handles cases where currentUser is stored as a plain string
+      userName = currentUserRaw;
+    }
+  }
+
+  const nameEl = document.getElementById('profileUserName');
+  const emailEl = document.getElementById('profileUserEmail');
+
+  if (nameEl) nameEl.textContent = userName;
+  if (emailEl) emailEl.textContent = userEmail;
+});
+
+function loadActiveUserProfile() {
+  // 1. Try to fetch the active logged-in user object from storage
+  const sessionUser = JSON.parse(
+    localStorage.getItem('currentUser') || 
+    sessionStorage.getItem('currentUser') || 
+    '{}'
+  );
+
+  // 2. Fall back to individual email/name keys if stored separately during login
+  const activeEmail = sessionUser.email || localStorage.getItem('userEmail') || localStorage.getItem('loginEmail');
+  const activeName = sessionUser.name || localStorage.getItem('userName') || (activeEmail ? activeEmail.split('@')[0] : '');
+
+  // 3. Populate DOM elements dynamically
+  const nameDisplay = document.getElementById('profileUserName');
+  const emailDisplay = document.getElementById('profileUserEmail');
+
+  if (nameDisplay && activeName) {
+    nameDisplay.textContent = activeName;
+  }
+  
+  if (emailDisplay && activeEmail) {
+    emailDisplay.textContent = activeEmail;
+  }
+}
+
+// Automatically load when the DOM is ready
+document.addEventListener('DOMContentLoaded', loadActiveUserProfile);
+
+// Function to load the logged-in user's profile details
+function loadUserProfile() {
+  // Retrieve the logged-in user object/email stored during sign-in
+  const currentUserJson = localStorage.getItem("currentUser") || sessionStorage.getItem("currentUser");
+  
+  if (currentUserJson) {
+    const user = JSON.parse(currentUserJson);
+    
+    // Set email input to the signed-in email
+    const emailInput = document.getElementById("profileUserEmailInput");
+    if (emailInput && user.email) {
+      emailInput.value = user.email;
+    }
+
+    // Set name input (use display name, derive from email, or fallback)
+    const nameInput = document.getElementById("profileUserNameInput");
+    if (nameInput) {
+      const derivedName = user.name || user.email.split("@")[0];
+      nameInput.value = derivedName;
+    }
+  }
+}
+
+function switchDashboardTab(tabName) {
+    const overviewSec = document.getElementById('dashboardOverviewSection');
+    const historySec = document.getElementById('dashboardHistorySection');
+    const btnOverview = document.getElementById('btnDashboardOverview');
+    const btnHistory = document.getElementById('btnDashboardHistory');
+
+    if (tabName === 'overview') {
+        overviewSec.style.display = 'flex';
+        historySec.classList.add('hidden');
+        btnOverview.style.background = 'var(--accent-yellow)';
+        btnOverview.style.borderColor = 'var(--border-dark)';
+        btnHistory.style.background = 'transparent';
+        btnHistory.style.borderColor = 'transparent';
+    } else {
+        overviewSec.style.display = 'none';
+        historySec.classList.remove('hidden');
+        btnHistory.style.background = 'var(--accent-yellow)';
+        btnHistory.style.borderColor = 'var(--border-dark)';
+        btnOverview.style.background = 'transparent';
+        btnOverview.style.borderColor = 'transparent';
+    }
+}
+// Profile Action Handlers
+
 
 function resetPasswordFromProfile() {
     const authScr = document.getElementById('authScreen');
@@ -1606,8 +2202,10 @@ function closeAuthModal() {
     if (authScr) authScr.classList.add('hidden');
 }
 
-// 14. EDIT PROFILE MODAL
-
+// 
+// ==========================================================================
+// EDIT PROFILE MODAL
+// ==========================================================================
 
 function editProfile() {
     // 1. 
@@ -1654,12 +2252,13 @@ async function saveProfileChanges(event) {
     event.preventDefault();
 
     const username = document.getElementById('editUsername')?.value.trim();
-    const birthdayRaw = document.getElementById('editBirthday')?.value;   
+    const email = document.getElementById('editEmail')?.value.trim();
+    const birthdayRaw = document.getElementById('editBirthday')?.value;   // "2000-01-01"
     const gender = document.getElementById('editGender')?.value;
     const bio = document.getElementById('editBio')?.value.trim();
 
-    if (!username ) {
-        showToastCard('Username is required');
+    if (!username || !email) {
+        showToastCard('Username and email are required');
         return;
     }
 
@@ -1670,7 +2269,7 @@ async function saveProfileChanges(event) {
         birthday = `${d}/${m}/${y}`;
     }
 
-    const payload = { username,  birthday, gender};
+    const payload = { username, email, birthday, gender, bio };
 
     try {
         const response = await fetch('/api/user', {
@@ -1701,16 +2300,18 @@ async function saveProfileChanges(event) {
         showToastCard('❌ Network error');
     }
 }
-
+// ==========================================================================
 // HISTORY VIEW — List / Cards with Pagination
+// ==========================================================================
 
 let historyStyle = 'list';   // 'list' | 'cards'
 let listPage = 1;            // Current page for list view (5 per page)
 let cardsPage = 1;           // Current day index for cards view
 const ITEMS_PER_PAGE = 5;    // 5 records per page in list view
 
-
+// ============================================================
 // SWITCH BETWEEN LIST AND CARDS
+// ============================================================
 
 function setHistoryStyle(style) {
     historyStyle = style;
@@ -1732,8 +2333,10 @@ function setHistoryStyle(style) {
     renderHistoryView();
 }
 
-
+// ============================================================
 // MAIN RENDER
+// ============================================================
+
 function renderHistoryView() {
     if (!Array.isArray(moodLogs)) moodLogs = [];
 
@@ -1744,8 +2347,10 @@ function renderHistoryView() {
     }
 }
 
-
+// ============================================================
 // LIST VIEW — 5 records per page
+// ============================================================
+
 function renderHistoryList() {
     const tbody = document.getElementById('history-list-body');
     if (!tbody) return;
@@ -1816,8 +2421,10 @@ function nextListPage() {
     }
 }
 
-
+// ============================================================
 // CARDS VIEW — 1 day per page (shows all moods of that day)
+// ============================================================
+
 function renderHistoryCards() {
     const container = document.getElementById('history-cards-body');
     if (!container) return;
