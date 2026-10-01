@@ -82,7 +82,7 @@ function switchAuthTab(tab) {
         if (vReset) vReset.classList.remove('hidden');
         if (tabHeader && tabHeader.children[2]) tabHeader.children[2].classList.add('active');
 
-        // Reset 到 Step 1
+       
         const step1 = document.getElementById('resetStep1');
         const step2 = document.getElementById('resetStep2');
         if (step1) step1.classList.remove('hidden');
@@ -489,7 +489,7 @@ async function fetchLogsAndRefresh() {
 }
 
 // ==========================================
-// WEEKLY MOOD CHART
+// MONTH MOOD CHART
 // ==========================================
 
 // Numerical values for each mood
@@ -616,10 +616,10 @@ function getWeeklyMoodData(logs) {
 
 
 /**
- * Prepare and update the weekly mood chart.
+ * Prepare and update the month mood chart.
  */
 // ==========================================
-// WEEKLY MOOD CHART - CHART.JS
+// MONTH MOOD CHART - CHART.JS
 // ==========================================
 
 let moodChartInstance = null;
