@@ -449,7 +449,7 @@ async function fetchLogsAndRefresh() {
 }
 
 // ==========================================
-// WEEKLY MOOD CHART
+// MONTH MOOD CHART
 // ==========================================
 
 // Numerical values for each mood
@@ -576,10 +576,10 @@ function getWeeklyMoodData(logs) {
 
 
 /**
- * Prepare and update the weekly mood chart.
+ * Prepare and update the month mood chart.
  */
 // ==========================================
-// WEEKLY MOOD CHART - CHART.JS
+// MONTH MOOD CHART - CHART.JS
 // ==========================================
 
 let moodChartInstance = null;
