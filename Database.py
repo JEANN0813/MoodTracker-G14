@@ -77,7 +77,7 @@ def insert_test_data():
         conn.close()   
         return
 
-    hashed_password = generate_password_hash('08132007')
+    hashed_password = generate_password_hash('Ann0813@')
     
      
     test_users = [
@@ -100,11 +100,11 @@ def insert_test_data():
     
     today = datetime.now().date()
     test_logs = [
-        (jeann_id, 'happy', 'Great day!', today.strftime('%Y-%m-%d')),
-        (jeann_id, 'sad', 'Felt a bit down', (today - timedelta(days=1)).strftime('%Y-%m-%d')),
-        (jeann_id, 'excited', 'Got good news!', (today - timedelta(days=2)).strftime('%Y-%m-%d')),
-        (jeann_id, 'happy', 'Wonderful weather', (today - timedelta(days=3)).strftime('%Y-%m-%d')),
-        (jeann_id, 'anxious', 'Feeling stressed about exam', (today - timedelta(days=4)).strftime('%Y-%m-%d')),
+        (jeann_id, 'Happy', 'Great day!', today.strftime('%Y-%m-%d')),
+        (jeann_id, 'Sad', 'Felt a bit down', (today - timedelta(days=1)).strftime('%Y-%m-%d')),
+        (jeann_id, 'Excited', 'Got good news!', (today - timedelta(days=2)).strftime('%Y-%m-%d')),
+        (jeann_id, 'Happy', 'Wonderful weather', (today - timedelta(days=3)).strftime('%Y-%m-%d')),
+        (jeann_id, 'Anxious', 'Feeling stressed about exam', (today - timedelta(days=4)).strftime('%Y-%m-%d')),
     ]
     
     cursor.executemany("""

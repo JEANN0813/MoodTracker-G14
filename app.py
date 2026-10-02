@@ -44,7 +44,7 @@ app.config['MAIL_DEFAULT_SENDER'] = ('MoodTracker Support', 'annannchan08132007@
 
 mail = Mail(app)
 
-BASE_DIR = os.path.abspath(os.path.dirname(__file__))
+
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///' + os.path.join(BASE_DIR, 'database.db')
 app.config['SECRET_KEY'] = 'moodtracker-secret-key-2026'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
@@ -697,7 +697,7 @@ def get_suggestions():
     }), 200
 
 with app.app_context():
-    db.create_all
+    db.create_all()
 
 
 

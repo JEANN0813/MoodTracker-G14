@@ -13,8 +13,7 @@ let selectedIcon = "";
 let currentDate = new Date();
 let activeTargetDate = new Date().toISOString().split('T')[0];
 
-const DAILY_EMOTION_LIMIT = 999;
-
+const DAILY_EMOTION_LIMIT = 999
 
 // MOOD CHART STATE 
 let chartRange = 'monthly';
@@ -466,34 +465,7 @@ function refreshUI() {
 }
 
 
-function renderHistoryTable() {
-    const tbody = document.getElementById('history-table-body');
-    if (!tbody) return;
 
-    if (!Array.isArray(moodLogs) || moodLogs.length === 0) {
-        tbody.innerHTML = `<tr><td colspan="4" style="text-align:center;color:var(--text-muted);padding:1.5rem 0;">No logs yet. Go to Dashboard to log your first mood!</td></tr>`;
-        return;
-    }
-
-    tbody.innerHTML = moodLogs.map(log => `
-        <tr>
-            <td>${log.log_date}</td>
-            <td>
-                <span class="badge-emotion" style="background:${getEmotionBg(log.emotion)}">
-                    <i data-lucide="${log.iconName || 'smile'}" style="width:14px;"></i> ${log.emotion}
-                </span>
-            </td>
-            <td style="color:var(--text-muted);">${log.note || '—'}</td>
-            <td>
-                <button class="btn-delete" onclick="deleteLog(${log.id})">
-                    <i data-lucide="trash-2" style="width:14px;"></i>
-                </button>
-            </td>
-        </tr>
-    `).join('');
-
-    if (window.lucide) lucide.createIcons();
-}
 
 function renderTable() {
     const tbody = document.getElementById('logs-table-body');
@@ -1302,7 +1274,7 @@ function calculateStreak(logs) {
   if (!logs || logs.length === 0) return 0;
 
   // Sort unique dates descending
-  const uniqueDates = [...new Set(logs.map(log => log.date))].sort().reverse();
+  const uniqueDates = [...new Set(logs.map(log => log.log_date))].sort().reverse();
   const todayStr = new Date().toISOString().split('T')[0];
 
   let streak = 0;
@@ -1340,7 +1312,7 @@ function calculateDominantMood(logs) {
 
   const counts = {};
   logs.forEach(log => {
-    const mood = log.mood || 'Neutral';
+    const mood = log.emotion || 'Neutral';
     counts[mood] = (counts[mood] || 0) + 1;
   });
 
@@ -1696,39 +1668,6 @@ function validatePassword(password) {
     return null;
 }
 
-function checkPasswordStrength(inputId, hintsId) {
-    const input = document.getElementById(inputId);
-    const hintsBox = document.getElementById(hintsId);
-    if (!input || !hintsBox) return;
-
-    const value = input.value;
-
-   
-    const rules = {
-        length: value.length >= 8,
-        upper: /[A-Z]/.test(value),
-        lower: /[a-z]/.test(value),
-        number: /[0-9]/.test(value),
-        special: /[!@#$%^&*(),.?":{}|<>]/.test(value)
-    };
-
-   
-    hintsBox.querySelectorAll('.hint').forEach(hint => {
-        const rule = hint.dataset.rule;
-        hint.classList.remove('valid', 'invalid');
-
-        if (!value) {
-           
-            return;
-        }
-
-        if (rules[rule]) {
-            hint.classList.add('valid');
-        } else {
-            hint.classList.add('invalid');
-        }
-    });
-}
 
 
 // STANDALONE RESET PASSWORD (from Profile) 
