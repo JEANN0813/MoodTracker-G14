@@ -14,23 +14,7 @@ Aya Ahmed Almasyabi ( Frontend Pages & User Interaction)
 
 ---
 
-## Table of Contents
 
-- [Features](#features)
-- [Tech Stack](#tech-stack)
-- [Project Structure](#project-structure)
-- [Prerequisites](#prerequisites)
-- [Installation](#installation)
-- [Configuration](#configuration)
-- [Running the App](#running-the-app)
-- [API Reference](#api-reference)
-- [Testing](#testing)
-- [Troubleshooting](#troubleshooting)
-- [Security Notes](#security-notes)
-- [License](#license)
-- [Team](#team)
-
----
 
 ## Features
 
@@ -45,16 +29,7 @@ Aya Ahmed Almasyabi ( Frontend Pages & User Interaction)
 
 ---
 
-## Features
 
-- Daily mood logging (Happy / Calm / Neutral / Sad / Anxious)
-- Calendar view with mood history
-- Monthly mood chart
-- AI mood assistant (Gemini)
-- Custom alarms for daily reminders
-- User profile with avatar and statistics
-
----
 
 ## Tech Stack
 
