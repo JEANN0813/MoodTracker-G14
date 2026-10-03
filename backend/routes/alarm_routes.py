@@ -72,7 +72,20 @@ def handle_single_alarm(alarm_id):
 
 
 
+@alarm_bp.route('/alarms/check', methods=['GET'])
+def check_triggered_alarms():
+    """
+    This route checks if there are any alarms that have been triggered for the current user.
+    If there are triggered alarms, it returns them in the response. Otherwise, it indicates that
+    """
+    user = get_current_user()
+    if not user:
+        return jsonify({'triggered': False}), 401
 
+    alarms = _triggered_alarms.pop(user.id, [])
+    if alarms:
+        return jsonify({'triggered': True, 'alarms': alarms})
+    return jsonify({'triggered': False})
 
 def check_and_push_alarms():
     """
