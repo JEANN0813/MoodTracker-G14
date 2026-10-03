@@ -1,0 +1,5 @@
+{
+    "include": ["backend", "run.py"],
+    "extraPaths": ["."],
+    "pythonVersion": "3.10"
+}
