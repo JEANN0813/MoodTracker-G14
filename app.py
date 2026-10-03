@@ -5,26 +5,27 @@ from datetime import timedelta, datetime
 from werkzeug.security import generate_password_hash, check_password_hash
 from flask_mail import Mail, Message
 from sqlalchemy import func
-from openai import OpenAI
 from google import genai
+from dotenv import load_dotenv
 import secrets
 import os
 import random
 import string
 from datetime import datetime
 from flask import Blueprint, request, jsonify
+from tenacity import retry, stop_after_attempt, wait_exponential
 from datetime import datetime, time
 import apscheduler
 from apscheduler.schedulers.background import BackgroundScheduler
 import re
 
-client = OpenAI(
-    api_key=os.environ.get("OPENAI_API_KEY")
-)
+load_dotenv()
 
-gemini_client = genai.Client(
-    api_key=os.environ.get("GEMINI_API_KEY")
-)
+api_key = os.getenv("GEMINI_API_KEY")
+if not api_key:
+    raise ValueError("Cannot find GEMINI_API_KEY，please check .env ")
+
+
 
 BASE_DIR = os.path.abspath(os.path.dirname(__file__))
 
@@ -33,6 +34,8 @@ app = Flask(
     static_folder=os.path.join(BASE_DIR, 'static'),
     static_url_path=''
 )
+
+client = genai.Client(api_key=api_key)
 
 # Email configuration
 app.config['MAIL_SERVER'] = 'smtp.gmail.com'
@@ -439,46 +442,45 @@ def delete_emotion_log(log_id):
     db.session.commit()
     return jsonify({'message': 'Log deleted successfully'}), 200
 
+@retry(
+    wait=wait_exponential(min=1, max=10), 
+    stop=stop_after_attempt(3),  
+    reraise=True,
+)
+def send_message_with_retry(chat_session, message):
+    return chat_session.send_message(message)
+
 @app.route('/api/chat', methods=['POST'])
 def chat():
 
     data = request.get_json()
+    user_message = data.get("message")
 
-    if not data or not data.get('message'):
-        return jsonify({
-            'error': 'Message is required.'
-        }), 400
-
+    if not user_message:
+        return jsonify({"error": "Message is required"}), 400
     message = data['message'].strip()
 
     try:
-
-        response = gemini_client.models.generate_content(
-            model="gemini-3.5-flash-lite",
-
-            contents=(
-                "You are the MoodTracker assistant. "
-                "You help users reflect on their emotions "
-                "in a friendly and supportive way. "
-                "Keep responses short and simple. "
-                "Do not diagnose mental health conditions.\n\n"
-                f"User: {message}"
-            )
+        chat_session = client.chats.create(
+            model="gemini-3.8-flash",
+            config={
+                "system_instruction": (
+                    "You are the MoodTracker assistant. "
+                    "You help users reflect on their emotions "
+                    "in a friendly and supportive way. "
+                    "Keep responses short and simple. "
+                    "Do not diagnose mental health conditions."
+                )
+            },
         )
 
-        return jsonify({
-            'reply': response.text
-        })
+        response = chat_session.send_message(user_message)
+        return jsonify({"reply": response.text})
 
     except Exception as e:
-
         print("Chat API error:", e)
-
-        return jsonify({
-            'error': 'Unable to generate a response.'
-        }), 500
-
-@app.route('/api/calendar/<int:year>/<int:month>', methods=['GET'])
+        return jsonify({"error": str(e)}), 500
+    
 def get_calendar(year, month):
     user = get_current_user()
     if not user:
