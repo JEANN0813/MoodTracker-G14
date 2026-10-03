@@ -13,7 +13,7 @@ let selectedIcon = "";
 let currentDate = new Date();
 let activeTargetDate = new Date().toISOString().split('T')[0];
 
-const DAILY_EMOTION_LIMIT = 999
+
 
 // MOOD CHART STATE 
 let chartRange = 'monthly';
@@ -86,6 +86,7 @@ function selectEmotion(btn, emotion, iconName) {
 
 //  MOOD LOGGING & LOCAL DATA HANDLERS 
 async function fetchLogsAndRefresh() {
+    localStorage.setItem('moodLogs', JSON.stringify(moodLogs));
     try {
         const response = await fetch('/api/logs', { method: 'GET' });
 
@@ -2332,6 +2333,29 @@ let _alarmAudio = null;
 let _isAlarmRinging = false;
 let _lastDismissedAt = 0; 
 let _currentRingingAlarmId = null;
+let _alarmPollTimer = null;
+
+function startAlarmPolling() {
+    if (_alarmPollTimer) return;
+
+    
+    _alarmPollTimer = setInterval(async () => {
+        if (_isAlarmRinging) return;   
+
+        try {
+            const res = await fetch('/api/alarms/check', { credentials: 'include' });
+            if (!res.ok) return;
+            const data = await res.json();
+
+            if (data.triggered && data.alarms.length > 0) {
+                triggerAlarm(data.alarms[0]);
+            }
+        } catch (err) {
+            console.error('Poll alarms error:', err);
+        }
+    }, 20000);
+}
+
 
 function triggerAlarm(alarm) {
     _isAlarmRinging = true;
@@ -2343,21 +2367,20 @@ function triggerAlarm(alarm) {
     }
     _alarmAudio.play().catch(() => {});
 
-    
     const modal = document.getElementById('alarmModal');
     const title = document.getElementById('modalTitle');
     const timeEl = document.getElementById('modalTime');
 
-    if (title) title.textContent = `⏰ ${alarm.label || 'Alarm'}`;
-    if (timeEl) timeEl.textContent = `Scheduled time: ${alarm.time}`;
+   
+    if (title) title.textContent = `⏰ ${alarm.title || 'Alarm'}`;
+    if (timeEl) timeEl.textContent = `Scheduled time: ${alarm.alarm_time}`;
     if (modal) modal.classList.remove('hidden');
 
     if (window.lucide) lucide.createIcons();
 
-    
-    if (Notification && Notification.permission === 'granted') {
-        new Notification(`⏰ ${alarm.label || 'Alarm'}`, {
-            body: `It's ${alarm.time}`
+    if ('Notification' in window && Notification.permission === 'granted') {
+        new Notification(`⏰ ${alarm.title || 'Alarm'}`, {
+            body: `It's ${alarm.alarm_time}`
         });
     }
 }
@@ -2381,36 +2404,34 @@ async function checkAlarms() {
     }
 }
 
-function stopAlarm() {
+async function stopAlarm() {
     _isAlarmRinging = false;
-    _lastDismissedAt = Date.now(); 
 
-   
     if (_currentRingingAlarmId) {
-        let alarms = JSON.parse(localStorage.getItem('alarms') || '[]');
-        alarms = alarms.map(a => {
-            if (a.id === _currentRingingAlarmId) {
-                return { ...a, enabled: false }; 
-            }
-            return a;
-        });
-        localStorage.setItem('alarms', JSON.stringify(alarms));
-        renderAlarms(); 
+        try {
+            await fetch(`/api/alarms/${_currentRingingAlarmId}`, {
+                method: 'PUT',
+                credentials: 'include',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ is_enabled: false })
+            });
+        } catch (e) {
+            console.warn('Failed to disable alarm:', e);
+        }
         _currentRingingAlarmId = null;
+        await loadAlarmsFromServer();
     }
 
     if (_alarmAudio) {
         _alarmAudio.pause();
         _alarmAudio.currentTime = 0;
-        _alarmAudio.loop = false;         
-        _alarmAudio.src = '';              
-        _alarmAudio = null; 
+        _alarmAudio.src = '';
+        _alarmAudio = null;
     }
 
     const modal = document.getElementById('alarmModal');
     if (modal) modal.classList.add('hidden');
 }
-
 
 function startLocalAlarmScheduler() {
     setInterval(() => {
@@ -2430,58 +2451,98 @@ function startLocalAlarmScheduler() {
     }, 3000); 
 }
 
-document.addEventListener('DOMContentLoaded', function () {
-    setTimeout(renderAlarms, 100);
-    startLocalAlarmScheduler(); 
+document.addEventListener('DOMContentLoaded', () => {
+    loadAlarmsFromServer();
+    startAlarmPolling();
 });
 
-function addAlarm(event) {
+async function addAlarm(event) {
     if (event) event.preventDefault();
+
     const timeInput = document.getElementById('alarmTimeInput');
     const labelInput = document.getElementById('alarmLabelInput');
-    if (!timeInput || !timeInput.value) return showToastCard('Please select a time');
-    const alarmData = {
-        id: Date.now(),
-        time: timeInput.value,
-        label: (labelInput?.value || '').trim() || 'Alarm',
-        enabled: true
+
+    if (!timeInput || !timeInput.value) {
+        return showToastCard('Please select a time');
+    }
+
+    const payload = {
+        time: timeInput.value,                         
+        title: (labelInput?.value || '').trim() || 'Alarm',
+        repeat_days: []                                
     };
-    const alarms = JSON.parse(localStorage.getItem('alarms') || '[]');
-    alarms.push(alarmData);
-    localStorage.setItem('alarms', JSON.stringify(alarms));
-    timeInput.value = '';
-    if (labelInput) labelInput.value = '';
-    renderAlarms();
-    showToastCard('⏰ Alarm added!');
+
+    try {
+        const res = await fetch('/api/alarms', {
+            method: 'POST',
+            credentials: 'include',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+        });
+
+        if (!res.ok) {
+            const err = await res.json().catch(() => ({}));
+            return showToastCard('❌ ' + (err.error || 'Failed to add alarm'));
+        }
+
+        timeInput.value = '';
+        if (labelInput) labelInput.value = '';
+
+        await loadAlarmsFromServer();   
+        showToastCard('⏰ Alarm added!');
+    } catch (err) {
+        showToastCard('❌ Network error');
+    }
 }
 
-function renderAlarms() {
+async function loadAlarmsFromServer() {
+    try {
+        const res = await fetch('/api/alarms', { credentials: 'include' });
+        if (!res.ok) return;
+        const alarms = await res.json();
+        renderAlarms(alarms);
+    } catch (err) {
+        console.error('Load alarms error:', err);
+    }
+}
+
+function renderAlarms(alarms) {
     const list = document.getElementById('alarmListContainer');
     if (!list) return;
-    const alarms = JSON.parse(localStorage.getItem('alarms') || '[]');
-    if (alarms.length === 0) {
-        list.innerHTML = `<li><span>No alarms set. Use the form below to add one.</span></li>`;
+
+    if (!alarms || alarms.length === 0) {
+        list.innerHTML = `<li><span>No alarms set.</span></li>`;
         return;
     }
+
     list.innerHTML = alarms.map(a => `
         <li>
-            <div><strong>${a.time}</strong> — <span>${a.label}</span></div>
+            <div>
+                <strong>${a.alarm_time}</strong> — <span>${a.title}</span>
+                ${a.is_enabled ? '' : ' <em>(disabled)</em>'}
+            </div>
             <button class="btn-delete" onclick="deleteAlarm(${a.id})" title="Delete">
                 <i data-lucide="trash-2" style="width:14px;"></i>
             </button>
         </li>
     `).join('');
+
     if (window.lucide) lucide.createIcons();
 }
 
-function deleteAlarm(id) {
-    let alarms = JSON.parse(localStorage.getItem('alarms') || '[]');
-    alarms = alarms.filter(a => a.id !== id);
-    localStorage.setItem('alarms', JSON.stringify(alarms));
-    renderAlarms();
-    showToastCard('Alarm removed.');
+async function deleteAlarm(id) {
+    try {
+        const res = await fetch(`/api/alarms/${id}`, {
+            method: 'DELETE',
+            credentials: 'include'
+        });
+        if (res.ok) {
+            await loadAlarmsFromServer();
+            showToastCard('Alarm removed.');
+        }
+    } catch (err) {
+        showToastCard('❌ Network error');
+    }
 }
 
-document.addEventListener('DOMContentLoaded', function () {
-    setTimeout(renderAlarms, 100);
-});
+

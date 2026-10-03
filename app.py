@@ -23,7 +23,7 @@ load_dotenv()
 
 api_key = os.getenv("GEMINI_API_KEY")
 if not api_key:
-    raise ValueError("Cannot find GEMINI_API_KEY，please check .env ")
+    raise ValueError("Cannot find GEMINI_API_KEY,please check .env ")
 
 
 
@@ -480,6 +480,7 @@ def chat():
     except Exception as e:
         print("Chat API error:", e)
         return jsonify({"error": str(e)}), 500
+ 
     
 def get_calendar(year, month):
     user = get_current_user()
@@ -768,25 +769,23 @@ def handle_single_alarm(alarm_id):
 
 
 
+_triggered_alarms = {}  
+
 def check_and_push_alarms():
-    """Background daemon process: runs every minute via APScheduler."""
     with app.app_context():
         now = datetime.now()
-        current_hour = now.hour
-        current_minute = now.minute
         current_weekday = str(now.isoweekday())
 
         enabled_alarms = Alarm.query.filter_by(is_enabled=True).all()
 
         for alarm in enabled_alarms:
-            if alarm.alarm_time.hour == current_hour and alarm.alarm_time.minute == current_minute:
+            if alarm.alarm_time.hour == now.hour and alarm.alarm_time.minute == now.minute:
                 repeat_list = alarm.repeat_days.split(',') if alarm.repeat_days else []
-                
+
                 if not repeat_list or current_weekday in repeat_list:
-                    print(f"[Background Alert] Alarm triggered: {alarm.title} at {alarm.alarm_time}")
-                    
                    
-                    
+                    _triggered_alarms.setdefault(alarm.user_id, []).append(alarm.to_dict())
+
                     if not repeat_list:
                         alarm.is_enabled = False
 
@@ -802,21 +801,10 @@ def check_triggered_alarms():
     if not user:
         return jsonify({'triggered': False}), 401
 
-    now = datetime.now()
-    current_time = now.time().replace(second=0, microsecond=0)
+    alarms = _triggered_alarms.pop(user.id, [])
 
-    
-    triggered_alarms = Alarm.query.filter_by(
-        user_id=user.id, 
-        is_enabled=True, 
-        alarm_time=current_time
-    ).all()
-
-    if triggered_alarms:
-        return jsonify({
-            'triggered': True, 
-            'alarms': [a.to_dict() for a in triggered_alarms]
-        })
+    if alarms:
+        return jsonify({'triggered': True, 'alarms': alarms})
 
     return jsonify({'triggered': False})
 
