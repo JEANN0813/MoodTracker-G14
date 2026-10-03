@@ -7,7 +7,15 @@
     <title>Mood Tracker | Sanctuary Dashboard</title>
 
     <link rel="stylesheet" href="style.css">
-    <script src="dashboard.js" defer></script>
+
+    <script src="js/utils.js"></script>
+    <script src="js/dashboard.js"></script>
+    <script src="js/moodLogs.js"></script>
+    <script src="js/calendar.js"></script>
+    <script src="js/history.js"></script>
+    <script src="js/profile.js"></script>
+    <script src="js/auth.js"></script>
+    <script src="js/alarms.js"></script>
 
 
 
@@ -17,6 +25,7 @@
         href="https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=Plus+Jakarta+Sans:wght@500;600;700;800&display=swap"
         rel="stylesheet">
     <script src="https://unpkg.com/lucide@latest"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 
     <style>
         /* ==== Landing Screen ==== */
@@ -208,13 +217,13 @@
             <section
                 style="margin:0 auto;display:flex;flex-direction:column;align-items:center;text-align:center;max-width:900px;padding:3rem 2rem;width:100%;box-sizing:border-box;">
                 <div class="hero-container" style="position:relative;width:100%;">
-                     
-                    
-                    
-                    
-                    
 
-                                 <div>
+                               
+                                       
+                                       
+                                       
+
+                                                     <div>
                         <h1
                             style="font-family:var(--font-serif);font-size:2.8rem;line-height:1.15;margin-bottom:1.2rem;font-weight:800;">
                             Understand Your Mind.<br>
@@ -232,7 +241,7 @@
                                 onclick="openAuthModal('register')">Get Started Free</button>
                             <button type="button" class="btn-secondary" style="padding:12px 28px;font-size:0.95rem;"
                                 onclick="openAuthModal('login')">Log In to Account</button>
-                
+
                         </div>
                     </div>
                 </div>
@@ -279,7 +288,7 @@
                         <h3 style="font-family:var(--font-serif);font-size:1.3rem;margin-bottom:0.5rem;">Get AI Insights
                         </h3>
                         <p style="font-size:0.85rem;color:var(--text-muted);font-weight:600;line-height:1.4;">Chat with
-                            our AI Mood Assistant for personalized reflection and 
+                            our AI Mood Assistant for personalized reflection and
                             recommendations.</p>
                     </div>
                 </div>
@@ -334,7 +343,7 @@
                         </div>
                         <strong
                             style="font-size:1.05rem;margin-bottom:0.4rem;color:var(--text-dark);display:block;">Privacy
-                           </strong>
+                        </strong>
                         <span style="font-weight:600;font-size:0.85rem;color:var(--text-muted);line-height:1.4;">Your
                             emotional logs stay private. You remain in full control of your account
                             data.</span>
@@ -380,7 +389,7 @@
      ============================================================ -->
     <div class="auth-container hidden" id="authScreen">
         <div class="auth-card">
-            
+
             <div class="auth-tabs" id="authTabsHeader">
                 <button class="auth-tab-btn active" onclick="switchAuthTab('login')">Log In</button>
                 <button class="auth-tab-btn" onclick="switchAuthTab('register')">Register</button>
@@ -480,7 +489,7 @@
                             <div class="hint" data-rule="special"><span class="dot">○</span> One special character
                                 (!@#$...)</div>
 
-                
+
                             <div id="regPasswordHints" class="password-hints"
                                 style="font-size: 0.85rem; margin-top: 5px;"></div>
                         </div>
@@ -722,8 +731,8 @@
                             </div>
                         </div>
                         <div style="margin-top:1rem;">
-                            <svg id="moodChartSvg" width="600" height="220"
-                                style="width:100%;height:auto;display:block;background:var(--canvas-bg);border:2px solid var(--border-dark);border-radius:16px;"></svg>
+                            <canvas id="moodChart" width="600" height="220"
+                                style="width:100%;height:auto;display:block;background:var(--canvas-bg);border:2px solid var(--border-dark);border-radius:16px;"></canvas>
                         </div>
                     </div>
 
